@@ -44,7 +44,7 @@ export default function Cemetery() {
 
     const map = L.map(containerRef.current).setView(
       [mapData.center.lat, mapData.center.lng],
-      17
+      18.4
     )
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,

@@ -29,7 +29,7 @@ class MapController
         }, $sections);
 
         Response::json([
-            'center' => ['lat' => 14.5996, 'lng' => 120.9843],
+            'center' => ['lat' => 14.365789, 'lng' => 120.857495],
             'sections' => $grouped,
         ]);
     }
