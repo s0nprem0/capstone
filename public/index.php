@@ -35,9 +35,10 @@ if (str_starts_with($uri, '/api/')) {
 
     if (file_exists($manifestFile)) {
         $manifest = json_decode(file_get_contents($manifestFile), true);
-        if (isset($manifest['resources/js/main.jsx'])) {
-            $css = $manifest['resources/js/main.jsx']['css'][0] ?? '';
-            $js = $manifest['resources/js/main.jsx']['file'] ?? '';
+        $entry = $manifest['index.html'] ?? null;
+        if ($entry) {
+            $css = $entry['css'][0] ?? '';
+            $js = $entry['file'] ?? '';
             $cssTag = $css ? '<link rel="stylesheet" href="/dist/' . htmlspecialchars($css) . '">' : '';
             $jsTag = '<script type="module" src="/dist/' . htmlspecialchars($js) . '"></script>';
             $vite = $cssTag . "\n    " . $jsTag;

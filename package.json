@@ -2,6 +2,7 @@
   "name": "cemetery-reservation-system",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.4.1",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
