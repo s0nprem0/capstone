@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const apiTarget = process.env.DOCKER ? 'http://php:8000' : 'http://localhost:8000'
+const apiTarget = process.env.DOCKER
+  ? 'http://php:8000'
+  : process.env.XAMPP
+    ? 'http://localhost:80'
+    : 'http://localhost:8000'
 
 export default defineConfig({
   plugins: [react()],
