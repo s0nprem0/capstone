@@ -24,4 +24,17 @@ class Lot extends Model
     {
         return self::update($id, ['status' => 'occupied']);
     }
+
+    public static function map(): array
+    {
+        $stmt = self::db()->query(
+            "SELECT l.lot_id, l.lot_code, l.block, l.lot_type, l.price, l.status,
+                    l.latitude, l.longitude, l.description,
+                    s.section_id, s.section_name, s.location
+             FROM cemetery_lots l
+             JOIN cemetery_sections s ON s.section_id = l.section_id
+             ORDER BY s.section_name, l.lot_code"
+        );
+        return $stmt->fetchAll();
+    }
 }

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function NewReservation() {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
   const [lots, setLots] = useState([])
   const [form, setForm] = useState({
-    lot_id: '',
+    lot_id: searchParams.get('lot') || '',
     reservation_date: '',
     purpose: '',
     number_of_slots: 1,

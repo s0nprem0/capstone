@@ -8,6 +8,7 @@ use App\Core\Router;
 use App\Core\Session;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
+use App\Controllers\MapController;
 use App\Controllers\ReservationController;
 use App\Controllers\LotController;
 
@@ -16,8 +17,11 @@ Session::start();
 
 $auth = new AuthController($router);
 $users = new UserController($router);
+$map = new MapController($router);
 $reservations = new ReservationController($router);
 $lots = new LotController($router);
+
+$router->get('/api/map', [$map, 'map']);
 
 $router->get('/api/csrf-token', [$auth, 'csrf']);
 $router->post('/api/auth/register', [$auth, 'register']);

@@ -39,6 +39,8 @@ CREATE TABLE `cemetery_lots` (
   `lot_type` ENUM('single', 'double', 'family') NOT NULL DEFAULT 'single',
   `price` DECIMAL(10,2) NULL,
   `status` ENUM('available', 'reserved', 'occupied') NOT NULL DEFAULT 'available',
+  `latitude` DECIMAL(10,8) NULL,
+  `longitude` DECIMAL(11,8) NULL,
   `description` TEXT NULL,
   FOREIGN KEY (`section_id`) REFERENCES `cemetery_sections`(`section_id`) ON DELETE CASCADE,
   UNIQUE KEY `uq_lot_code` (`lot_code`),
@@ -134,10 +136,10 @@ INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`) VALU
   ('Section C', 'West wing', 'Cremation niches'),
   ('Section D', 'South wing', 'Mausoleum wing');
 
-INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `price`, `status`) VALUES
-  ('A-001', 1, 'A', 'single', 15000.00, 'available'),
-  ('A-002', 1, 'A', 'single', 15000.00, 'available'),
-  ('A-003', 1, 'A', 'double', 25000.00, 'available'),
-  ('B-001', 2, 'B', 'single', 18000.00, 'available'),
-  ('B-002', 2, 'B', 'family', 40000.00, 'available'),
-  ('C-001', 3, 'C', 'single', 8000.00, 'available');
+INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `price`, `status`, `latitude`, `longitude`) VALUES
+  ('A-001', 1, 'A', 'single', 15000.00, 'available', 14.59950000, 120.98420000),
+  ('A-002', 1, 'A', 'single', 15000.00, 'available', 14.59952000, 120.98423000),
+  ('A-003', 1, 'A', 'double', 25000.00, 'available', 14.59954000, 120.98426000),
+  ('B-001', 2, 'B', 'single', 18000.00, 'available', 14.59970000, 120.98440000),
+  ('B-002', 2, 'B', 'family', 40000.00, 'available', 14.59972000, 120.98443000),
+  ('C-001', 3, 'C', 'single', 8000.00, 'available', 14.59990000, 120.98460000);
