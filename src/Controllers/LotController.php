@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\Lot;
+use App\Core\Auth;
+use App\Core\Response;
 use App\Core\Router;
+use App\Models\AuditLog;
+use App\Models\Lot;
 
 class LotController
 {
@@ -18,36 +21,81 @@ class LotController
 
     public function index(): void
     {
-        $this->router->json(Lot::all());
+        Response::json(Lot::all());
+    }
+
+    public function available(): void
+    {
+        Response::json(Lot::available());
     }
 
     public function show(int $id): void
     {
         $lot = Lot::find($id);
         if (!$lot) {
-            $this->router->json(['error' => 'Not found'], 404);
+            Response::json(['error' => 'Not found'], 404);
             return;
         }
-        $this->router->json($lot);
+        Response::json($lot);
     }
 
     public function store(): void
     {
-        $data = $this->router->input();
-        $id = Lot::create($data);
-        $this->router->json(['id' => $id, 'message' => 'Created'], 201);
+        Auth::requireRole(['admin']);
+        $input = $this->router->input();
+
+        $required = ['lot_code', 'section_id', 'price'];
+        foreach ($required as $field) {
+            if (($input[$field] ?? '') === '') {
+                Response::json(['error' => "$field is required"], 422);
+                return;
+            }
+        }
+
+        $id = Lot::create([
+            'lot_code' => $input['lot_code'],
+            'section_id' => (int) $input['section_id'],
+            'block' => $input['block'] ?? null,
+            'lot_type' => $input['lot_type'] ?? 'single',
+            'price' => (float) $input['price'],
+            'status' => $input['status'] ?? 'available',
+            'description' => $input['description'] ?? null,
+        ]);
+
+        AuditLog::record(Auth::id(), 'create', 'cemetery_lots', $id);
+        Response::json(Lot::find($id), 201);
     }
 
     public function update(int $id): void
     {
-        $data = $this->router->input();
-        $updated = Lot::update($id, $data);
-        $this->router->json(['message' => $updated ? 'Updated' : 'Not found'], $updated ? 200 : 404);
+        Auth::requireRole(['admin', 'staff']);
+        if (!Lot::find($id)) {
+            Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+
+        $input = $this->router->input();
+        $data = array_intersect_key($input, array_flip([
+            'lot_code', 'section_id', 'block', 'lot_type', 'price', 'status', 'description',
+        ]));
+
+        if ($data !== []) {
+            Lot::update($id, $data);
+            AuditLog::record(Auth::id(), 'update', 'cemetery_lots', $id);
+        }
+
+        Response::json(Lot::find($id));
     }
 
     public function destroy(int $id): void
     {
-        $deleted = Lot::delete($id);
-        $this->router->json(['message' => $deleted ? 'Deleted' : 'Not found'], $deleted ? 200 : 404);
+        Auth::requireRole(['admin']);
+        if (!Lot::find($id)) {
+            Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        Lot::delete($id);
+        AuditLog::record(Auth::id(), 'delete', 'cemetery_lots', $id);
+        Response::json(['message' => 'Deleted']);
     }
 }

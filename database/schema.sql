@@ -1,5 +1,5 @@
 -- Cemetery Reservation and Records Management System
--- Database Schema
+-- Database Schema (aligned to study ERD + required additions)
 
 CREATE DATABASE IF NOT EXISTS `cemetery_db`
   DEFAULT CHARACTER SET utf8mb4
@@ -7,80 +7,137 @@ CREATE DATABASE IF NOT EXISTS `cemetery_db`
 
 USE `cemetery_db`;
 
--- Sections of the cemetery
-CREATE TABLE `sections` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(100) NOT NULL,
-  `description` TEXT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- 1. USERS
+CREATE TABLE `users` (
+  `user_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `fullname` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(100) NOT NULL,
+  `phone` VARCHAR(15) NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'staff', 'user') NOT NULL DEFAULT 'user',
+  `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_users_email` (`email`),
+  KEY `idx_users_fullname` (`fullname`),
+  KEY `idx_users_email` (`email`)
 ) ENGINE=InnoDB;
 
--- Individual lots within sections
-CREATE TABLE `lots` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+-- 2. CEMETERY_SECTIONS
+CREATE TABLE `cemetery_sections` (
+  `section_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `section_name` VARCHAR(50) NOT NULL,
+  `location` VARCHAR(100) NULL,
+  `description` TEXT NULL
+) ENGINE=InnoDB;
+
+-- 3. CEMETERY_LOTS
+CREATE TABLE `cemetery_lots` (
+  `lot_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `lot_code` VARCHAR(20) NOT NULL,
   `section_id` INT UNSIGNED NOT NULL,
-  `lot_number` VARCHAR(50) NOT NULL,
-  `status` ENUM('available', 'reserved', 'occupied') DEFAULT 'available',
-  `type` ENUM('standard', 'double', 'cremation', 'mausoleum') DEFAULT 'standard',
+  `block` VARCHAR(10) NULL,
+  `lot_type` ENUM('single', 'double', 'family') NOT NULL DEFAULT 'single',
   `price` DECIMAL(10,2) NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`section_id`) REFERENCES `sections`(`id`) ON DELETE CASCADE,
-  UNIQUE KEY `unique_lot` (`section_id`, `lot_number`)
+  `status` ENUM('available', 'reserved', 'occupied') NOT NULL DEFAULT 'available',
+  `description` TEXT NULL,
+  FOREIGN KEY (`section_id`) REFERENCES `cemetery_sections`(`section_id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_lot_code` (`lot_code`),
+  KEY `idx_lots_status` (`status`)
 ) ENGINE=InnoDB;
 
--- Reservations
+-- 4. RESERVATIONS
 CREATE TABLE `reservations` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `reservation_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT UNSIGNED NOT NULL,
   `lot_id` INT UNSIGNED NOT NULL,
-  `deceased_name` VARCHAR(255) NOT NULL,
-  `date_of_birth` DATE NULL,
-  `date_of_death` DATE NULL,
-  `contact_name` VARCHAR(255) NOT NULL,
-  `contact_email` VARCHAR(255) NULL,
-  `contact_phone` VARCHAR(50) NULL,
-  `relationship` VARCHAR(100) NULL,
-  `status` ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
-  `reserved_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`lot_id`) REFERENCES `lots`(`id`) ON DELETE CASCADE
+  `reservation_date` DATE NOT NULL,
+  `purpose` VARCHAR(100) NULL,
+  `number_of_slots` INT UNSIGNED NOT NULL DEFAULT 1,
+  `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `payment_status` ENUM('pending', 'paid', 'failed') NOT NULL DEFAULT 'pending',
+  `approved_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE CASCADE,
+  KEY `idx_reservations_user` (`user_id`),
+  KEY `idx_reservations_lot` (`lot_id`),
+  KEY `idx_reservations_date` (`reservation_date`)
 ) ENGINE=InnoDB;
 
--- Burial records
-CREATE TABLE `burial_records` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+-- 5. PAYMENTS
+CREATE TABLE `payments` (
+  `payment_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `reservation_id` INT UNSIGNED NOT NULL,
-  `lot_id` INT UNSIGNED NOT NULL,
-  `deceased_name` VARCHAR(255) NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `payment_method` ENUM('gcash', 'card', 'cash') NOT NULL,
+  `reference_no` VARCHAR(100) NULL,
+  `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `payment_status` ENUM('pending', 'paid', 'failed') NOT NULL DEFAULT 'pending',
+  `receipt_path` VARCHAR(255) NULL,
+  `validated_by` INT UNSIGNED NULL,
+  `validated_at` DATETIME NULL,
+  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`validated_by`) REFERENCES `users`(`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- 6. BURIAL_RECORDS
+CREATE TABLE `burial_records` (
+  `burial_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `deceased_fullname` VARCHAR(255) NOT NULL,
   `date_of_birth` DATE NULL,
   `date_of_death` DATE NULL,
   `burial_date` DATE NOT NULL,
-  `cause_of_death` VARCHAR(255) NULL,
-  `funeral_home` VARCHAR(255) NULL,
-  `notes` TEXT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`lot_id`) REFERENCES `lots`(`id`) ON DELETE CASCADE
+  `lot_id` INT UNSIGNED NOT NULL,
+  `burial_type` ENUM('single', 'double', 'family', 'cremation') NOT NULL DEFAULT 'single',
+  `next_of_kin_name` VARCHAR(100) NULL,
+  `next_of_kin_phone` VARCHAR(15) NULL,
+  `interment_status` ENUM('scheduled', 'interred') NOT NULL DEFAULT 'scheduled',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE CASCADE,
+  KEY `idx_burials_deceased` (`deceased_fullname`),
+  KEY `idx_burials_date` (`burial_date`)
 ) ENGINE=InnoDB;
 
--- Payments
-CREATE TABLE `payments` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `reservation_id` INT UNSIGNED NOT NULL,
-  `amount` DECIMAL(10,2) NOT NULL,
-  `payment_method` ENUM('cash', 'check', 'card', 'bank_transfer') NOT NULL,
-  `reference_number` VARCHAR(100) NULL,
-  `paid_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`id`) ON DELETE CASCADE
+-- 7. NOTIFICATIONS
+CREATE TABLE `notifications` (
+  `notification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT UNSIGNED NOT NULL,
+  `message` VARCHAR(255) NOT NULL,
+  `type` ENUM('reservation', 'payment', 'system') NOT NULL DEFAULT 'system',
+  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
+  KEY `idx_notifications_user` (`user_id`)
 ) ENGINE=InnoDB;
 
--- Sample sections
-INSERT INTO `sections` (`name`, `description`) VALUES
-  ('Section A', 'General burial plots'),
-  ('Section B', 'Garden of Peace'),
-  ('Section C', 'Cremation niches'),
-  ('Section D', 'Mausoleum wing');
+-- 8. AUDIT_LOGS
+CREATE TABLE `audit_logs` (
+  `log_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT UNSIGNED NULL,
+  `action` VARCHAR(100) NOT NULL,
+  `table_name` VARCHAR(50) NOT NULL,
+  `record_id` INT UNSIGNED NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE SET NULL,
+  KEY `idx_audit_user` (`user_id`),
+  KEY `idx_audit_action` (`action`)
+) ENGINE=InnoDB;
+
+-- ===== Seed data =====
+-- Default admin (password: admin123)
+INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`) VALUES
+  ('System Administrator', 'admin@cemetery.test', '09170000001', '$2y$10$By0J7o/86O1M19BODiwRGOq6EcnSjZehzxdQVrDiEOe1lW2tTA2Rq', 'admin', 'active');
+
+INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`) VALUES
+  ('Section A', 'North wing', 'General burial plots'),
+  ('Section B', 'East garden', 'Garden of Peace'),
+  ('Section C', 'West wing', 'Cremation niches'),
+  ('Section D', 'South wing', 'Mausoleum wing');
+
+INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `price`, `status`) VALUES
+  ('A-001', 1, 'A', 'single', 15000.00, 'available'),
+  ('A-002', 1, 'A', 'single', 15000.00, 'available'),
+  ('A-003', 1, 'A', 'double', 25000.00, 'available'),
+  ('B-001', 2, 'B', 'single', 18000.00, 'available'),
+  ('B-002', 2, 'B', 'family', 40000.00, 'available'),
+  ('C-001', 3, 'C', 'single', 8000.00, 'available');

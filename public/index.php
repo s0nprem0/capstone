@@ -5,21 +5,43 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/bootstrap.php';
 
 use App\Core\Router;
+use App\Core\Session;
+use App\Controllers\AuthController;
+use App\Controllers\UserController;
 use App\Controllers\ReservationController;
 use App\Controllers\LotController;
 
 $router = new Router();
+Session::start();
 
+$auth = new AuthController($router);
+$users = new UserController($router);
 $reservations = new ReservationController($router);
 $lots = new LotController($router);
 
+$router->get('/api/csrf-token', [$auth, 'csrf']);
+$router->post('/api/auth/register', [$auth, 'register']);
+$router->post('/api/auth/login', [$auth, 'login']);
+$router->post('/api/auth/logout', [$auth, 'logout']);
+$router->get('/api/auth/me', [$auth, 'me']);
+
+$router->get('/api/users', [$users, 'index']);
+$router->get('/api/users/{id}', [$users, 'show']);
+$router->post('/api/users', [$users, 'store']);
+$router->post('/api/users/{id}', [$users, 'update']);
+$router->post('/api/users/{id}/delete', [$users, 'destroy']);
+
 $router->get('/api/reservations', [$reservations, 'index']);
+$router->get('/api/reservations/mine', [$reservations, 'mine']);
 $router->get('/api/reservations/{id}', [$reservations, 'show']);
 $router->post('/api/reservations', [$reservations, 'store']);
 $router->post('/api/reservations/{id}', [$reservations, 'update']);
+$router->post('/api/reservations/{id}/approve', [$reservations, 'approve']);
+$router->post('/api/reservations/{id}/reject', [$reservations, 'reject']);
 $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
 
 $router->get('/api/lots', [$lots, 'index']);
+$router->get('/api/lots/available', [$lots, 'available']);
 $router->get('/api/lots/{id}', [$lots, 'show']);
 $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/{id}', [$lots, 'update']);

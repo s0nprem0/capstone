@@ -23,6 +23,15 @@ class Router
     public function dispatch(): void
     {
         $method = $_SERVER['REQUEST_METHOD'];
+
+        if ($method === 'POST' && !$this->isPublicRoute()) {
+            $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+            if (!Csrf::validate($token)) {
+                Response::json(['error' => 'Invalid CSRF token'], 419);
+                return;
+            }
+        }
+
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $uri = rtrim($uri, '/') ?: '/';
 
@@ -42,15 +51,20 @@ class Router
             }
         }
 
-        http_response_code(404);
-        echo json_encode(['error' => 'Not Found']);
+        Response::json(['error' => 'Not Found'], 404);
+    }
+
+    private function isPublicRoute(): bool
+    {
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri = rtrim($uri, '/') ?: '/';
+        return str_starts_with($uri, '/api/auth/login')
+            || str_starts_with($uri, '/api/auth/register');
     }
 
     public function json(mixed $data, int $status = 200): void
     {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode($data);
+        Response::json($data, $status);
     }
 
     public function input(): array
