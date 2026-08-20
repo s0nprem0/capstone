@@ -1,0 +1,58 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cemetery-php
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=cemetery_db
+      - DB_USERNAME=cemetery_user
+      - DB_PASSWORD=secret
+      - APP_ENV=local
+      - APP_DEBUG=true
+
+  node:
+    build:
+      context: .
+      dockerfile: docker/node.Dockerfile
+    container_name: cemetery-node
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DOCKER=1
+
+  mysql:
+    image: mysql:8.0
+    container_name: cemetery-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cemetery_db
+      MYSQL_USER: cemetery_user
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+  node_modules:

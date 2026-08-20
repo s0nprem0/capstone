@@ -1,0 +1,10 @@
+node_modules/
+vendor/
+.env
+*.log
+dist/
+.cache/
+.vscode/
+.idea/
+*.swp
+*.swo
