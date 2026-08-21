@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Reservations from './pages/Reservations'
 import NewReservation from './pages/NewReservation'
 import Payments from './pages/Payments'
+import BurialRecords from './pages/BurialRecords'
 import Cemetery from './pages/Cemetery'
 import Records from './pages/Records'
 import Users from './pages/Users'
@@ -33,6 +34,7 @@ export default function App() {
           </Route>
 
           <Route element={<RequireRole roles={['admin', 'staff']} />}>
+            <Route path="/burial-records" element={<BurialRecords />} />
             <Route path="/users" element={<Users />} />
           </Route>
         </Route>

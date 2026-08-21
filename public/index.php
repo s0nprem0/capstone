@@ -11,6 +11,7 @@ use App\Controllers\UserController;
 use App\Controllers\MapController;
 use App\Controllers\ReservationController;
 use App\Controllers\PaymentController;
+use App\Controllers\BurialRecordController;
 use App\Controllers\LotController;
 
 $router = new Router();
@@ -21,6 +22,7 @@ $users = new UserController($router);
 $map = new MapController($router);
 $reservations = new ReservationController($router);
 $payments = new PaymentController($router);
+$burialRecords = new BurialRecordController($router);
 $lots = new LotController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -52,6 +54,12 @@ $router->get('/api/payments/{id}', [$payments, 'show']);
 $router->post('/api/payments', [$payments, 'store']);
 $router->post('/api/payments/{id}/validate', [$payments, 'validate']);
 $router->post('/api/payments/{id}/delete', [$payments, 'destroy']);
+
+$router->get('/api/burial-records', [$burialRecords, 'index']);
+$router->get('/api/burial-records/{id}', [$burialRecords, 'show']);
+$router->post('/api/burial-records', [$burialRecords, 'store']);
+$router->post('/api/burial-records/{id}', [$burialRecords, 'update']);
+$router->post('/api/burial-records/{id}/delete', [$burialRecords, 'destroy']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
