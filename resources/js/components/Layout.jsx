@@ -19,6 +19,7 @@ function roleNav(role) {
       { to: '/payments', label: 'Payments' },
       { to: '/burial-records', label: 'Burial Records' },
       { to: '/records', label: 'Records' },
+      { to: '/reports', label: 'Reports' },
       { to: '/users', label: 'Users' },
     ]
   }

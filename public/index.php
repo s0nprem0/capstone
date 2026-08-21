@@ -14,6 +14,7 @@ use App\Controllers\PaymentController;
 use App\Controllers\BurialRecordController;
 use App\Controllers\NotificationController;
 use App\Controllers\StatsController;
+use App\Controllers\ReportController;
 use App\Controllers\LotController;
 
 $router = new Router();
@@ -27,6 +28,7 @@ $payments = new PaymentController($router);
 $burialRecords = new BurialRecordController($router);
 $notifications = new NotificationController($router);
 $stats = new StatsController($router);
+$reports = new ReportController($router);
 $lots = new LotController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -70,6 +72,12 @@ $router->post('/api/notifications/{id}/read', [$notifications, 'markRead']);
 $router->post('/api/notifications/read-all', [$notifications, 'markAllRead']);
 
 $router->get('/api/stats/dashboard', [$stats, 'dashboard']);
+
+$router->get('/api/reports/reservations', [$reports, 'reservations']);
+$router->get('/api/reports/payments', [$reports, 'payments']);
+$router->get('/api/reports/burial-records', [$reports, 'burialRecords']);
+$router->get('/api/reports/availability', [$reports, 'availability']);
+$router->get('/api/reports/audit-logs', [$reports, 'auditLogs']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
