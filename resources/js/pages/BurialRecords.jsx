@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 export default function BurialRecords() {
   const [records, setRecords] = useState([])
   const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState({
@@ -70,6 +71,19 @@ export default function BurialRecords() {
     else setError(data?.error || 'Delete failed')
   }
 
+  const filtered = records.filter((r) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      r.deceased_fullname.toLowerCase().includes(q) ||
+      (r.lot_code && r.lot_code.toLowerCase().includes(q)) ||
+      (r.section_name && r.section_name.toLowerCase().includes(q)) ||
+      (r.burial_date && r.burial_date.includes(q)) ||
+      r.interment_status.toLowerCase().includes(q) ||
+      (r.next_of_kin_name && r.next_of_kin_name.toLowerCase().includes(q))
+    )
+  })
+
   return (
     <div>
       <div className="page-header">
@@ -78,6 +92,15 @@ export default function BurialRecords() {
       </div>
 
       {error && <p className="alert alert--error">{error}</p>}
+
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search by name, lot, section, date, status, next of kin..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ marginBottom: '1rem' }}
+      />
 
       {showForm && (
         <div className="form-card" style={{ marginBottom: '1.5rem' }}>
@@ -139,8 +162,8 @@ export default function BurialRecords() {
       )}
 
       <div className="table-container">
-        {records.length === 0 ? (
-          <p className="text-muted">No burial records yet.</p>
+        {filtered.length === 0 ? (
+          <p className="text-muted">No burial records found.</p>
         ) : (
           <table className="table">
             <thead>
@@ -157,7 +180,7 @@ export default function BurialRecords() {
               </tr>
             </thead>
             <tbody>
-              {records.map((r) => (
+              {filtered.map((r) => (
                 <tr key={r.burial_id}>
                   <td>{r.burial_id}</td>
                   <td>{r.deceased_fullname}</td>

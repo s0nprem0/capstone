@@ -7,6 +7,7 @@ export default function Reservations() {
   const { user } = useAuth()
   const [reservations, setReservations] = useState([])
   const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
 
   const load = async () => {
     const path = user?.role === 'user' ? '/api/reservations/mine' : '/api/reservations'
@@ -18,6 +19,19 @@ export default function Reservations() {
   useEffect(() => {
     load()
   }, [user])
+
+  const filtered = reservations.filter((r) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      (r.lot_code && r.lot_code.toLowerCase().includes(q)) ||
+      (r.user_name && r.user_name.toLowerCase().includes(q)) ||
+      (r.section_name && r.section_name.toLowerCase().includes(q)) ||
+      (r.reservation_date && r.reservation_date.includes(q)) ||
+      (r.approved_status && r.approved_status.toLowerCase().includes(q)) ||
+      (r.purpose && r.purpose.toLowerCase().includes(q))
+    )
+  })
 
   const decide = async (id, action) => {
     const { ok, data } = await api(`/api/reservations/${id}/${action}`, { method: 'POST' })
@@ -38,9 +52,18 @@ export default function Reservations() {
 
       {error && <p className="alert alert--error">{error}</p>}
 
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search by lot, name, section, date, status..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ marginBottom: '1rem' }}
+      />
+
       <div className="table-container">
-        {reservations.length === 0 ? (
-          <p className="text-muted">No reservations yet.</p>
+        {filtered.length === 0 ? (
+          <p className="text-muted">No reservations found.</p>
         ) : (
           <table className="table">
             <thead>
@@ -58,7 +81,7 @@ export default function Reservations() {
               </tr>
             </thead>
             <tbody>
-              {reservations.map((r) => (
+              {filtered.map((r) => (
                 <tr key={r.reservation_id}>
                   <td>{r.reservation_id}</td>
                   <td>{r.lot_code}</td>

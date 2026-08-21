@@ -7,6 +7,7 @@ export default function Users() {
   const [users, setUsers] = useState([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [search, setSearch] = useState('')
   const [form, setForm] = useState({
     fullname: '',
     email: '',
@@ -54,6 +55,18 @@ export default function Users() {
       setError(data?.error || 'Failed to update user')
     }
   }
+
+  const filtered = users.filter((u) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      u.fullname.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.phone && u.phone.includes(q)) ||
+      u.role.toLowerCase().includes(q) ||
+      u.status.toLowerCase().includes(q)
+    )
+  })
 
   return (
     <div>
@@ -103,6 +116,15 @@ export default function Users() {
         </form>
       )}
 
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search by name, email, phone, role, status..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ marginBottom: '1rem' }}
+      />
+
       <div className="table-container">
         <table className="table">
           <thead>
@@ -116,7 +138,7 @@ export default function Users() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {filtered.map((u) => (
               <tr key={u.user_id}>
                 <td>{u.fullname}</td>
                 <td>{u.email}</td>
