@@ -10,6 +10,7 @@ use App\Controllers\AuthController;
 use App\Controllers\UserController;
 use App\Controllers\MapController;
 use App\Controllers\ReservationController;
+use App\Controllers\PaymentController;
 use App\Controllers\LotController;
 
 $router = new Router();
@@ -19,6 +20,7 @@ $auth = new AuthController($router);
 $users = new UserController($router);
 $map = new MapController($router);
 $reservations = new ReservationController($router);
+$payments = new PaymentController($router);
 $lots = new LotController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -43,6 +45,13 @@ $router->post('/api/reservations/{id}', [$reservations, 'update']);
 $router->post('/api/reservations/{id}/approve', [$reservations, 'approve']);
 $router->post('/api/reservations/{id}/reject', [$reservations, 'reject']);
 $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
+
+$router->get('/api/payments', [$payments, 'index']);
+$router->get('/api/payments/mine', [$payments, 'mine']);
+$router->get('/api/payments/{id}', [$payments, 'show']);
+$router->post('/api/payments', [$payments, 'store']);
+$router->post('/api/payments/{id}/validate', [$payments, 'validate']);
+$router->post('/api/payments/{id}/delete', [$payments, 'destroy']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);

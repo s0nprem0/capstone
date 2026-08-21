@@ -5,6 +5,7 @@ function roleNav(role) {
   const common = [
     { to: '/', label: 'Dashboard' },
     { to: '/cemetery', label: 'Cemetery Map' },
+    { to: '/payments', label: 'Payments' },
     { to: '/records', label: 'Records' },
   ]
 
@@ -13,6 +14,7 @@ function roleNav(role) {
       { to: '/', label: 'Dashboard' },
       { to: '/reservations', label: 'Reservations' },
       { to: '/cemetery', label: 'Cemetery Map' },
+      { to: '/payments', label: 'Payments' },
       { to: '/records', label: 'Records' },
       { to: '/users', label: 'Users' },
     ]

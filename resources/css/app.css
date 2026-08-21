@@ -323,6 +323,44 @@ select {
   color: #9b1c1c;
 }
 
+.badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge--paid {
+  background: #e6f4ea;
+  color: #1e5c33;
+}
+
+.badge--failed {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.badge--approved {
+  background: #e6f4ea;
+  color: #1e5c33;
+}
+
+.badge--rejected {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.alert--error {
+  background: #fde8e8;
+  color: #9b1c1c;
+  border: 1px solid #fca5a5;
+}
+
 .form-card--compact {
   margin-bottom: 1.5rem;
 }
