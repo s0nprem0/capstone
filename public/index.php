@@ -12,6 +12,7 @@ use App\Controllers\MapController;
 use App\Controllers\ReservationController;
 use App\Controllers\PaymentController;
 use App\Controllers\BurialRecordController;
+use App\Controllers\NotificationController;
 use App\Controllers\LotController;
 
 $router = new Router();
@@ -23,6 +24,7 @@ $map = new MapController($router);
 $reservations = new ReservationController($router);
 $payments = new PaymentController($router);
 $burialRecords = new BurialRecordController($router);
+$notifications = new NotificationController($router);
 $lots = new LotController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -60,6 +62,10 @@ $router->get('/api/burial-records/{id}', [$burialRecords, 'show']);
 $router->post('/api/burial-records', [$burialRecords, 'store']);
 $router->post('/api/burial-records/{id}', [$burialRecords, 'update']);
 $router->post('/api/burial-records/{id}/delete', [$burialRecords, 'destroy']);
+
+$router->get('/api/notifications', [$notifications, 'mine']);
+$router->post('/api/notifications/{id}/read', [$notifications, 'markRead']);
+$router->post('/api/notifications/read-all', [$notifications, 'markAllRead']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);

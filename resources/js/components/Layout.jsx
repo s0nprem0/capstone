@@ -1,5 +1,7 @@
 import { Outlet, NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useState, useEffect } from 'react'
+import { api } from '../lib/api'
 
 function roleNav(role) {
   const common = [
@@ -27,6 +29,18 @@ function roleNav(role) {
 export default function Layout() {
   const { user, logout } = useAuth()
   const items = roleNav(user?.role)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    const load = async () => {
+      const { ok, data } = await api('/api/notifications')
+      if (ok) setUnreadCount(data.unread_count)
+    }
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [user])
 
   return (
     <div className="app-layout">
@@ -43,6 +57,15 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
+          {user && (
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
+            >
+              Notifications
+              {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+            </NavLink>
+          )}
         </nav>
         <div className="sidebar-footer">
           {user ? (

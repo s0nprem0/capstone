@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
+use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Reservation;
 
@@ -115,6 +116,11 @@ class PaymentController
             ]);
         }
 
+        Notification::createFor(
+            (int) $payment['user_id'],
+            "Your payment #{$id} for reservation #{$payment['reservation_id']} has been {$status}.",
+            'payment'
+        );
         AuditLog::record(Auth::id(), 'validate', 'payments', $id);
         Response::json(Payment::withDetails($id));
     }

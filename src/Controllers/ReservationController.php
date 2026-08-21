@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
 use App\Models\Lot;
+use App\Models\Notification;
 use App\Models\Reservation;
 
 class ReservationController
@@ -136,6 +137,11 @@ class ReservationController
         }
         Reservation::update($id, ['approved_status' => 'approved']);
         AuditLog::record(Auth::id(), 'approve', 'reservations', $id);
+        Notification::createFor(
+            (int) $reservation['user_id'],
+            "Your reservation #{$id} for lot " . ($reservation['lot_id']) . " has been approved.",
+            'reservation'
+        );
         Response::json(['message' => 'Reservation approved']);
     }
 
@@ -150,6 +156,11 @@ class ReservationController
         Reservation::update($id, ['approved_status' => 'rejected']);
         Lot::update((int) $reservation['lot_id'], ['status' => 'available']);
         AuditLog::record(Auth::id(), 'reject', 'reservations', $id);
+        Notification::createFor(
+            (int) $reservation['user_id'],
+            "Your reservation #{$id} for lot " . ($reservation['lot_id']) . " has been rejected.",
+            'reservation'
+        );
         Response::json(['message' => 'Reservation rejected']);
     }
 
