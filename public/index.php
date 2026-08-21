@@ -13,6 +13,7 @@ use App\Controllers\ReservationController;
 use App\Controllers\PaymentController;
 use App\Controllers\BurialRecordController;
 use App\Controllers\NotificationController;
+use App\Controllers\StatsController;
 use App\Controllers\LotController;
 
 $router = new Router();
@@ -25,6 +26,7 @@ $reservations = new ReservationController($router);
 $payments = new PaymentController($router);
 $burialRecords = new BurialRecordController($router);
 $notifications = new NotificationController($router);
+$stats = new StatsController($router);
 $lots = new LotController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -66,6 +68,8 @@ $router->post('/api/burial-records/{id}/delete', [$burialRecords, 'destroy']);
 $router->get('/api/notifications', [$notifications, 'mine']);
 $router->post('/api/notifications/{id}/read', [$notifications, 'markRead']);
 $router->post('/api/notifications/read-all', [$notifications, 'markAllRead']);
+
+$router->get('/api/stats/dashboard', [$stats, 'dashboard']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
