@@ -4,13 +4,6 @@ import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 
 function roleNav(role) {
-  const common = [
-    { to: '/', label: 'Dashboard' },
-    { to: '/cemetery', label: 'Cemetery Map' },
-    { to: '/payments', label: 'Payments' },
-    { to: '/records', label: 'Records' },
-  ]
-
   if (role === 'admin' || role === 'staff') {
     return [
       { to: '/', label: 'Dashboard' },
@@ -18,13 +11,17 @@ function roleNav(role) {
       { to: '/cemetery', label: 'Cemetery Map' },
       { to: '/payments', label: 'Payments' },
       { to: '/burial-records', label: 'Burial Records' },
-      { to: '/records', label: 'Records' },
       { to: '/reports', label: 'Reports' },
       { to: '/users', label: 'Users' },
     ]
   }
 
-  return common
+  return [
+    { to: '/', label: 'Dashboard' },
+    { to: '/cemetery', label: 'Cemetery Map' },
+    { to: '/reservations', label: 'My Reservations' },
+    { to: '/payments', label: 'Payments' },
+  ]
 }
 
 export default function Layout() {
