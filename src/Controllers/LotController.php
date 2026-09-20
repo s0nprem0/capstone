@@ -19,6 +19,17 @@ class LotController
         $this->router = $router;
     }
 
+    private function coordinate(mixed $value): ?float
+    {
+        if ($value === null || $value === '') return null;
+        return (float) $value;
+    }
+
+    private function validCoordinate(?float $lat, ?float $lng): bool
+    {
+        return ($lat === null || abs($lat) <= 90) && ($lng === null || abs($lng) <= 180);
+    }
+
     public function index(): void
     {
         Response::json(Lot::all());
@@ -52,6 +63,13 @@ class LotController
             }
         }
 
+        $latitude = $this->coordinate($input['latitude'] ?? null);
+        $longitude = $this->coordinate($input['longitude'] ?? null);
+        if (!$this->validCoordinate($latitude, $longitude)) {
+            Response::json(['error' => 'latitude must be within -90..90 and longitude within -180..180'], 422);
+            return;
+        }
+
         $id = Lot::create([
             'lot_code' => $input['lot_code'],
             'section_id' => (int) $input['section_id'],
@@ -60,6 +78,8 @@ class LotController
             'price' => (float) $input['price'],
             'status' => $input['status'] ?? 'available',
             'description' => $input['description'] ?? null,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
         ]);
 
         AuditLog::record(Auth::id(), 'create', 'cemetery_lots', $id);
@@ -77,7 +97,19 @@ class LotController
         $input = $this->router->input();
         $data = array_intersect_key($input, array_flip([
             'lot_code', 'section_id', 'block', 'lot_type', 'price', 'status', 'description',
+            'latitude', 'longitude',
         ]));
+
+        if (array_key_exists('latitude', $data)) {
+            $data['latitude'] = $this->coordinate($data['latitude']);
+        }
+        if (array_key_exists('longitude', $data)) {
+            $data['longitude'] = $this->coordinate($data['longitude']);
+        }
+        if (!$this->validCoordinate($data['latitude'] ?? null, $data['longitude'] ?? null)) {
+            Response::json(['error' => 'latitude must be within -90..90 and longitude within -180..180'], 422);
+            return;
+        }
 
         if ($data !== []) {
             Lot::update($id, $data);

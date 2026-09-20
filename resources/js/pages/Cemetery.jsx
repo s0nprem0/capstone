@@ -83,10 +83,14 @@ export default function Cemetery() {
   const counts = mapData
     ? mapData.sections.flatMap((s) => s.lots).reduce(
         (acc, lot) => {
-          acc[lot.status] = (acc[lot.status] || 0) + 1
+          if (lot.latitude && lot.longitude) {
+            acc[lot.status] = (acc[lot.status] || 0) + 1
+          } else {
+            acc.without_coords = (acc.without_coords || 0) + 1
+          }
           return acc
         },
-        { available: 0, reserved: 0, occupied: 0 }
+        { available: 0, reserved: 0, occupied: 0, without_coords: 0 }
       )
     : null
 
@@ -102,6 +106,12 @@ export default function Cemetery() {
           <span><i className="dot" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({counts.reserved})</span>
           <span><i className="dot" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({counts.occupied})</span>
         </div>
+      )}
+
+      {counts?.without_coords > 0 && (
+        <p className="text-muted map-hint">
+          {counts.without_coords} lot(s) have no coordinates and are not shown on the map.
+        </p>
       )}
 
       <div ref={containerRef} className="map-canvas" />
