@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import ConfirmButton from '../components/ConfirmButton'
 
 export default function Payments() {
   const { user } = useAuth()
   const [payments, setPayments] = useState([])
+  const [myReservations, setMyReservations] = useState([])
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ reservation_id: '', amount: '', payment_method: 'gcash', reference_no: '' })
@@ -22,8 +24,26 @@ export default function Payments() {
     load()
   }, [user])
 
+  useEffect(() => {
+    if (user?.role !== 'user') return
+    api('/api/reservations/mine').then(({ ok, data }) => {
+      if (ok) setMyReservations(data)
+    })
+  }, [user])
+
+  const payable = myReservations.filter((r) => r.payment_status !== 'paid')
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSelectReservation = (e) => {
+    const reservation = myReservations.find((r) => String(r.reservation_id) === e.target.value)
+    setForm({
+      ...form,
+      reservation_id: e.target.value,
+      amount: reservation ? Number(reservation.total_amount) : form.amount,
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -76,12 +96,26 @@ export default function Payments() {
       {error && <p className="alert alert--error">{error}</p>}
 
       {showForm && (
-        <div className="form-card" style={{ marginBottom: '1.5rem' }}>
+        <div className="form-card section-block">
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <label>
-                Reservation ID
-                <input type="number" name="reservation_id" value={form.reservation_id} onChange={handleChange} required />
+                Reservation
+                <select name="reservation_id" value={form.reservation_id} onChange={handleSelectReservation} required>
+                  {payable.length === 0 ? (
+                    <option value="">No outstanding reservations</option>
+                  ) : (
+                    <>
+                      <option value="">Select a reservation</option>
+                      {payable.map((r) => (
+                        <option key={r.reservation_id} value={r.reservation_id}>
+                          #{r.reservation_id} — {r.lot_code} ({r.section_name}) — ₱
+                          {Number(r.total_amount).toLocaleString()}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
               </label>
               <label>
                 Amount (₱)
@@ -140,20 +174,22 @@ export default function Payments() {
                   <td><span className={`badge badge--${p.payment_status}`}>{p.payment_status}</span></td>
                   {isStaffView && p.payment_status === 'pending' && (
                     <td>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        disabled={validating === p.payment_id}
-                        onClick={() => validatePayment(p.payment_id, 'paid')}
-                      >
-                        Approve
-                      </button>{' '}
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        disabled={validating === p.payment_id}
-                        onClick={() => validatePayment(p.payment_id, 'failed')}
-                      >
-                        Reject
-                      </button>
+                      <div className="table-actions">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={validating === p.payment_id}
+                          onClick={() => validatePayment(p.payment_id, 'paid')}
+                        >
+                          {validating === p.payment_id ? 'Working...' : 'Approve'}
+                        </button>
+                        <ConfirmButton
+                          label="Reject"
+                          danger
+                          onConfirm={() => validatePayment(p.payment_id, 'failed')}
+                          busy={validating === p.payment_id}
+                          message="Reject this payment? The client will be notified."
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>

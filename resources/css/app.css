@@ -154,6 +154,15 @@ h2 {
   color: var(--color-text);
 }
 
+.btn-danger {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #991b1b;
+}
+
 .form-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -405,6 +414,25 @@ select {
   background: #fde8e8;
   color: #9b1c1c;
   border: 1px solid #fca5a5;
+}
+
+.confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.confirm-message {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
 }
 
 .form-card--compact {
