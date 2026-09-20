@@ -90,7 +90,7 @@ class PaymentController
     public function validate(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $payment = Payment::find($id);
+        $payment = Payment::withDetails($id);
         if (!$payment) {
             Response::json(['error' => 'Not found'], 404);
             return;

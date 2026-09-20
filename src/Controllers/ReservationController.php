@@ -138,7 +138,8 @@ class ReservationController
     public function approve(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        if (!Reservation::find($id)) {
+        $reservation = Reservation::find($id);
+        if (!$reservation) {
             Response::json(['error' => 'Not found'], 404);
             return;
         }
@@ -146,7 +147,7 @@ class ReservationController
         AuditLog::record(Auth::id(), 'approve', 'reservations', $id);
         Notification::createFor(
             (int) $reservation['user_id'],
-            "Your reservation #{$id} for lot " . ($reservation['lot_id']) . " has been approved.",
+            "Your reservation #{$id} for lot {$reservation['lot_id']} has been approved.",
             'reservation'
         );
         Response::json(['message' => 'Reservation approved']);
