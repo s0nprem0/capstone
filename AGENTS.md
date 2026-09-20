@@ -113,11 +113,22 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 - Verify with the Makefile workflow: `make up`, `make install`, `make migrate`; smoke-test API via curl; `pnpm build` must pass.
 - Keep `database/schema.sql` authoritative so a fresh `make migrate` reproduces the full database.
 
-## Definition of done (phase by phase — Waterfall)
-1. **Requirements:** confirm scope against the study; document acceptance criteria.
-2. **Design:** finalize DB migrations, API contract, and route map before coding.
-3. **Implementation:** build in module order — Auth/RBAC → Sections/Lots → Map → Reservations → Payments → Burial Records → Notifications → Search → Reports → Dashboards → Backup/Restore.
-4. **Testing:** unit (core logic), integration (API), system, and UAT-style flows; test cases per module with expected vs actual results.
-5. **Deployment:** `docker compose up`; seed default admin/staff accounts and sample sections/lots for demo.
+## Software engineering process (Agile — Scrum)
+The project follows an iterative Agile (Scrum) process:
 
-When finished, summarize what was built per module, how to run it, and what remains for the study's actual deployment phase.
+- **Product backlog:** the study's modules are tracked as prioritized user stories/epics (see backlog order below). Groomed continuously — reprioritize as the study or adviser feedback evolves.
+- **Sprints:** 1–2 week iterations. Sprint planning pulls top-priority items from the backlog into the sprint; each sprint must end with a working, testable increment.
+- **Ceremonies:** daily standups; sprint review (demo the increment to the team/adviser); retrospective (adjust the process, celebrate wins, note improvements).
+- **Scope:** requirements are confirmed incrementally against the study; acceptance criteria are written per user story before implementation starts.
+
+### Definition of Done (per story / per sprint)
+1. **Implemented end-to-end:** API + frontend working, matching the story's acceptance criteria.
+2. **Tested:** unit tests for core logic; integration smoke-tests of the API via curl; `pnpm build` passes; a fresh `make migrate` reproduces the database.
+3. **Secure:** RBAC enforced server-side on the route, inputs validated, audit-logged where required.
+4. **Idiomatic:** conventions met — PDO prepared statements, `declare(strict_types=1)`, PSR-4, React hooks/function components, conventional commits.
+5. **Verifiable:** runs in the dev environment (`make up`), demoable in the sprint review.
+
+### Prioritized backlog order (build smallest vertical slices first)
+Auth/RBAC → Sections/Lots → Cemetery Map → Reservations → Payments → Burial Records → Notifications → Search → Reports → Dashboards → Backup/Restore. Priorities may shift between sprints based on feedback; each story ships as a complete vertical slice rather than a full layer.
+
+When finished, summarize what was built per module and sprint, how to run it, and what remains for the study's actual deployment phase.
