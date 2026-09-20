@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
+use App\Models\Reservation;
 use App\Models\User;
 
 class UserController
@@ -58,6 +59,11 @@ class UserController
             return;
         }
 
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Response::json(['error' => 'Invalid email address'], 422);
+            return;
+        }
+
         if (User::findByEmail($email)) {
             Response::json(['error' => 'Email already registered'], 422);
             return;
@@ -85,11 +91,30 @@ class UserController
             return;
         }
 
+        $self = (int) $id === (int) Auth::id();
+        if (Auth::role() !== 'admin' && $user['role'] === 'admin') {
+            Response::json(['error' => 'Admin accounts can only be managed by an administrator'], 403);
+            return;
+        }
+
         $input = $this->router->input();
         $data = [];
 
         if (isset($input['fullname'])) {
             $data['fullname'] = trim($input['fullname']);
+        }
+        if (isset($input['email'])) {
+            $email = strtolower(trim($input['email']));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                Response::json(['error' => 'Invalid email address'], 422);
+                return;
+            }
+            $existing = User::findByEmail($email);
+            if ($existing && (int) $existing['user_id'] !== $id) {
+                Response::json(['error' => 'Email already registered'], 422);
+                return;
+            }
+            $data['email'] = $email;
         }
         if (isset($input['phone'])) {
             $data['phone'] = trim($input['phone']) !== '' ? trim($input['phone']) : null;
@@ -99,12 +124,20 @@ class UserController
                 Response::json(['error' => 'Invalid status'], 422);
                 return;
             }
+            if ($self && $input['status'] === 'inactive') {
+                Response::json(['error' => 'You cannot deactivate your own account'], 422);
+                return;
+            }
             $data['status'] = $input['status'];
         }
         if (isset($input['role'])) {
             Auth::requireRole(['admin']);
             if (!in_array($input['role'], ['admin', 'staff', 'user'], true)) {
                 Response::json(['error' => 'Invalid role'], 422);
+                return;
+            }
+            if ($self && $input['role'] !== $user['role']) {
+                Response::json(['error' => 'You cannot change your own role'], 422);
                 return;
             }
             $data['role'] = $input['role'];
@@ -132,8 +165,13 @@ class UserController
             Response::json(['error' => 'You cannot delete your own account'], 422);
             return;
         }
-        if (!User::find($id)) {
+        $user = User::find($id);
+        if (!$user) {
             Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        if (Reservation::forUser($id) !== []) {
+            Response::json(['error' => 'User has reservations; deactivate the account instead of deleting it'], 422);
             return;
         }
         User::delete($id);
