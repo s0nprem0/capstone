@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import ConfirmButton from '../components/ConfirmButton'
 
 export default function Users() {
   const { user: me } = useAuth()
@@ -8,6 +9,7 @@ export default function Users() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
+  const [busyId, setBusyId] = useState(null)
   const [form, setForm] = useState({
     fullname: '',
     email: '',
@@ -44,10 +46,12 @@ export default function Users() {
   }
 
   const toggleStatus = async (u) => {
+    setBusyId(u.user_id)
     const { ok, data } = await api(`/api/users/${u.user_id}`, {
       method: 'POST',
       body: { status: u.status === 'active' ? 'inactive' : 'active' },
     })
+    setBusyId(null)
     if (ok) {
       setSuccess('User updated')
       load()
@@ -122,10 +126,9 @@ export default function Users() {
         placeholder="Search by name, email, phone, role, status..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: '1rem' }}
       />
 
-      <div className="table-container">
+      <div className="table-container section-block">
         <table className="table">
           <thead>
             <tr>
@@ -146,9 +149,25 @@ export default function Users() {
                 <td><span className={`badge badge--${u.role}`}>{u.role}</span></td>
                 <td><span className={`badge badge--${u.status}`}>{u.status}</span></td>
                 <td>
-                  <button className="btn btn-secondary btn-sm" onClick={() => toggleStatus(u)}>
-                    {u.status === 'active' ? 'Deactivate' : 'Activate'}
-                  </button>
+                  <div className="table-actions">
+                    {u.status === 'active' ? (
+                      <ConfirmButton
+                        label="Deactivate"
+                        danger
+                        onConfirm={() => toggleStatus(u)}
+                        busy={busyId === u.user_id}
+                        message="Deactivate this account? They will no longer be able to sign in."
+                      />
+                    ) : (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        disabled={busyId === u.user_id}
+                        onClick={() => toggleStatus(u)}
+                      >
+                        {busyId === u.user_id ? 'Working...' : 'Activate'}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

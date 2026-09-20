@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import ConfirmButton from '../components/ConfirmButton'
 
 export default function BurialRecords() {
   const [records, setRecords] = useState([])
@@ -13,6 +14,7 @@ export default function BurialRecords() {
     next_of_kin_name: '', next_of_kin_phone: '', interment_status: 'scheduled',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [busyId, setBusyId] = useState(null)
 
   const load = async () => {
     const { ok, data } = await api('/api/burial-records')
@@ -65,8 +67,9 @@ export default function BurialRecords() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this burial record?')) return
+    setBusyId(id)
     const { ok, data } = await api(`/api/burial-records/${id}/delete`, { method: 'POST' })
+    setBusyId(null)
     if (ok) load()
     else setError(data?.error || 'Delete failed')
   }
@@ -99,11 +102,10 @@ export default function BurialRecords() {
         placeholder="Search by name, lot, section, date, status, next of kin..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: '1rem' }}
       />
 
       {showForm && (
-        <div className="form-card" style={{ marginBottom: '1.5rem' }}>
+        <div className="form-card section-block">
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <label>
@@ -161,7 +163,7 @@ export default function BurialRecords() {
         </div>
       )}
 
-      <div className="table-container">
+      <div className="table-container section-block">
         {filtered.length === 0 ? (
           <p className="text-muted">No burial records found.</p>
         ) : (
@@ -191,8 +193,16 @@ export default function BurialRecords() {
                   <td>{r.next_of_kin_name || '—'}</td>
                   <td><span className={`badge badge--${r.interment_status === 'interred' ? 'paid' : 'pending'}`}>{r.interment_status}</span></td>
                   <td>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>{' '}
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(r.burial_id)}>Delete</button>
+                    <div className="table-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
+                      <ConfirmButton
+                        label="Delete"
+                        danger
+                        onConfirm={() => handleDelete(r.burial_id)}
+                        busy={busyId === r.burial_id}
+                        message="Delete this burial record? This cannot be undone."
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

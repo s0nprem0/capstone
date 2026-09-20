@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import ConfirmButton from '../components/ConfirmButton'
 
 export default function Reservations() {
   const { user } = useAuth()
   const [reservations, setReservations] = useState([])
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [busy, setBusy] = useState(null)
 
   const load = async () => {
     const path = user?.role === 'user' ? '/api/reservations/mine' : '/api/reservations'
@@ -34,7 +36,9 @@ export default function Reservations() {
   })
 
   const decide = async (id, action) => {
+    setBusy(`${id}:${action}`)
     const { ok, data } = await api(`/api/reservations/${id}/${action}`, { method: 'POST' })
+    setBusy(null)
     if (ok) load()
     else setError(data?.error || 'Action failed')
   }
@@ -58,10 +62,9 @@ export default function Reservations() {
         placeholder="Search by lot, name, section, date, status..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: '1rem' }}
       />
 
-      <div className="table-container">
+      <div className="table-container section-block">
         {filtered.length === 0 ? (
           <p className="text-muted">No reservations found.</p>
         ) : (
@@ -94,8 +97,22 @@ export default function Reservations() {
                   <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
                   {isStaffView && r.approved_status === 'pending' && (
                     <td>
-                      <button className="btn btn-primary btn-sm" onClick={() => decide(r.reservation_id, 'approve')}>Approve</button>{' '}
-                      <button className="btn btn-secondary btn-sm" onClick={() => decide(r.reservation_id, 'reject')}>Reject</button>
+                      <div className="table-actions">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={!!busy}
+                          onClick={() => decide(r.reservation_id, 'approve')}
+                        >
+                          {busy === `${r.reservation_id}:approve` ? 'Working...' : 'Approve'}
+                        </button>
+                        <ConfirmButton
+                          label="Reject"
+                          danger
+                          onConfirm={() => decide(r.reservation_id, 'reject')}
+                          busy={busy === `${r.reservation_id}:reject`}
+                          message="Reject this reservation? The lot will be released."
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>
