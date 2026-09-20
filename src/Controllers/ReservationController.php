@@ -75,13 +75,20 @@ class ReservationController
             return;
         }
 
+        $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
+        $maxSlots = $capacity[$lot['lot_type']] ?? 1;
+        if ($slots > $maxSlots) {
+            Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
+            return;
+        }
+
         $reservationId = Reservation::create([
             'user_id' => $userId,
             'lot_id' => $lotId,
             'reservation_date' => $date,
             'purpose' => $input['purpose'] ?? null,
             'number_of_slots' => $slots,
-            'total_amount' => (float) ($input['total_amount'] ?? ($lot['price'] * $slots)),
+            'total_amount' => (float) ($lot['price'] * $slots),
             'payment_status' => 'pending',
             'approved_status' => 'pending',
         ]);

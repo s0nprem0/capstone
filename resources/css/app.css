@@ -187,6 +187,12 @@ label {
   gap: 0.25rem;
 }
 
+.label-hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
 input,
 select {
   padding: 0.5rem;
@@ -197,9 +203,19 @@ select {
 
 .form-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.total-display {
+  margin-right: auto;
+  font-size: 0.9rem;
+}
+
+.total-display strong {
+  font-size: 1.1rem;
 }
 
 .table-container {
