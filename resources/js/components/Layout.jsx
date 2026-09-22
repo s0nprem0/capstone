@@ -14,7 +14,9 @@ function roleNav(role) {
       { to: '/reports', label: 'Reports' },
       { to: '/users', label: 'Users' },
     ]
-    if (role === 'admin') items.splice(3, 0, { to: '/sections', label: 'Sections' })
+    if (role === 'admin') {
+      items.splice(3, 0, { to: '/sections', label: 'Sections' }, { to: '/admin/lots', label: 'Lots' })
+    }
     return items
   }
 

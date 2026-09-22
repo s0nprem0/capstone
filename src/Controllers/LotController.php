@@ -188,6 +188,14 @@ class LotController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        $usage = Lot::usage($id);
+        if (($usage['reservations'] + $usage['payments'] + $usage['burials']) > 0) {
+            Response::json([
+                'error' => 'This lot is linked to reservations, payments, or burial records and cannot be deleted.',
+                'usage' => $usage,
+            ], 409);
+            return;
+        }
         Lot::delete($id);
         AuditLog::record(Auth::id(), 'delete', 'cemetery_lots', $id);
         Response::json(['message' => 'Deleted']);

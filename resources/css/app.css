@@ -928,6 +928,74 @@ select {
   stroke-width: 2.5;
 }
 
+.editor-dirty--muted {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.editor-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.editor-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.editor-form-grid input,
+.editor-form-grid select {
+  width: 100%;
+}
+
+.editor-block-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.editor-block-label select,
+.editor-block-label textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+.editor-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.lot-label {
+  font-size: 9px;
+  font-weight: 600;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 1.5px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.lot-editor-legend {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .editor-hint {
   font-size: 0.75rem;
   color: var(--color-text-muted);

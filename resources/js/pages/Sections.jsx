@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
 import SectionEditor from '../components/SectionEditor'
@@ -241,6 +242,9 @@ export default function Sections() {
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditor({ focus: s.section_id })}>
                       Map outline
                     </button>
+                    <Link to={`/admin/lots?section=${s.section_id}`} className="btn btn-secondary btn-sm">
+                      Edit lots
+                    </Link>
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"

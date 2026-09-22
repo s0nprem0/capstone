@@ -15,6 +15,7 @@ import Cemetery from './pages/Cemetery'
 import Records from './pages/Records'
 import Users from './pages/Users'
 import Sections from './pages/Sections'
+import LotEditor from './pages/LotEditor'
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
 
           <Route element={<RequireRole roles={['admin']} />}>
             <Route path="/sections" element={<Sections />} />
+            <Route path="/admin/lots" element={<LotEditor />} />
           </Route>
         </Route>
 
