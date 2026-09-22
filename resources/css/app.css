@@ -743,6 +743,18 @@ select {
   pointer-events: none;
 }
 
+.map-render-count {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
 .map-section {
   cursor: pointer;
 }
@@ -867,6 +879,7 @@ select {
 @media print {
   .map-zoom-controls,
   .map-drag-hint,
+  .map-render-count,
   .map-toolbar,
   .map-detail,
   .section-editor {

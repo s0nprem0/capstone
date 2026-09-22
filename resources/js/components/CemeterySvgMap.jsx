@@ -235,10 +235,23 @@ export default function CemeterySvgMap({
                 ) : (
                   <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={isActive ? 0.18 : 0.12} stroke={color} strokeWidth={isActive ? 3 : 2} strokeDasharray="8 6" />
                 )}
-                <g transform={`translate(${x + w / 2}, ${y + h / 2})`}>
-                  <rect x={-85} y={-34} width={170} height={68} rx={8} fill="#fff" opacity={0.92} stroke={color} strokeWidth={isActive ? 2.5 : 2} />
-                  <text textAnchor="middle" x={0} y={-8} className="map-section-title">{section.section_name}</text>
-                  <text textAnchor="middle" x={0} y={16} className="map-section-meta">
+                <g
+                  transform={`translate(${x + w / 2}, ${isActive ? y + 34 : y + h / 2})`}
+                  pointerEvents="none"
+                >
+                  <rect
+                    x={isActive ? -75 : -85}
+                    y={isActive ? -23 : -34}
+                    width={isActive ? 150 : 170}
+                    height={isActive ? 46 : 68}
+                    rx={8}
+                    fill="#fff"
+                    opacity={0.94}
+                    stroke={color}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  <text textAnchor="middle" x={0} y={isActive ? -6 : -8} className="map-section-title">{section.section_name}</text>
+                  <text textAnchor="middle" x={0} y={isActive ? 14 : 16} className="map-section-meta">
                     {total} lots · {section.counts?.available || 0} available
                   </text>
                 </g>
@@ -258,6 +271,12 @@ export default function CemeterySvgMap({
           ))}
         </g>
       </svg>
+
+      {visibleLots.length > 0 && (
+        <div className="map-render-count">
+          {visibleLots.length} lot box{visibleLots.length === 1 ? '' : 'es'} rendered
+        </div>
+      )}
 
       <div className="map-zoom-controls">
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in">+</button>
