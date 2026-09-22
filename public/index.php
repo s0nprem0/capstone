@@ -16,6 +16,7 @@ use App\Controllers\NotificationController;
 use App\Controllers\StatsController;
 use App\Controllers\ReportController;
 use App\Controllers\LotController;
+use App\Controllers\SectionController;
 
 $router = new Router();
 Session::start();
@@ -30,6 +31,7 @@ $notifications = new NotificationController($router);
 $stats = new StatsController($router);
 $reports = new ReportController($router);
 $lots = new LotController($router);
+$sections = new SectionController($router);
 
 $router->get('/api/map', [$map, 'map']);
 
@@ -84,6 +86,7 @@ $router->get('/api/lots/available', [$lots, 'available']);
 $router->get('/api/lots/{id}', [$lots, 'show']);
 $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
+$router->post('/api/sections/viewboxes', [$sections, 'updateViewboxes']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
 

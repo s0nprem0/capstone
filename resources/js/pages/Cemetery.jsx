@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS } from '../components/CemeterySvgMap'
-import LotEditor from '../components/LotEditor' // TEMP: overview layout editor (remove later)
+import SectionEditor from '../components/SectionEditor' // TEMP: overview section-vertex editor (remove later)
 
 const STATUS_LABELS = {
   available: 'Available',
@@ -20,7 +20,7 @@ export default function Cemetery() {
   const [showLayout, setShowLayout] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
-  const [isEditing, setIsEditing] = useState(false) // TEMP: overview editor (remove later)
+  const [isEditing, setIsEditing] = useState(false) // TEMP: overview section-vertex editor (remove later)
 
   const fetchMap = () => {
     api('/api/map').then(({ ok, data }) => {
@@ -65,9 +65,8 @@ export default function Cemetery() {
     setSelectedLot(null)
   }
 
-  // TEMP: overview editor (remove with LotEditor.jsx) — admin-only entry.
+  // TEMP: overview section-vertex editor (remove with SectionEditor.jsx) — admin-only entry.
   const canEdit = user?.role === 'admin'
-  const allLots = useMemo(() => (mapData?.sections || []).flatMap((s) => s.lots || []), [mapData])
 
   const startEdit = () => {
     setSelectedLot(null)
@@ -85,8 +84,8 @@ export default function Cemetery() {
       {mapData && (
         <>
           {isEditing ? (
-            <LotEditor
-              lots={allLots}
+            <SectionEditor
+              sections={mapData.sections}
               onSaved={() => {
                 exitEdit()
                 fetchMap()

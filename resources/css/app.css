@@ -782,9 +782,9 @@ select {
   pointer-events: none;
 }
 
-/* ==== Overview layout editor ==== TEMP: remove with LotEditor.jsx and
-   the Cemetery.jsx markers once the lot grid is finalized. */
-.lot-editor {
+/* ==== Overview section-vertex editor ==== TEMP: remove with SectionEditor.jsx and
+   the Cemetery.jsx / backend markers once the layout is finalized. */
+.section-editor {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -830,8 +830,15 @@ select {
   cursor: grab;
 }
 
-.editor-lot-label {
-  font-size: 10px;
+.editor-section {
+  pointer-events: all;
+}
+
+.editor-section-label {
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--color-text);
+  pointer-events: none;
 }
 
 .editor-hint {
@@ -854,7 +861,7 @@ select {
   .map-drag-hint,
   .map-toolbar,
   .map-detail,
-  .lot-editor {
+  .section-editor {
     display: none !important;
   }
   .map-layout {
