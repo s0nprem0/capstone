@@ -213,7 +213,19 @@ export default function CemeterySvgMap({
                 (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
               return (
                 <g key={section.section_id} data-section-id={section.section_id} className="map-section">
-                  <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
+                  {section.points ? (
+                    <polygon
+                      points={section.points}
+                      fill={color}
+                      opacity={0.12}
+                      stroke={color}
+                      strokeWidth={2}
+                      strokeDasharray="8 6"
+                      strokeLinejoin="round"
+                    />
+                  ) : (
+                    <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
+                  )}
                   <g transform={`translate(${x + w / 2}, ${y + h / 2})`}>
                     <rect x={-85} y={-34} width={170} height={68} rx={8} fill="#fff" opacity={0.92} stroke={color} strokeWidth={2} />
                     <text textAnchor="middle" x={0} y={-8} className="map-section-title">{section.section_name}</text>

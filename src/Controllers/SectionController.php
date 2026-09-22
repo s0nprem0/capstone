@@ -20,37 +20,57 @@ class SectionController
     }
 
     // TEMP: supports the admin overview section-vertex editor; remove when the layout is final.
-    public function updateViewboxes(): void
+    public function updatePolygons(): void
     {
         Auth::requireRole(['admin']);
         $input = $this->router->input();
-        $rows = $input['viewboxes'] ?? null;
+        $rows = $input['polygons'] ?? null;
         if (!is_array($rows) || $rows === []) {
-            Response::json(['error' => 'viewboxes[] is required'], 422);
+            Response::json(['error' => 'polygons[] is required'], 422);
             return;
         }
 
         $updated = 0;
         foreach ($rows as $row) {
             $id = (int) ($row['section_id'] ?? 0);
-            $parts = preg_split('/\s+/', trim((string) ($row['svg_viewbox'] ?? '')));
-            if ($id <= 0 || !is_array($parts) || count($parts) !== 4) continue;
+            $tokens = preg_split('/\s+/', trim((string) ($row['svg_points'] ?? '')));
+            if ($id <= 0 || !is_array($tokens) || count($tokens) < 8 || count($tokens) % 2 !== 0) continue;
+
+            $points = [];
             $ok = true;
-            $clean = [];
-            foreach ($parts as $p) {
-                if (!is_numeric($p)) {
+            foreach ($tokens as $t) {
+                if (!is_numeric($t)) {
                     $ok = false;
                     break;
                 }
-                $clean[] = (int) round((float) $p);
+                $points[] = (int) round((float) $t);
             }
-            [$x, $y, $w, $h] = $clean;
-            if (!$ok || $w < 10 || $h < 10 || $x < 0 || $y < 0 || $x + $w > 1791 || $y + $h > 1457) continue;
+            if (!$ok) continue;
+
+            $minX = PHP_INT_MAX;
+            $minY = PHP_INT_MAX;
+            $maxX = 0;
+            $maxY = 0;
+            $svgPoints = [];
+            for ($i = 0; $i < count($points); $i += 2) {
+                $px = $points[$i];
+                $py = $points[$i + 1];
+                if ($px < 0 || $py < 0 || $px > 1791 || $py > 1457) continue 2;
+                $minX = min($minX, $px);
+                $minY = min($minY, $py);
+                $maxX = max($maxX, $px);
+                $maxY = max($maxY, $py);
+                $svgPoints[] = "$px $py";
+            }
 
             if (!CemeterySection::find($id)) continue;
 
-            CemeterySection::update($id, ['svg_viewbox' => "$x $y $w $h"]);
-            AuditLog::record(Auth::id(), 'update-viewbox', 'cemetery_sections', $id);
+            $bbox = sprintf('%d %d %d %d', $minX, $minY, $maxX - $minX, $maxY - $minY);
+            CemeterySection::update($id, [
+                'svg_points' => implode(' ', $svgPoints),
+                'svg_viewbox' => $bbox,
+            ]);
+            AuditLog::record(Auth::id(), 'update-polygon', 'cemetery_sections', $id);
             $updated++;
         }
 

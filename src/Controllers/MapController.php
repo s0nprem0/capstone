@@ -39,6 +39,7 @@ class MapController
                 'section_name' => $section['section_name'],
                 'location' => $section['location'] ?? null,
                 'viewBox' => $section['svg_viewbox'] ?? '0 0 1791 1457',
+                'points' => $section['svg_points'] ?? null,
                 'image' => $section['svg_image'] ?? null,
                 'counts' => $counts,
                 'lots' => $sectionLots,

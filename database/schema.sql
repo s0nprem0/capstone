@@ -7,6 +7,18 @@ CREATE DATABASE IF NOT EXISTS `cemetery_db`
 
 USE `cemetery_db`;
 
+-- Resettable: DROP + recreate so `make migrate` reproduces the schema from scratch.
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `audit_logs`;
+DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `burial_records`;
+DROP TABLE IF EXISTS `payments`;
+DROP TABLE IF EXISTS `reservations`;
+DROP TABLE IF EXISTS `cemetery_lots`;
+DROP TABLE IF EXISTS `cemetery_sections`;
+DROP TABLE IF EXISTS `users`;
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- 1. USERS
 CREATE TABLE `users` (
   `user_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -29,7 +41,8 @@ CREATE TABLE `cemetery_sections` (
   `location` VARCHAR(100) NULL,
   `description` TEXT NULL,
   `svg_viewbox` VARCHAR(50) NOT NULL DEFAULT '0 0 1791 1457' COMMENT 'SVG crop region (x y w h) in map space',
-  `svg_image` VARCHAR(255) NULL COMMENT 'trace background image path'
+  `svg_image` VARCHAR(255) NULL COMMENT 'trace background image path',
+  `svg_points` VARCHAR(1024) NULL COMMENT 'polygon vertex list (x y pairs) in map space'
 ) ENGINE=InnoDB;
 
 -- 3. CEMETERY_LOTS
@@ -137,12 +150,12 @@ CREATE TABLE `audit_logs` (
 INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`) VALUES
   ('System Administrator', 'admin@cemetery.test', '09170000001', '$2y$10$By0J7o/86O1M19BODiwRGOq6EcnSjZehzxdQVrDiEOe1lW2tTA2Rq', 'admin', 'active');
 
-INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`, `svg_viewbox`) VALUES
-  ('Section A', 'North wing', 'General burial plots', '280 270 1320 350'),
-  ('Section B', 'East garden', 'Garden of Peace', '870 560 830 370'),
-  ('Section C', 'West wing', 'Plot blocks', '870 890 790 285'),
-  ('Section D', 'South wing', 'Mausoleum wing', '20 290 900 900'),
-  ('Section E', 'East strip', 'Cremation/wen strip', '1600 300 200 600');
+INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`, `svg_viewbox`, `svg_points`) VALUES
+  ('Section A', 'North wing', 'General burial plots', '280 270 1320 350', '280 270 1600 270 1600 620 280 620'),
+  ('Section B', 'East garden', 'Garden of Peace', '870 560 830 370', '870 560 1700 560 1700 930 870 930'),
+  ('Section C', 'West wing', 'Plot blocks', '870 890 790 285', '870 890 1660 890 1660 1175 870 1175'),
+  ('Section D', 'South wing', 'Mausoleum wing', '20 290 900 900', '20 290 920 290 920 1190 20 1190'),
+  ('Section E', 'East strip', 'Cremation/wen strip', '1600 300 200 600', '1600 300 1800 300 1800 900 1600 900');
 
 -- Placeholder SVG grid lots (261 lots). Generated from the traced layout in
 -- overall map space (viewBox 0 0 1791 1457). Staff refine positions/sizes

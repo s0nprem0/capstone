@@ -1,27 +1,64 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
-// TEMP: admin overview section-vertex mapping editor. Drag section corners
-// to align the A–E outlines to the traced layout. Save posts section
-// viewBoxes. Remove this file plus the TEMP markers in Cemetery.jsx,
+// TEMP: admin overview section-vertex mapping editor (free-form polygons).
+// Drag vertices to reshape a section, drag an edge "+" to add a vertex,
+// double-click a vertex to remove it (min 4), drag the body to move it.
+// Save posts section svg_points; the backend syncs svg_viewbox to the
+// bounding box. Remove this file plus the TEMP markers in Cemetery.jsx,
 // app.css, SectionController.php and public/index.php once the layout
 // is finalized.
 
 const SNAP = 5
 const GRID_STEP = 50
-const MIN_SIZE = 60
-const HANDLES = ['nw', 'ne', 'sw', 'se']
+const MIN_VERTICES = 4
+const [MAP_MIN_X, MAP_MIN_Y, MAP_W, MAP_H] = MAP_VIEWBOX
+const MAP_MAX_X = MAP_MIN_X + MAP_W
+const MAP_MAX_Y = MAP_MIN_Y + MAP_H
 const SECTION_COLORS = ['#2c5530', '#1d4ed8', '#7c3aed', '#b45309', '#0e7490']
 
 const snap = (v) => Math.round(v / SNAP) * SNAP
 
-const parseVb = (s) => {
+const clampP = (p) => ({
+  x: Math.max(MAP_MIN_X, Math.min(MAP_MAX_X, p.x)),
+  y: Math.max(MAP_MIN_Y, Math.min(MAP_MAX_Y, p.y)),
+})
+
+const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
   return parts.length === 4 ? parts : [...MAP_VIEWBOX]
 }
 
-const vbString = (r) => `${r.x} ${r.y} ${r.w} ${r.h}`
+const strToPts = (s) => {
+  const first = String(s || '').trim()
+  if (!first) return null
+  const tokens = first.split(/\s+/).map(Number)
+  if (tokens.length < 8 || tokens.length % 2 !== 0) return null
+  const pts = []
+  for (let i = 0; i < tokens.length; i += 2) pts.push({ x: tokens[i], y: tokens[i + 1] })
+  return pts
+}
+
+const ptsToStr = (pts) => pts.map((p) => `${Math.round(p.x)} ${Math.round(p.y)}`).join(' ')
+
+const bboxOf = (pts) => {
+  const xs = pts.map((p) => p.x)
+  const ys = pts.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const minY = Math.min(...ys)
+  return { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY }
+}
+
+const initialPts = (section) => strToPts(section.points) || (() => {
+  const [x, y, w, h] = parseViewBox(section.viewBox)
+  return [
+    { x, y },
+    { x: x + w, y },
+    { x: x + w, y: y + h },
+    { x, y: y + h },
+  ]
+})()
 
 export default function SectionEditor({ sections, onSaved, onCancel }) {
   const svgRef = useRef(null)
@@ -32,19 +69,13 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
   const vbRef = useRef(vb)
 
   const [edits, setEdits] = useState(() =>
-    Object.fromEntries(sections.map((s) => {
-      const [x, y, w, h] = parseVb(s.viewBox)
-      return [s.section_id, { x, y, w, h }]
-    }))
+    Object.fromEntries(sections.map((s) => [s.section_id, initialPts(s)]))
   )
   const [selectedId, setSelectedId] = useState(null)
+  const [selectedVertex, setSelectedVertex] = useState(null)
   const [drag, setDrag] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-
-  const [minX, minY, mapW, mapH] = MAP_VIEWBOX
-  const maxX = minX + mapW
-  const maxY = minY + mapH
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -119,31 +150,58 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
     }
   }, [])
 
-  const clampRect = useCallback(
-    (r) => {
-      const x = Math.max(minX, Math.min(maxX - r.w, r.x))
-      const y = Math.max(minY, Math.min(maxY - r.h, r.y))
-      return { x, y, w: Math.min(r.w, maxX - x), h: Math.min(r.h, maxY - y) }
-    },
-    [minX, minY, maxX, maxY]
-  )
+  // Arrow-key nudge of the selected vertex while the editor is open.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (selectedId == null || selectedVertex == null) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const dir = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]
+      if (!dir) return
+      e.preventDefault()
+      setEdits((prev) => {
+        const pts = prev[selectedId].map((p) => ({ ...p }))
+        pts[selectedVertex] = clampP({
+          x: snap(pts[selectedVertex].x + dir[0] * SNAP),
+          y: snap(pts[selectedVertex].y + dir[1] * SNAP),
+        })
+        return { ...prev, [selectedId]: pts }
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedId, selectedVertex])
 
   const isDirty = useCallback(
     (sectionId) => {
       const s = sections.find((sec) => sec.section_id === sectionId)
-      const ed = edits[sectionId]
-      return !!s && !!ed && vbString(ed) !== String(s.viewBox || MAP_VIEWBOX.join(' '))
+      const pts = edits[sectionId]
+      if (!s || !pts) return false
+      const orig = strToPts(s.points) || initialPts(s)
+      return ptsToStr(pts) !== ptsToStr(orig)
     },
     [sections, edits]
   )
 
   const dirtyCount = sections.filter((s) => isDirty(s.section_id)).length
 
-  const startDrag = (e, sectionId, type, corner) => {
+  const startDrag = (e, sectionId, type, index) => {
     if (saving) return
     e.stopPropagation()
-    setDrag({ type, sectionId, corner, start: toSvg(e), orig: { ...edits[sectionId] } })
-    setSelectedId(sectionId)
+    const pt = toSvg(e)
+    if (type === 'add') {
+      // index = insertion point; the new vertex starts at the edge midpoint.
+      const pts = edits[sectionId]
+      const a = pts[(index - 1 + pts.length) % pts.length]
+      const b = pts[index % pts.length]
+      const mid = clampP({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
+      setDrag({ type, sectionId, index, start: pt, vertex: mid, orig: pts })
+      setSelectedId(sectionId)
+      setSelectedVertex(index)
+    } else {
+      setDrag({ type, sectionId, index: type === 'vertex' ? index : null, start: pt, orig: edits[sectionId] })
+      setSelectedId(sectionId)
+      if (type === 'vertex') setSelectedVertex(index)
+    }
     svgRef.current.setPointerCapture(e.pointerId)
   }
 
@@ -156,28 +214,28 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
   const onPointerMove = (e) => {
     if (drag && !saving) {
       const pt = toSvg(e)
-      const dx = pt.x - drag.start.x
-      const dy = pt.y - drag.start.y
+      const cur = clampP({ x: snap(pt.x), y: snap(pt.y) })
       setEdits((prev) => {
-        const o = drag.orig
-        if (drag.type === 'move') {
-          return {
-            ...prev,
-            [drag.sectionId]: clampRect({ ...o, x: snap(o.x + dx), y: snap(o.y + dy) }),
-          }
+        if (drag.type === 'vertex') {
+          const pts = drag.orig.map((p) => ({ ...p }))
+          pts[drag.index] = cur
+          return { ...prev, [drag.sectionId]: pts }
         }
-        let { x, y, w, h } = o
-        if (drag.corner.includes('e')) w = Math.max(MIN_SIZE, snap(o.w + dx))
-        if (drag.corner.includes('s')) h = Math.max(MIN_SIZE, snap(o.h + dy))
-        if (drag.corner.includes('w')) {
-          x = snap(o.x + dx)
-          w = Math.max(MIN_SIZE, snap(o.w - dx))
+        if (drag.type === 'add') {
+          const pts = [...drag.orig.slice(0, drag.index), cur, ...drag.orig.slice(drag.index)]
+          return { ...prev, [drag.sectionId]: pts }
         }
-        if (drag.corner.includes('n')) {
-          y = snap(o.y + dy)
-          h = Math.max(MIN_SIZE, snap(o.h - dy))
+        // move whole polygon: shift all vertices, clamped so the bbox stays in map bounds
+        const dx = snap(pt.x - drag.start.x)
+        const dy = snap(pt.y - drag.start.y)
+        const bbox = bboxOf(drag.orig)
+        const sx = Math.max(-bbox.x, Math.min(MAP_W - bbox.w, dx))
+        const sy = Math.max(-bbox.y, Math.min(MAP_H - bbox.h, dy))
+        if (sx === 0 && sy === 0) return prev
+        return {
+          ...prev,
+          [drag.sectionId]: drag.orig.map((p) => ({ x: p.x + sx, y: p.y + sy })),
         }
-        return { ...prev, [drag.sectionId]: clampRect({ x, y, w, h }) }
       })
       return
     }
@@ -198,15 +256,26 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
     setDrag(null)
   }
 
+  const deleteVertex = (e, sectionId, index) => {
+    e.stopPropagation()
+    setEdits((prev) => {
+      const pts = prev[sectionId]
+      if (pts.length <= MIN_VERTICES) return prev
+      const next = pts.filter((_, i) => i !== index)
+      if (selectedVertex === index) setSelectedVertex(null)
+      return { ...prev, [sectionId]: next }
+    })
+  }
+
   const save = async () => {
     setSaving(true)
     setError('')
     const changed = sections
       .filter((s) => isDirty(s.section_id))
-      .map((s) => ({ section_id: s.section_id, svg_viewbox: vbString(edits[s.section_id]) }))
+      .map((s) => ({ section_id: s.section_id, svg_points: ptsToStr(edits[s.section_id]) }))
     try {
       if (changed.length > 0) {
-        const res = await api('/api/sections/viewboxes', { method: 'POST', body: { viewboxes: changed } })
+        const res = await api('/api/sections/polygons', { method: 'POST', body: { polygons: changed } })
         if (!res.ok) throw new Error(res.data?.error || 'Failed to save sections')
       }
       onSaved()
@@ -226,14 +295,15 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
   const selectedSection = selectedId ? sections.find((s) => s.section_id === selectedId) : null
 
   const gridLines = []
-  for (let x = Math.ceil(minX / GRID_STEP) * GRID_STEP; x <= maxX; x += GRID_STEP) {
-    gridLines.push({ x1: x, y1: minY, x2: x, y2: maxY, k: `v${x}` })
+  for (let x = Math.ceil(MAP_MIN_X / GRID_STEP) * GRID_STEP; x <= MAP_MAX_X; x += GRID_STEP) {
+    gridLines.push({ x1: x, y1: MAP_MIN_Y, x2: x, y2: MAP_MAX_Y, k: `v${x}` })
   }
-  for (let y = Math.ceil(minY / GRID_STEP) * GRID_STEP; y <= maxY; y += GRID_STEP) {
-    gridLines.push({ x1: minX, y1: y, x2: maxX, y2: y, k: `h${y}` })
+  for (let y = Math.ceil(MAP_MIN_Y / GRID_STEP) * GRID_STEP; y <= MAP_MAX_Y; y += GRID_STEP) {
+    gridLines.push({ x1: MAP_MIN_X, y1: y, x2: MAP_MAX_X, y2: y, k: `h${y}` })
   }
 
   const handleSize = Math.max(10, Math.round(vb[2] / 70))
+  const addHandleSize = Math.max(8, Math.round(vb[2] / 90))
 
   return (
     <div className="section-editor">
@@ -287,34 +357,32 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
           </g>
 
           {sections.map((sec, i) => {
-            const ed = edits[sec.section_id]
-            if (!ed) return null
+            const pts = edits[sec.section_id]
+            if (!pts) return null
             const color = SECTION_COLORS[i % SECTION_COLORS.length]
             const isSel = sec.section_id === selectedId
+            const bbox = bboxOf(pts)
             const dirty = isDirty(sec.section_id)
             return (
               <g key={sec.section_id}>
-                <rect
+                <polygon
                   className="editor-section"
-                  x={ed.x}
-                  y={ed.y}
-                  width={ed.w}
-                  height={ed.h}
-                  rx={6}
+                  points={ptsToStr(pts)}
                   fill={color}
-                  opacity={0.12}
+                  opacity={isSel ? 0.16 : 0.1}
                   stroke={color}
                   strokeWidth={isSel ? 3 : 2}
-                  strokeDasharray={dirty ? '8 5' : '8 6'}
+                  strokeDasharray={dirty ? '8 5' : undefined}
+                  strokeLinejoin="round"
                   onPointerDown={(e) => startDrag(e, sec.section_id, 'move')}
                   style={{ cursor: 'move' }}
                 >
-                  <title>{`${sec.section_name} · ${vbString(ed)}`}</title>
-                </rect>
+                  <title>{`${sec.section_name} · ${pts.length} vertices · bbox ${Math.round(bbox.x)} ${Math.round(bbox.y)} ${Math.round(bbox.w)} ${Math.round(bbox.h)}`}</title>
+                </polygon>
 
                 <text
-                  x={ed.x + ed.w / 2}
-                  y={ed.y + ed.h / 2}
+                  x={bbox.x + bbox.w / 2}
+                  y={bbox.y + bbox.h / 2}
                   textAnchor="middle"
                   dominantBaseline="central"
                   className="editor-section-label"
@@ -323,26 +391,53 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
                   {sec.section_name}
                 </text>
 
-                {HANDLES.map((corner) => {
-                  const cx = corner.includes('w') ? ed.x : ed.x + ed.w
-                  const cy = corner.includes('n') ? ed.y : ed.y + ed.h
+                {pts.map((p, vi) => {
+                  const vSel = isSel && selectedVertex === vi
                   return (
                     <rect
-                      key={corner}
-                      className="editor-handle"
-                      x={cx - handleSize / 2}
-                      y={cy - handleSize / 2}
+                      key={`v${vi}`}
+                      className="editor-vertex"
+                      x={p.x - handleSize / 2}
+                      y={p.y - handleSize / 2}
                       width={handleSize}
                       height={handleSize}
                       rx={2}
-                      fill={isSel ? '#fff' : color}
-                      stroke={isSel ? '#111' : '#fff'}
+                      fill={vSel ? '#fff' : color}
+                      stroke={vSel ? '#111' : '#fff'}
                       strokeWidth={1.5}
-                      onPointerDown={(e) => startDrag(e, sec.section_id, 'resize', corner)}
-                      style={{ cursor: corner === 'nw' || corner === 'se' ? 'nwse-resize' : 'nesw-resize' }}
-                    />
+                      opacity={isSel ? 1 : 0.7}
+                      onPointerDown={(e) => startDrag(e, sec.section_id, 'vertex', vi)}
+                      onDoubleClick={(e) => deleteVertex(e, sec.section_id, vi)}
+                      style={{ cursor: 'move' }}
+                    >
+                      <title>{`Vertex ${vi + 1} · double-click to remove`}</title>
+                    </rect>
                   )
                 })}
+
+                {isSel &&
+                  pts.map((p, vi) => {
+                    const a = pts[vi]
+                    const b = pts[(vi + 1) % pts.length]
+                    const midX = (a.x + b.x) / 2
+                    const midY = (a.y + b.y) / 2
+                    return (
+                      <circle
+                        key={`e${vi}`}
+                        className="editor-addhandle"
+                        cx={midX}
+                        cy={midY}
+                        r={addHandleSize / 2}
+                        fill="#fff"
+                        stroke={color}
+                        strokeWidth={1.5}
+                        onPointerDown={(e) => startDrag(e, sec.section_id, 'add', vi + 1)}
+                        style={{ cursor: 'copy' }}
+                      >
+                        <title>Drag to add a vertex here</title>
+                      </circle>
+                    )
+                  })}
               </g>
             )
           })}
@@ -354,16 +449,23 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view">⌂</button>
         </div>
 
-        <div className="map-drag-hint">Drag corners to reshape · drag a section to move it · drag empty space to pan · scroll to zoom</div>
+        <div className="map-drag-hint">Drag vertices to reshape · drag edge + to add · double-click vertex to remove</div>
       </div>
 
       <p className="editor-hint">
-        Drag the corner handles to map each section outline onto the layout
+        Select a section, then drag its vertices or edges to map it onto the layout
         {selected && selectedSection && (
           <span className="editor-coords">
             {' · '}
-            {selectedSection.section_name} = {vbString(selected)}
+            {selectedSection.section_name} · {selected.length} vertices · bbox{' '}
+            {Math.round(bboxOf(selected).x)} {Math.round(bboxOf(selected).y)} {Math.round(bboxOf(selected).w)}{' '}
+            {Math.round(bboxOf(selected).h)}
             {isDirty(selectedId) && ' (unsaved)'}
+          </span>
+        )}
+        {selected && (
+          <span className="editor-coords">
+            {' · arrow keys nudge the selected vertex'}
           </span>
         )}
       </p>

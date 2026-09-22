@@ -841,6 +841,14 @@ select {
   pointer-events: none;
 }
 
+.editor-vertex {
+  pointer-events: all;
+}
+
+.editor-addhandle {
+  pointer-events: all;
+}
+
 .editor-hint {
   font-size: 0.75rem;
   color: var(--color-text-muted);
