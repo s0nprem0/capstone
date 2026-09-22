@@ -67,6 +67,9 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
   const rafRef = useRef(null)
   const panRef = useRef(null)
   const movedRef = useRef(false)
+  // Pointer capture retargets click/dblclick to the SVG, so track which vertex
+  // handle got the last pointerdown and handle double-click deletion up there.
+  const lastVertexRef = useRef(null)
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
 
@@ -208,6 +211,7 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
     if (saving) return
     e.stopPropagation()
     const pt = toSvg(e)
+    lastVertexRef.current = type === 'vertex' ? { sectionId, index } : null
     if (type === 'add') {
       // index = insertion point; the new vertex starts at the edge midpoint.
       const pts = edits[sectionId]
@@ -226,6 +230,7 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
   }
 
   const onSvgPointerDown = (e) => {
+    lastVertexRef.current = null
     panRef.current = { x: e.clientX, y: e.clientY, vb: [...vbRef.current] }
     movedRef.current = false
     svgRef.current.setPointerCapture(e.pointerId)
@@ -276,15 +281,24 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
     setDrag(null)
   }
 
-  const deleteVertex = (e, sectionId, index) => {
-    e.stopPropagation()
+  const removeVertex = (sectionId, index) => {
     setEdits((prev) => {
       const pts = prev[sectionId]
-      if (pts.length <= MIN_VERTICES) return prev
-      const next = pts.filter((_, i) => i !== index)
-      if (selectedVertex === index) setSelectedVertex(null)
-      return { ...prev, [sectionId]: next }
+      if (!pts || pts.length <= MIN_VERTICES) return prev
+      return { ...prev, [sectionId]: pts.filter((_, i) => i !== index) }
     })
+    if (sectionId === selectedId && index === selectedVertex) setSelectedVertex(null)
+  }
+
+  const deleteSelectedVertex = () => {
+    if (selectedId == null || selectedVertex == null) return
+    removeVertex(selectedId, selectedVertex)
+  }
+
+  const onSvgDoubleClick = () => {
+    const v = lastVertexRef.current
+    if (!v) return
+    removeVertex(v.sectionId, v.index)
   }
 
   const save = async () => {
@@ -333,6 +347,21 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
           {dirtyCount > 0 && <span className="editor-dirty">{dirtyCount} unsaved</span>}
         </span>
         <div className="editor-actions">
+          {selectedId != null && selectedVertex != null && (
+            <button
+              type="button"
+              className="btn btn-danger btn-sm"
+              onClick={deleteSelectedVertex}
+              disabled={saving || (edits[selectedId]?.length ?? 0) <= MIN_VERTICES}
+              title={
+                (edits[selectedId]?.length ?? 0) <= MIN_VERTICES
+                  ? 'A section needs at least 4 vertices'
+                  : 'Remove the selected vertex (or double-click it)'
+              }
+            >
+              ⌫ Delete vertex
+            </button>
+          )}
           <button type="button" className="btn btn-secondary btn-sm" onClick={cancel} disabled={saving}>
             Discard
           </button>
@@ -360,6 +389,7 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onDoubleClick={onSvgDoubleClick}
         >
           <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
@@ -427,10 +457,9 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
                       strokeWidth={1.5}
                       opacity={isSel ? 1 : 0.7}
                       onPointerDown={(e) => startDrag(e, sec.section_id, 'vertex', vi)}
-                      onDoubleClick={(e) => deleteVertex(e, sec.section_id, vi)}
                       style={{ cursor: 'move' }}
                     >
-                      <title>{`Vertex ${vi + 1} · double-click to remove`}</title>
+                      <title>{`Vertex ${vi + 1} · select it, then press Delete vertex (double-click also works)`}</title>
                     </rect>
                   )
                 })}
@@ -469,7 +498,7 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view">⌂</button>
         </div>
 
-        <div className="map-drag-hint">Drag vertices to reshape · drag edge + to add · double-click vertex to remove</div>
+        <div className="map-drag-hint">Drag vertices to reshape · drag edge + to add · select a vertex, then press ⌫ Delete (or double-click)</div>
       </div>
 
       <p className="editor-hint">
