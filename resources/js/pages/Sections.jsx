@@ -96,6 +96,23 @@ export default function Sections() {
     }
   }
 
+  const reflowLots = async (s) => {
+    const key = `reflow-${s.section_id}`
+    setError('')
+    setSuccess('')
+    setBusyId(key)
+    const { ok, data } = await api('/api/lots/regrid', { method: 'POST', body: { section_id: s.section_id } })
+    setBusyId(null)
+    if (ok) {
+      setSuccess(
+        `Reflowed ${data.updated} lot${data.updated === 1 ? '' : 's'} into ${s.section_name}'s outline.`
+      )
+      load()
+    } else {
+      setError(data?.error || 'Reflow failed')
+    }
+  }
+
   const deleteMessage = (s) =>
     s.lot_count > 0
       ? `Delete ${s.section_name} and its ${s.lot_count} lot(s)? This is only allowed while no lot is reserved or occupied.`
@@ -223,6 +240,14 @@ export default function Sections() {
                   <div className="table-actions">
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditor({ focus: s.section_id })}>
                       Map outline
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={busyId === `reflow-${s.section_id}`}
+                      onClick={() => reflowLots(s)}
+                    >
+                      {busyId === `reflow-${s.section_id}` ? 'Reflowing...' : 'Reflow lots'}
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>
                       Edit

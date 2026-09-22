@@ -219,7 +219,9 @@ export default function Cemetery() {
 
           {activeSection && activeSection.lots && activeSection.lots.length === 0 && (
             <p className="text-muted map-hint">
-              No lots in {activeSection.section_name} match the current filter or search.
+              {(activeSection.counts?.available || 0) + (activeSection.counts?.reserved || 0) + (activeSection.counts?.occupied || 0) === 0
+                ? `${activeSection.section_name} has no lots mapped yet — add them in Section Management.`
+                : `No lots in ${activeSection.section_name} match the current filter or search.`}
             </p>
           )}
             </>
