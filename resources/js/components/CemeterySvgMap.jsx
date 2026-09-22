@@ -88,6 +88,18 @@ export default function CemeterySvgMap({
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
 
+  // Clicking a section opens it: zoom to its area to view the lot grid.
+  // The Overview tab (activeSection === null) flies back to the full map.
+  const focusKey = activeSection ? activeSection.section_id : null
+  useEffect(() => {
+    if (focusKey == null) {
+      flyTo([...MAP_VIEWBOX])
+    } else {
+      const sec = sections.find((s) => s.section_id === focusKey)
+      if (sec) flyTo(parseViewBox(sec.viewBox))
+    }
+  }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const zoomAt = useCallback(
     (px, py, factor) => {
       const el = svgRef.current
@@ -260,7 +272,7 @@ export default function CemeterySvgMap({
         </button>
       </div>
 
-      <div className="map-drag-hint">Click a section to show its lots · drag to pan · scroll to zoom</div>
+      <div className="map-drag-hint">Click a section to open it and view its lots · drag to pan · scroll to zoom</div>
     </div>
   )
 }

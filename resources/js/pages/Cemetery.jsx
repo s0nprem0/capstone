@@ -216,6 +216,12 @@ export default function Cemetery() {
               to reserve an available plot.
             </p>
           )}
+
+          {activeSection && activeSection.lots && activeSection.lots.length === 0 && (
+            <p className="text-muted map-hint">
+              No lots in {activeSection.section_name} match the current filter or search.
+            </p>
+          )}
             </>
           )}
         </>
