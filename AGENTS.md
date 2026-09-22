@@ -7,13 +7,13 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 - React 18 SPA + Vite (pnpm) frontend, `react-router-dom` v6.
 - MySQL 8.0, `utf8mb4`. Schema is authoritative in `database/schema.sql`.
 - Containerized dev environment (PHP, Node, MySQL) via `docker-compose.yml` + Makefile.
-- Leaflet.js + OpenStreetMap for the interactive cemetery map (to be added).
+- Leaflet.js + OpenStreetMap replaced by a pure SVG digital map (traced layout + grid lot boxes, no map tiles).
 
 ## Tech stack (mandatory)
 - Backend: PHP >= 8.1, PDO prepared statements only (no value concatenation into SQL), `declare(strict_types=1)`, PSR-4 `App\`.
 - Database: MySQL 8.0, `utf8mb4`.
 - Frontend: React 18 SPA + Vite, pnpm, `react-router-dom` v6. Styling in `resources/css/app.css`. No TypeScript.
-- Mapping: Leaflet.js + OpenStreetMap tiles.
+- Mapping: pure SVG digital map (traced layout paths + grid lot `<rect>`s, rendered client-side; no Leaflet, no tiles).
 - Client-side storage: localStorage (drafts / non-sensitive), sessionStorage (active auth flags), JSON (API interchange). No sensitive data in localStorage.
 - Containerization: `docker-compose.yml` (php:8000, node:5173, mysql:3306) + Makefile workflow.
 
@@ -56,7 +56,7 @@ make migrate   # apply database/schema.sql to MySQL
 ## Current state (gaps to close)
 Existing: base Router/Model/Database; generic CRUD controllers for **lots and reservations**; React skeleton (`Dashboard`, `Reservations`, `NewReservation`, `Cemetery`, `Records`) with stub pages.
 
-Missing entirely: authentication/RBAC, burial records, notifications, Leaflet map, search/filter, reports, payment receipt upload + validation, backup/restore, dashboards. The schema (`database/schema.sql`) is the initial baseline and must be extended per the "Data model" section below before feature work.
+Missing entirely: authentication/RBAC, burial records, notifications, search/filter, reports, payment receipt upload + validation, backup/restore, dashboards. The schema (`database/schema.sql`) is the initial baseline and must be extended per the "Data model" section below before feature work. The SVG digital map (sections + grid lots) is implemented.
 
 ## Roles & permissions (RBAC) — from the study
 - **Administrator** (`admin`): everything — manage user/staff accounts, roles, permissions, access levels; approve/reject reservations; manage sections and lots; generate reports; backup/restore; view audit logs.
@@ -86,7 +86,7 @@ RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{i
 - `/api/reports/*` (reservations, burial-records, payments, audit-logs, availability)
 - `/api/backup/export`, `/api/backup/import`
 - `/api/stats/dashboard`
-- `/api/map` (sections + lots with geo coordinates and status)
+- `/api/map` (sections + lots with SVG grid coordinates and status)
 
 Always respond with proper HTTP status codes; validate inputs server-side; never trust client input; RBAC enforced on every route, not just in the UI.
 

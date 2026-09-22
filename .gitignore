@@ -3,6 +3,7 @@ vendor/
 .env
 *.log
 dist/
+dist-root-bak/
 .cache/
 .vscode/
 .idea/
