@@ -50,17 +50,19 @@ const bboxOf = (pts) => {
   return { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY }
 }
 
-const initialPts = (section) => strToPts(section.points) || (() => {
-  const [x, y, w, h] = parseViewBox(section.viewBox)
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x: x + w, y: y + h },
-    { x, y: y + h },
-  ]
-})()
+const initialPts = (section) =>
+  strToPts(section.points ?? section.svg_points) ||
+  (() => {
+    const [x, y, w, h] = parseViewBox(section.viewBox)
+    return [
+      { x, y },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+      { x, y: y + h },
+    ]
+  })()
 
-export default function SectionEditor({ sections, onSaved, onCancel }) {
+export default function SectionEditor({ sections, onSaved, onCancel, focusSectionId = null }) {
   const svgRef = useRef(null)
   const rafRef = useRef(null)
   const panRef = useRef(null)
@@ -171,12 +173,30 @@ export default function SectionEditor({ sections, onSaved, onCancel }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedId, selectedVertex])
 
+  // Optional: jump to and select one section on open (used by the Sections manager).
+  const focusDone = useRef(null)
+  useEffect(() => {
+    if (focusSectionId == null || focusDone.current === focusSectionId) return
+    const pts = edits[focusSectionId]
+    if (!pts) return
+    focusDone.current = focusSectionId
+    setSelectedId(focusSectionId)
+    setSelectedVertex(null)
+    const bbox = bboxOf(pts)
+    const pad = Math.max(80, bbox.w * 0.2, bbox.h * 0.2)
+    const t = setTimeout(
+      () => flyTo([bbox.x - pad, bbox.y - pad, bbox.w + pad * 2, bbox.h + pad * 2]),
+      60
+    )
+    return () => clearTimeout(t)
+  }, [focusSectionId, edits, flyTo])
+
   const isDirty = useCallback(
     (sectionId) => {
       const s = sections.find((sec) => sec.section_id === sectionId)
       const pts = edits[sectionId]
       if (!s || !pts) return false
-      const orig = strToPts(s.points) || initialPts(s)
+      const orig = strToPts(s.points ?? s.svg_points) || initialPts(s)
       return ptsToStr(pts) !== ptsToStr(orig)
     },
     [sections, edits]

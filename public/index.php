@@ -86,9 +86,15 @@ $router->get('/api/lots/available', [$lots, 'available']);
 $router->get('/api/lots/{id}', [$lots, 'show']);
 $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
-$router->post('/api/sections/polygons', [$sections, 'updatePolygons']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
+
+$router->get('/api/sections', [$sections, 'index']);
+$router->get('/api/sections/{id}', [$sections, 'show']);
+$router->post('/api/sections', [$sections, 'store']);
+$router->post('/api/sections/{id}', [$sections, 'update']);
+$router->post('/api/sections/{id}/delete', [$sections, 'destroy']);
+$router->post('/api/sections/polygons', [$sections, 'updatePolygons']);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 

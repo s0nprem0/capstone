@@ -14,6 +14,7 @@ import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
 import Records from './pages/Records'
 import Users from './pages/Users'
+import Sections from './pages/Sections'
 
 export default function App() {
   return (
@@ -40,6 +41,10 @@ export default function App() {
             <Route path="/burial-records" element={<BurialRecords />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
+          </Route>
+
+          <Route element={<RequireRole roles={['admin']} />}>
+            <Route path="/sections" element={<Sections />} />
           </Route>
         </Route>
 
