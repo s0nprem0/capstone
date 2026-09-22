@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 export const STATUS_COLORS = {
@@ -61,7 +61,6 @@ export default function CemeterySvgMap({
   const movedRef = useRef(false)
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
-  const focusKey = activeSection ? activeSection.section_id : null
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -88,10 +87,6 @@ export default function CemeterySvgMap({
   useEffect(() => {
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
-
-  useEffect(() => {
-    flyTo(activeSection ? parseViewBox(activeSection.viewBox) : [...MAP_VIEWBOX])
-  }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -152,12 +147,12 @@ export default function CemeterySvgMap({
     const lotEl = e.target.closest?.('[data-lot-id]')
     if (lotEl) {
       const lotId = Number(lotEl.getAttribute('data-lot-id'))
-      const lot = activeSection?.lots?.find((l) => l.lot_id === lotId)
+      const lot = allLots.find((l) => l.lot_id === lotId)
       if (lot) onSelectLot(lot)
       return
     }
     const secEl = e.target.closest?.('[data-section-id]')
-    if (secEl && !activeSection) {
+    if (secEl) {
       const secId = Number(secEl.getAttribute('data-section-id'))
       const section = sections.find((s) => s.section_id === secId)
       if (section) onFocusSection(section)
@@ -172,7 +167,9 @@ export default function CemeterySvgMap({
   }
 
   const showLabels = vb[2] < 1500
-  const activeLots = activeSection?.lots || []
+  // Lots stay on the full overview map; an active section only filters them.
+  const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
+  const visibleLots = activeSection ? activeSection.lots || [] : allLots
 
   return (
     <div className="map-svg-wrap">
@@ -204,51 +201,50 @@ export default function CemeterySvgMap({
           </g>
         )}
 
-        {!activeSection ? (
-          <g className="map-sections">
-            {sections.map((section, i) => {
-              const [x, y, w, h] = parseViewBox(section.viewBox)
-              const color = SECTION_COLORS[i % SECTION_COLORS.length]
-              const total =
-                (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
-              return (
-                <g key={section.section_id} data-section-id={section.section_id} className="map-section">
-                  {section.points ? (
-                    <polygon
-                      points={section.points}
-                      fill={color}
-                      opacity={0.12}
-                      stroke={color}
-                      strokeWidth={2}
-                      strokeDasharray="8 6"
-                      strokeLinejoin="round"
-                    />
-                  ) : (
-                    <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
-                  )}
-                  <g transform={`translate(${x + w / 2}, ${y + h / 2})`}>
-                    <rect x={-85} y={-34} width={170} height={68} rx={8} fill="#fff" opacity={0.92} stroke={color} strokeWidth={2} />
-                    <text textAnchor="middle" x={0} y={-8} className="map-section-title">{section.section_name}</text>
-                    <text textAnchor="middle" x={0} y={16} className="map-section-meta">
-                      {total} lots · {section.counts?.available || 0} available
-                    </text>
-                  </g>
+        <g className="map-sections">
+          {sections.map((section, i) => {
+            const [x, y, w, h] = parseViewBox(section.viewBox)
+            const color = SECTION_COLORS[i % SECTION_COLORS.length]
+            const isActive = activeSection?.section_id === section.section_id
+            const total =
+              (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
+            return (
+              <g key={section.section_id} data-section-id={section.section_id} className="map-section">
+                {section.points ? (
+                  <polygon
+                    points={section.points}
+                    fill={color}
+                    opacity={isActive ? 0.18 : 0.12}
+                    stroke={color}
+                    strokeWidth={isActive ? 3 : 2}
+                    strokeDasharray="8 6"
+                    strokeLinejoin="round"
+                  />
+                ) : (
+                  <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={isActive ? 0.18 : 0.12} stroke={color} strokeWidth={isActive ? 3 : 2} strokeDasharray="8 6" />
+                )}
+                <g transform={`translate(${x + w / 2}, ${y + h / 2})`}>
+                  <rect x={-85} y={-34} width={170} height={68} rx={8} fill="#fff" opacity={0.92} stroke={color} strokeWidth={isActive ? 2.5 : 2} />
+                  <text textAnchor="middle" x={0} y={-8} className="map-section-title">{section.section_name}</text>
+                  <text textAnchor="middle" x={0} y={16} className="map-section-meta">
+                    {total} lots · {section.counts?.available || 0} available
+                  </text>
                 </g>
-              )
-            })}
-          </g>
-        ) : (
-          <g className="map-lots">
-            {activeLots.map((lot) => (
-              <MemoLotRect
-                key={lot.lot_id}
-                lot={lot}
-                selected={lot.lot_id === selectedLotId}
-                showLabel={showLabels}
-              />
-            ))}
-          </g>
-        )}
+              </g>
+            )
+          })}
+        </g>
+
+        <g className="map-lots">
+          {visibleLots.map((lot) => (
+            <MemoLotRect
+              key={lot.lot_id}
+              lot={lot}
+              selected={lot.lot_id === selectedLotId}
+              showLabel={showLabels}
+            />
+          ))}
+        </g>
       </svg>
 
       <div className="map-zoom-controls">
@@ -257,7 +253,7 @@ export default function CemeterySvgMap({
         <button
           type="button"
           className="btn btn-secondary btn-sm"
-          onClick={() => flyTo(activeSection ? parseViewBox(activeSection.viewBox) : [...MAP_VIEWBOX])}
+          onClick={() => flyTo([...MAP_VIEWBOX])}
           title="Fit view"
         >
           ⌂
