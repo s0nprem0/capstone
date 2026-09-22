@@ -30,6 +30,12 @@ class LotController
         return ($lat === null || abs($lat) <= 90) && ($lng === null || abs($lng) <= 180);
     }
 
+    private function svgInt(mixed $value, int $default): int
+    {
+        if ($value === null || $value === '') return $default;
+        return max(0, (int) $value);
+    }
+
     public function index(): void
     {
         Response::json(Lot::all());
@@ -80,6 +86,10 @@ class LotController
             'description' => $input['description'] ?? null,
             'latitude' => $latitude,
             'longitude' => $longitude,
+            'svg_x' => $this->svgInt($input['svg_x'] ?? null, 0),
+            'svg_y' => $this->svgInt($input['svg_y'] ?? null, 0),
+            'svg_w' => $this->svgInt($input['svg_w'] ?? null, 40),
+            'svg_h' => $this->svgInt($input['svg_h'] ?? null, 40),
         ]);
 
         AuditLog::record(Auth::id(), 'create', 'cemetery_lots', $id);
@@ -97,7 +107,7 @@ class LotController
         $input = $this->router->input();
         $data = array_intersect_key($input, array_flip([
             'lot_code', 'section_id', 'block', 'lot_type', 'price', 'status', 'description',
-            'latitude', 'longitude',
+            'latitude', 'longitude', 'svg_x', 'svg_y', 'svg_w', 'svg_h',
         ]));
 
         if (array_key_exists('latitude', $data)) {
@@ -110,6 +120,12 @@ class LotController
             Response::json(['error' => 'latitude must be within -90..90 and longitude within -180..180'], 422);
             return;
         }
+        foreach (['svg_x', 'svg_y'] as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = $this->svgInt($data[$field], 0);
+        }
+        foreach (['svg_w', 'svg_h'] as $field) {
+            if (array_key_exists($field, $data)) $data[$field] = $this->svgInt($data[$field], 40);
+        }
 
         if ($data !== []) {
             Lot::update($id, $data);
@@ -117,6 +133,52 @@ class LotController
         }
 
         Response::json(Lot::find($id));
+    }
+
+    public function importGrid(): void
+    {
+        Auth::requireRole(['admin']);
+        $input = $this->router->input();
+
+        $sectionId = (int) ($input['section_id'] ?? 0);
+        $rows = $input['lots'] ?? null;
+        if ($sectionId <= 0 || !is_array($rows) || $rows === []) {
+            Response::json(['error' => 'section_id and lots[] are required'], 422);
+            return;
+        }
+        if (!\App\Models\CemeterySection::find($sectionId)) {
+            Response::json(['error' => 'Unknown section'], 422);
+            return;
+        }
+
+        $created = 0;
+        $skipped = 0;
+        foreach ($rows as $row) {
+            $lotCode = trim((string) ($row['lot_code'] ?? ''));
+            if ($lotCode === '' || Lot::findBy('lot_code', $lotCode)) {
+                $skipped++;
+                continue;
+            }
+            Lot::create([
+                'lot_code' => $lotCode,
+                'section_id' => $sectionId,
+                'block' => $row['block'] ?? null,
+                'lot_type' => in_array($row['lot_type'] ?? '', ['single', 'double', 'family'], true) ? $row['lot_type'] : 'single',
+                'price' => (float) ($row['price'] ?? 0),
+                'status' => in_array($row['status'] ?? '', ['available', 'reserved', 'occupied'], true) ? $row['status'] : 'available',
+                'svg_x' => $this->svgInt($row['svg_x'] ?? null, 0),
+                'svg_y' => $this->svgInt($row['svg_y'] ?? null, 0),
+                'svg_w' => $this->svgInt($row['svg_w'] ?? null, 40),
+                'svg_h' => $this->svgInt($row['svg_h'] ?? null, 40),
+            ]);
+            $created++;
+        }
+
+        if ($created > 0) {
+            AuditLog::record(Auth::id(), 'import-grid', 'cemetery_lots', $sectionId);
+        }
+
+        Response::json(['created' => $created, 'skipped' => $skipped]);
     }
 
     public function destroy(int $id): void

@@ -83,6 +83,7 @@ $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
 $router->get('/api/lots/{id}', [$lots, 'show']);
 $router->post('/api/lots', [$lots, 'store']);
+$router->post('/api/lots/import-grid', [$lots, 'importGrid']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
 
