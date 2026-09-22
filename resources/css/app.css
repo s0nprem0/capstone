@@ -572,7 +572,230 @@ select {
   margin-bottom: 0;
 }
 
+/* ==== SVG digital map ==== */
+.map-svg-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  display: block;
+  background: #f4f1e8;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-svg:active {
+  cursor: grabbing;
+}
+
+.map-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.map-detail {
+  flex: 0 0 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.map-detail h3 {
+  margin-bottom: 0.75rem;
+}
+
+.map-detail-list {
+  margin: 0 0 1rem;
+}
+
+.map-detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+}
+
+.map-detail-list dt {
+  color: var(--color-text-muted);
+}
+
+.map-detail-list dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+}
+
+.map-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.map-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.map-tab {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 0.825rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.map-tab--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.map-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.map-filters {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.chip {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.chip--active {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: #fff;
+}
+
+.map-search {
+  max-width: 220px;
+}
+
+.map-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  z-index: 5;
+}
+
+.map-zoom-controls .btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+}
+
+.map-drag-hint {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.map-section {
+  cursor: pointer;
+}
+
+.map-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  fill: var(--color-text);
+}
+
+.map-section-meta {
+  font-size: 13px;
+  fill: var(--color-text-muted);
+}
+
+.lot-rect {
+  cursor: pointer;
+}
+
+.lot-rect rect {
+  transition: stroke-width 0.12s, filter 0.12s;
+}
+
+.lot-rect:hover rect {
+  stroke-width: 3;
+  filter: brightness(1.1);
+}
+
+.lot-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
 @media print {
+  .map-zoom-controls,
+  .map-drag-hint,
+  .map-toolbar,
+  .map-detail {
+    display: none !important;
+  }
+  .map-layout {
+    display: block;
+  }
+  .map-svg {
+    min-height: 0;
+    border: none;
+  }
   .no-print,
   .sidebar {
     display: none !important;
