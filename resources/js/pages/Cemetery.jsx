@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS } from '../components/CemeterySvgMap'
+import LotEditor from '../components/LotEditor' // TEMP: overview layout editor (remove later)
 
 const STATUS_LABELS = {
   available: 'Available',
@@ -19,12 +20,17 @@ export default function Cemetery() {
   const [showLayout, setShowLayout] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
+  const [isEditing, setIsEditing] = useState(false) // TEMP: overview editor (remove later)
 
-  useEffect(() => {
+  const fetchMap = () => {
     api('/api/map').then(({ ok, data }) => {
       if (ok) setMapData(data)
       else setError(data?.error || 'Failed to load map data')
     })
+  }
+
+  useEffect(() => {
+    fetchMap()
   }, [])
 
   const sections = useMemo(() => {
@@ -59,6 +65,17 @@ export default function Cemetery() {
     setSelectedLot(null)
   }
 
+  // TEMP: overview editor (remove with LotEditor.jsx) — admin-only entry.
+  const canEdit = user?.role === 'admin'
+  const allLots = useMemo(() => (mapData?.sections || []).flatMap((s) => s.lots || []), [mapData])
+
+  const startEdit = () => {
+    setSelectedLot(null)
+    setIsEditing(true)
+  }
+
+  const exitEdit = () => setIsEditing(false)
+
   return (
     <div>
       <h2>Cemetery Map</h2>
@@ -67,15 +84,31 @@ export default function Cemetery() {
 
       {mapData && (
         <>
-          <div className="map-toolbar">
-            <div className="map-tabs">
-              <button
-                type="button"
-                className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
-                onClick={showAll}
-              >
-                Overview
-              </button>
+          {isEditing ? (
+            <LotEditor
+              lots={allLots}
+              onSaved={() => {
+                exitEdit()
+                fetchMap()
+              }}
+              onCancel={exitEdit}
+            />
+          ) : (
+            <>
+              <div className="map-toolbar">
+                <div className="map-tabs">
+                  <button
+                    type="button"
+                    className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
+                    onClick={showAll}
+                  >
+                    Overview
+                  </button>
+                  {canEdit && !activeSection && (
+                    <button type="button" className="map-tab map-tab--edit" onClick={startEdit}>
+                      ✎ Edit layout
+                    </button>
+                  )}
               {sections.map((s) => (
                 <button
                   key={s.section_id}
@@ -183,6 +216,8 @@ export default function Cemetery() {
               )}{' '}
               to reserve an available plot.
             </p>
+          )}
+            </>
           )}
         </>
       )}

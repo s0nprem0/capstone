@@ -782,11 +782,79 @@ select {
   pointer-events: none;
 }
 
+/* ==== Overview layout editor ==== TEMP: remove with LotEditor.jsx and
+   the Cemetery.jsx markers once the lot grid is finalized. */
+.lot-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.editor-title {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.editor-title strong {
+  color: var(--color-text);
+}
+
+.editor-dirty {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fff3bf;
+  color: #99582a;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.editor-svg {
+  cursor: grab;
+}
+
+.editor-lot-label {
+  font-size: 10px;
+}
+
+.editor-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.editor-coords {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.map-tab--edit {
+  border-style: dashed;
+  color: var(--color-primary);
+}
+
 @media print {
   .map-zoom-controls,
   .map-drag-hint,
   .map-toolbar,
-  .map-detail {
+  .map-detail,
+  .lot-editor {
     display: none !important;
   }
   .map-layout {
