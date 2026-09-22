@@ -81,6 +81,12 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
   const [drag, setDrag] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showPlots, setShowPlots] = useState(true)
+  const [live, setLive] = useState(null) // coordinate readout while dragging
+  const [plots, setPlots] = useState(null) // /api/map lot grid reference
+  const undoRef = useRef([]) // [{ sectionId, pts }] snapshots for undo
+  const redoRef = useRef([])
+  const movePushedRef = useRef(false)
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -155,27 +161,6 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
     }
   }, [])
 
-  // Arrow-key nudge of the selected vertex while the editor is open.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (selectedId == null || selectedVertex == null) return
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      const dir = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]
-      if (!dir) return
-      e.preventDefault()
-      setEdits((prev) => {
-        const pts = prev[selectedId].map((p) => ({ ...p }))
-        pts[selectedVertex] = clampP({
-          x: snap(pts[selectedVertex].x + dir[0] * SNAP),
-          y: snap(pts[selectedVertex].y + dir[1] * SNAP),
-        })
-        return { ...prev, [selectedId]: pts }
-      })
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selectedId, selectedVertex])
-
   // Optional: jump to and select one section on open (used by the Sections manager).
   const focusDone = useRef(null)
   useEffect(() => {
@@ -207,8 +192,54 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
 
   const dirtyCount = sections.filter((s) => isDirty(s.section_id)).length
 
+  const pushHistory = useCallback((sectionId) => {
+    const pts = edits[sectionId]
+    if (!pts) return
+    undoRef.current.push({ sectionId, pts: pts.map((p) => ({ ...p })) })
+    if (undoRef.current.length > 50) undoRef.current.shift()
+    redoRef.current = []
+  }, [edits])
+
+  const undo = useCallback(() => {
+    const last = undoRef.current.pop()
+    if (!last) return
+    const pts = edits[last.sectionId]
+    if (pts) redoRef.current.push({ sectionId: last.sectionId, pts: pts.map((p) => ({ ...p })) })
+    setSelectedVertex(null)
+    setEdits((prev) => ({ ...prev, [last.sectionId]: last.pts }))
+  }, [edits])
+
+  const redo = useCallback(() => {
+    const last = redoRef.current.pop()
+    if (!last) return
+    const pts = edits[last.sectionId]
+    if (pts) undoRef.current.push({ sectionId: last.sectionId, pts: pts.map((p) => ({ ...p })) })
+    setSelectedVertex(null)
+    setEdits((prev) => ({ ...prev, [last.sectionId]: last.pts }))
+  }, [edits])
+
+  // Faint plot grid (from /api/map) as a mapping reference.
+  useEffect(() => {
+    api('/api/map')
+      .then(({ ok, data }) => { if (ok) setPlots(data) })
+      .catch(() => {})
+  }, [])
+
+  // Jump to and select a section (used by the chips row).
+  const focusSection = useCallback((id) => {
+    const pts = edits[id]
+    if (!pts) return
+    setSelectedId(id)
+    setSelectedVertex(null)
+    const bbox = bboxOf(pts)
+    const pad = Math.max(80, bbox.w * 0.25, bbox.h * 0.25)
+    flyTo([bbox.x - pad, bbox.y - pad, bbox.w + pad * 2, bbox.h + pad * 2])
+  }, [edits, flyTo])
+
   const startDrag = (e, sectionId, type, index) => {
     if (saving) return
+    movePushedRef.current = false
+    if (type !== 'move') pushHistory(sectionId)
     e.stopPropagation()
     const pt = toSvg(e)
     lastVertexRef.current = type === 'vertex' ? { sectionId, index } : null
@@ -244,10 +275,12 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
         if (drag.type === 'vertex') {
           const pts = drag.orig.map((p) => ({ ...p }))
           pts[drag.index] = cur
+          setLive({ what: `Vertex ${drag.index + 1}`, x: cur.x, y: cur.y })
           return { ...prev, [drag.sectionId]: pts }
         }
         if (drag.type === 'add') {
           const pts = [...drag.orig.slice(0, drag.index), cur, ...drag.orig.slice(drag.index)]
+          setLive({ what: 'New vertex', x: cur.x, y: cur.y })
           return { ...prev, [drag.sectionId]: pts }
         }
         // move whole polygon: shift all vertices, clamped so the bbox stays in map bounds
@@ -257,6 +290,11 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
         const sx = Math.max(-bbox.x, Math.min(MAP_W - bbox.w, dx))
         const sy = Math.max(-bbox.y, Math.min(MAP_H - bbox.h, dy))
         if (sx === 0 && sy === 0) return prev
+        if (!movePushedRef.current) {
+          movePushedRef.current = true
+          pushHistory(drag.sectionId)
+        }
+        setLive({ what: 'Move', x: sx, y: sy })
         return {
           ...prev,
           [drag.sectionId]: drag.orig.map((p) => ({ x: p.x + sx, y: p.y + sy })),
@@ -279,9 +317,11 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
     if (panRef.current && !movedRef.current) setSelectedId(null)
     panRef.current = null
     setDrag(null)
+    setLive(null)
   }
 
   const removeVertex = (sectionId, index) => {
+    if ((edits[sectionId]?.length ?? 0) > MIN_VERTICES) pushHistory(sectionId)
     setEdits((prev) => {
       const pts = prev[sectionId]
       if (!pts || pts.length <= MIN_VERTICES) return prev
@@ -294,6 +334,48 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
     if (selectedId == null || selectedVertex == null) return
     removeVertex(selectedId, selectedVertex)
   }
+
+  // Keyboard: Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo, Del/Backspace removes
+  // the selected vertex, Escape deselects, arrows nudge the selected vertex.
+  useEffect(() => {
+    const onKey = (e) => {
+      const mod = e.metaKey || e.ctrlKey
+      if (e.key === 'z' && mod && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+        return
+      }
+      if ((e.key === 'z' && mod && e.shiftKey) || (e.key === 'y' && mod)) {
+        e.preventDefault()
+        redo()
+        return
+      }
+      if (e.key === 'Escape') {
+        setSelectedVertex(null)
+        return
+      }
+      if ((e.key === 'Backspace' || e.key === 'Delete') && selectedId != null && selectedVertex != null) {
+        e.preventDefault()
+        deleteSelectedVertex()
+        return
+      }
+      if (selectedId == null || selectedVertex == null || mod || e.altKey) return
+      const dir = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]
+      if (!dir) return
+      e.preventDefault()
+      pushHistory(selectedId)
+      setEdits((prev) => {
+        const pts = prev[selectedId].map((p) => ({ ...p }))
+        pts[selectedVertex] = clampP({
+          x: snap(pts[selectedVertex].x + dir[0] * SNAP),
+          y: snap(pts[selectedVertex].y + dir[1] * SNAP),
+        })
+        return { ...prev, [selectedId]: pts }
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedId, selectedVertex, undo, redo, pushHistory, deleteSelectedVertex])
 
   const onSvgDoubleClick = () => {
     const v = lastVertexRef.current
@@ -347,6 +429,24 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
           {dirtyCount > 0 && <span className="editor-dirty">{dirtyCount} unsaved</span>}
         </span>
         <div className="editor-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={undo}
+            disabled={saving || undoRef.current.length === 0}
+            title="Undo last change (Ctrl+Z)"
+          >
+            ↩ Undo
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={redo}
+            disabled={saving || redoRef.current.length === 0}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            ↪ Redo
+          </button>
           {selectedId != null && selectedVertex != null && (
             <button
               type="button"
@@ -378,6 +478,31 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
 
       {error && <p className="alert alert--error">{error}</p>}
 
+      <div className="editor-chips">
+        <div className="editor-chips-list">
+          {sections.map((sec) => {
+            const active = sec.section_id === selectedId
+            const dirty = isDirty(sec.section_id)
+            return (
+              <button
+                key={sec.section_id}
+                type="button"
+                className={`editor-chip${active ? ' editor-chip--active' : ''}${dirty ? ' editor-chip--dirty' : ''}`}
+                onClick={() => focusSection(sec.section_id)}
+                title={active ? `${sec.section_name} selected — click its shape to edit` : `Jump to ${sec.section_name}`}
+              >
+                {sec.section_name}
+                {dirty && ' •'}
+              </button>
+            )
+          })}
+        </div>
+        <label className="map-toggle map-toggle--editor">
+          <input type="checkbox" checked={showPlots} onChange={(e) => setShowPlots(e.target.checked)} />
+          Show plots
+        </label>
+      </div>
+
       <div className="map-svg-wrap">
         <svg
           ref={svgRef}
@@ -405,6 +530,16 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
               <line key={l.k} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#94a3b8" strokeWidth={0.6} opacity={0.4} />
             ))}
           </g>
+
+          {showPlots && plots?.sections && (
+            <g className="editor-plots" pointerEvents="none">
+              {plots.sections.flatMap((s) =>
+                (s.lots || []).map((l) => (
+                  <rect key={l.lot_id} x={l.svg_x} y={l.svg_y} width={l.svg_w} height={l.svg_h} rx={1.5} fill="#2f9e44" opacity={0.3} />
+                ))
+              )}
+            </g>
+          )}
 
           {sections.map((sec, i) => {
             const pts = edits[sec.section_id]
@@ -498,25 +633,27 @@ export default function SectionEditor({ sections, onSaved, onCancel, focusSectio
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view">⌂</button>
         </div>
 
-        <div className="map-drag-hint">Drag vertices to reshape · drag edge + to add · select a vertex, then press ⌫ Delete (or double-click)</div>
+        <div className="map-drag-hint">Drag vertices to reshape · drag edge + to add a vertex · double-click a vertex to delete</div>
       </div>
 
       <p className="editor-hint">
-        Select a section, then drag its vertices or edges to map it onto the layout
+        Drag vertices to reshape · grab the body to move · drag a blank spot to pan
         {selected && selectedSection && (
           <span className="editor-coords">
             {' · '}
             {selectedSection.section_name} · {selected.length} vertices · bbox{' '}
             {Math.round(bboxOf(selected).x)} {Math.round(bboxOf(selected).y)} {Math.round(bboxOf(selected).w)}{' '}
             {Math.round(bboxOf(selected).h)}
-            {isDirty(selectedId) && ' (unsaved)'}
+            {isDirty(selectedId) ? ' (unsaved)' : ''}
           </span>
         )}
-        {selected && (
+        {live && (
           <span className="editor-coords">
-            {' · arrow keys nudge the selected vertex'}
+            {' · '}
+            {live.what}: {live.x}, {live.y}
           </span>
         )}
+        <span className="editor-coords">{' · Ctrl+Z undo · Del removes the selected vertex'}</span>
       </p>
     </div>
   )

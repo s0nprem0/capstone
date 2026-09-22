@@ -861,6 +861,73 @@ select {
   pointer-events: all;
 }
 
+.editor-plots rect {
+  pointer-events: none;
+}
+
+.editor-chips {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.editor-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.editor-chip {
+  padding: 0.25rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.editor-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.editor-chip--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.editor-chip--dirty {
+  border-style: dashed;
+}
+
+.map-toggle--editor {
+  margin-left: auto;
+}
+
+.editor-vertex {
+  cursor: grab;
+}
+
+.editor-vertex:hover {
+  stroke-width: 2.5;
+  opacity: 1 !important;
+}
+
+.editor-addhandle {
+  cursor: copy;
+}
+
+.editor-addhandle:hover {
+  stroke-width: 2.5;
+}
+
 .editor-hint {
   font-size: 0.75rem;
   color: var(--color-text-muted);
