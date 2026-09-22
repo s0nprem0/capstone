@@ -167,9 +167,9 @@ export default function CemeterySvgMap({
   }
 
   const showLabels = vb[2] < 1500
-  // Lots stay on the full overview map; an active section only filters them.
+  // Overview stays clean (outlines only); a section's lots appear when it is clicked.
   const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
-  const visibleLots = activeSection ? activeSection.lots || [] : allLots
+  const visibleLots = activeSection ? activeSection.lots || [] : []
 
   return (
     <div className="map-svg-wrap">
@@ -260,7 +260,7 @@ export default function CemeterySvgMap({
         </button>
       </div>
 
-      <div className="map-drag-hint">Drag to pan · scroll to zoom</div>
+      <div className="map-drag-hint">Click a section to show its lots · drag to pan · scroll to zoom</div>
     </div>
   )
 }
