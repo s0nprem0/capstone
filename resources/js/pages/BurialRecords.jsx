@@ -6,6 +6,9 @@ export default function BurialRecords() {
   const [records, setRecords] = useState([])
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [q, setQ] = useState('')
+  const [interment, setInterment] = useState('')
+  const [type, setType] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState({
@@ -16,13 +19,24 @@ export default function BurialRecords() {
   const [submitting, setSubmitting] = useState(false)
   const [busyId, setBusyId] = useState(null)
 
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const load = async () => {
-    const { ok, data } = await api('/api/burial-records')
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (interment) params.set('interment_status', interment)
+    if (type) params.set('burial_type', type)
+    const qs = params.toString()
+    const path = qs ? `/api/burial-records?${qs}` : '/api/burial-records'
+    const { ok, data } = await api(path)
     if (ok) setRecords(data)
     else setError(data?.error || 'Failed to load burial records')
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [q, interment, type])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -74,19 +88,6 @@ export default function BurialRecords() {
     else setError(data?.error || 'Delete failed')
   }
 
-  const filtered = records.filter((r) => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      r.deceased_fullname.toLowerCase().includes(q) ||
-      (r.lot_code && r.lot_code.toLowerCase().includes(q)) ||
-      (r.section_name && r.section_name.toLowerCase().includes(q)) ||
-      (r.burial_date && r.burial_date.includes(q)) ||
-      r.interment_status.toLowerCase().includes(q) ||
-      (r.next_of_kin_name && r.next_of_kin_name.toLowerCase().includes(q))
-    )
-  })
-
   return (
     <div>
       <div className="page-header">
@@ -96,13 +97,27 @@ export default function BurialRecords() {
 
       {error && <p className="alert alert--error">{error}</p>}
 
-      <input
-        type="text"
-        className="search-input"
-        placeholder="Search by name, lot, section, date, status, next of kin..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="filter-bar">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by name, lot, section, date, status, next of kin..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={interment} onChange={(e) => setInterment(e.target.value)}>
+          <option value="">All interment statuses</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="interred">Interred</option>
+        </select>
+        <select value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="">All burial types</option>
+          <option value="single">Single</option>
+          <option value="double">Double</option>
+          <option value="family">Family</option>
+          <option value="cremation">Cremation</option>
+        </select>
+      </div>
 
       {showForm && (
         <div className="form-card section-block">
@@ -164,7 +179,7 @@ export default function BurialRecords() {
       )}
 
       <div className="table-container section-block">
-        {filtered.length === 0 ? (
+        {records.length === 0 ? (
           <p className="text-muted">No burial records found.</p>
         ) : (
           <table className="table">
@@ -182,7 +197,7 @@ export default function BurialRecords() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {records.map((r) => (
                 <tr key={r.burial_id}>
                   <td>{r.burial_id}</td>
                   <td>{r.deceased_fullname}</td>

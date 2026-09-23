@@ -23,7 +23,7 @@ class BurialRecordController
     public function index(): void
     {
         Auth::requireRole(['admin', 'staff']);
-        Response::json(BurialRecord::allWithDetails());
+        Response::json(BurialRecord::search($_GET));
     }
 
     public function show(int $id): void

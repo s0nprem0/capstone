@@ -11,6 +11,9 @@ export default function Users() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
+  const [q, setQ] = useState('')
+  const [role, setRole] = useState('')
+  const [status, setStatus] = useState('')
   const [busyId, setBusyId] = useState(null)
 
   const [form, setForm] = useState(EMPTY_FORM)
@@ -22,15 +25,26 @@ export default function Users() {
 
   const isAdmin = me?.role === 'admin'
 
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const load = async () => {
-    const { ok, data } = await api('/api/users')
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (role) params.set('role', role)
+    if (status) params.set('status', status)
+    const qs = params.toString()
+    const path = qs ? `/api/users?${qs}` : '/api/users'
+    const { ok, data } = await api(path)
     if (ok) setUsers(data)
     else setError(data?.error || 'Failed to load users')
   }
 
   useEffect(() => {
     load()
-  }, [])
+  }, [q, role, status])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -106,18 +120,6 @@ export default function Users() {
       setError(data?.error || 'Delete failed')
     }
   }
-
-  const filtered = users.filter((u) => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      u.fullname.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.phone && u.phone.includes(q)) ||
-      u.role.toLowerCase().includes(q) ||
-      u.status.toLowerCase().includes(q)
-    )
-  })
 
   return (
     <div>
@@ -239,13 +241,26 @@ export default function Users() {
         </form>
       )}
 
-      <input
-        type="text"
-        className="search-input"
-        placeholder="Search by name, email, phone, role, status..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="filter-bar">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by name, email, phone, role, status..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="">All roles</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+          <option value="user">Visitor/Client</option>
+        </select>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
 
       <div className="table-container section-block">
         <table className="table">
@@ -260,7 +275,7 @@ export default function Users() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
+            {users.map((u) => (
               <tr key={u.user_id}>
                 <td>{u.fullname}</td>
                 <td>{u.email}</td>

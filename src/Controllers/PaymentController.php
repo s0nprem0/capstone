@@ -25,13 +25,13 @@ class PaymentController
     public function index(): void
     {
         Auth::requireRole(['admin', 'staff']);
-        Response::json(Payment::allWithDetails());
+        Response::json(Payment::search($_GET));
     }
 
     public function mine(): void
     {
         Auth::requireRole(['user']);
-        Response::json(Payment::forUser(Auth::id()));
+        Response::json(Payment::search($_GET, Auth::id()));
     }
 
     public function show(int $id): void

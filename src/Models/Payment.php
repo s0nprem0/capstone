@@ -22,34 +22,6 @@ class Payment extends Model
         return $stmt->fetchAll();
     }
 
-    public static function forUser(int $userId): array
-    {
-        $stmt = self::db()->prepare(
-            "SELECT p.*, r.lot_id, l.lot_code, r.total_amount AS reservation_amount
-             FROM payments p
-             JOIN reservations r ON r.reservation_id = p.reservation_id
-             JOIN cemetery_lots l ON l.lot_id = r.lot_id
-             WHERE r.user_id = :user_id
-             ORDER BY p.payment_id DESC"
-        );
-        $stmt->execute(['user_id' => $userId]);
-        return $stmt->fetchAll();
-    }
-
-    public static function allWithDetails(): array
-    {
-        $stmt = self::db()->query(
-            "SELECT p.*, r.user_id, r.lot_id, r.total_amount AS reservation_amount,
-                    l.lot_code, u.fullname AS user_name
-             FROM payments p
-             JOIN reservations r ON r.reservation_id = p.reservation_id
-             JOIN cemetery_lots l ON l.lot_id = r.lot_id
-             JOIN users u ON u.user_id = r.user_id
-             ORDER BY p.payment_id DESC"
-        );
-        return $stmt->fetchAll();
-    }
-
     public static function withDetails(int $id): ?array
     {
         $stmt = self::db()->prepare(
@@ -63,5 +35,58 @@ class Payment extends Model
         );
         $stmt->execute(['id' => $id]);
         return $stmt->fetch() ?: null;
+    }
+
+    public static function search(array $filters, ?int $userId = null): array
+    {
+        $where = [];
+        $params = [];
+
+        if ($userId !== null) {
+            $where[] = 'r.user_id = :user_id';
+            $params['user_id'] = $userId;
+        }
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(p.reference_no LIKE :q1 OR p.payment_method LIKE :q2 OR u.fullname LIKE :q3 OR l.lot_code LIKE :q4)';
+            foreach (['q1', 'q2', 'q3', 'q4'] as $param) {
+                $params[$param] = "%{$q}%";
+            }
+        }
+
+        if (isset($filters['payment_status']) && in_array($filters['payment_status'], ['pending', 'paid', 'failed'], true)) {
+            $where[] = 'p.payment_status = :payment_status';
+            $params['payment_status'] = $filters['payment_status'];
+        }
+        if (isset($filters['payment_method']) && in_array($filters['payment_method'], ['gcash', 'card', 'cash'], true)) {
+            $where[] = 'p.payment_method = :payment_method';
+            $params['payment_method'] = $filters['payment_method'];
+        }
+        if (isset($filters['section_id']) && (int) $filters['section_id'] > 0) {
+            $where[] = 'l.section_id = :section_id';
+            $params['section_id'] = (int) $filters['section_id'];
+        }
+        foreach (['from' => '>=', 'to' => '<='] as $key => $op) {
+            if (isset($filters[$key]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $filters[$key])) {
+                $where[] = "p.payment_date {$op} :{$key}";
+                $params[$key] = $filters[$key] . ' 00:00:00';
+            }
+        }
+
+        $sql = "SELECT p.*, r.user_id, r.lot_id, r.total_amount AS reservation_amount,
+                       l.lot_code, u.fullname AS user_name, u.email AS user_email
+                FROM payments p
+                JOIN reservations r ON r.reservation_id = p.reservation_id
+                JOIN cemetery_lots l ON l.lot_id = r.lot_id
+                JOIN users u ON u.user_id = r.user_id";
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY p.payment_id DESC';
+
+        $stmt = self::db()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 }

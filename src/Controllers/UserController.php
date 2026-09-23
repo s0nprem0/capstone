@@ -23,7 +23,7 @@ class UserController
     public function index(): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $users = array_map(fn($u) => User::publicUser($u), User::all());
+        $users = array_map(fn($u) => User::publicUser($u), User::search($_GET));
         Response::json($users);
     }
 

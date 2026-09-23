@@ -13,11 +13,24 @@ export default function Payments() {
   const [submitting, setSubmitting] = useState(false)
   const [validating, setValidating] = useState(null)
   const [uploadingId, setUploadingId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [q, setQ] = useState('')
+  const [status, setStatus] = useState('')
   const fileInputRef = useRef(null)
   const uploadTargetRef = useRef(null)
 
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const load = async () => {
-    const path = user?.role === 'user' ? '/api/payments/mine' : '/api/payments'
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (status) params.set('payment_status', status)
+    const qs = params.toString()
+    const base = user?.role === 'user' ? '/api/payments/mine' : '/api/payments'
+    const path = qs ? `${base}?${qs}` : base
     const { ok, data } = await api(path)
     if (ok) setPayments(data)
     else setError(data?.error || 'Failed to load payments')
@@ -25,7 +38,7 @@ export default function Payments() {
 
   useEffect(() => {
     load()
-  }, [user])
+  }, [q, status, user])
 
   useEffect(() => {
     if (user?.role !== 'user') return
@@ -179,6 +192,22 @@ export default function Payments() {
         className="visually-hidden"
         onChange={handleReceiptFile}
       />
+
+      <div className="filter-bar">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by reference, method, name, lot..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
 
       <div className="table-container">
         {payments.length === 0 ? (

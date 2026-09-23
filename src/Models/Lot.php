@@ -49,4 +49,41 @@ class Lot extends Model
         $stmt->execute(['section_id' => $sectionId]);
         return $stmt->fetchAll();
     }
+
+    public static function search(array $filters): array
+    {
+        $where = [];
+        $params = [];
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(lot_code LIKE :q1 OR block LIKE :q2)';
+            foreach (['q1', 'q2'] as $param) {
+                $params[$param] = "%{$q}%";
+            }
+        }
+
+        if (isset($filters['status']) && in_array($filters['status'], ['available', 'reserved', 'occupied'], true)) {
+            $where[] = 'status = :status';
+            $params['status'] = $filters['status'];
+        }
+        if (isset($filters['lot_type']) && in_array($filters['lot_type'], ['single', 'double', 'family'], true)) {
+            $where[] = 'lot_type = :lot_type';
+            $params['lot_type'] = $filters['lot_type'];
+        }
+        if (isset($filters['section_id']) && (int) $filters['section_id'] > 0) {
+            $where[] = 'section_id = :section_id';
+            $params['section_id'] = (int) $filters['section_id'];
+        }
+
+        $sql = "SELECT * FROM `" . static::$table . "`";
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY lot_code';
+
+        $stmt = self::db()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 }

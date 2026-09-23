@@ -24,13 +24,13 @@ class ReservationController
     public function index(): void
     {
         Auth::requireRole(['admin', 'staff']);
-        Response::json(Reservation::allWithDetails());
+        Response::json(Reservation::search($_GET));
     }
 
     public function mine(): void
     {
         Auth::requireRole(['user']);
-        Response::json(Reservation::forUser(Auth::id()));
+        Response::json(Reservation::search($_GET, Auth::id()));
     }
 
     public function show(int $id): void

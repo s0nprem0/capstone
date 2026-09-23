@@ -38,7 +38,7 @@ class LotController
 
     public function index(): void
     {
-        Response::json(Lot::all());
+        Response::json(Lot::search($_GET));
     }
 
     public function available(): void

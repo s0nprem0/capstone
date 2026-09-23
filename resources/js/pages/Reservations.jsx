@@ -9,10 +9,24 @@ export default function Reservations() {
   const [reservations, setReservations] = useState([])
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [q, setQ] = useState('')
+  const [payment, setPayment] = useState('')
+  const [approval, setApproval] = useState('')
   const [busy, setBusy] = useState(null)
 
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const load = async () => {
-    const path = user?.role === 'user' ? '/api/reservations/mine' : '/api/reservations'
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (payment) params.set('payment_status', payment)
+    if (approval) params.set('approved_status', approval)
+    const qs = params.toString()
+    const base = user?.role === 'user' ? '/api/reservations/mine' : '/api/reservations'
+    const path = qs ? `${base}?${qs}` : base
     const { ok, data } = await api(path)
     if (ok) setReservations(data)
     else setError(data?.error || 'Failed to load reservations')
@@ -20,20 +34,7 @@ export default function Reservations() {
 
   useEffect(() => {
     load()
-  }, [user])
-
-  const filtered = reservations.filter((r) => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      (r.lot_code && r.lot_code.toLowerCase().includes(q)) ||
-      (r.user_name && r.user_name.toLowerCase().includes(q)) ||
-      (r.section_name && r.section_name.toLowerCase().includes(q)) ||
-      (r.reservation_date && r.reservation_date.includes(q)) ||
-      (r.approved_status && r.approved_status.toLowerCase().includes(q)) ||
-      (r.purpose && r.purpose.toLowerCase().includes(q))
-    )
-  })
+  }, [q, payment, approval, user])
 
   const decide = async (id, action) => {
     setBusy(`${id}:${action}`)
@@ -56,16 +57,30 @@ export default function Reservations() {
 
       {error && <p className="alert alert--error">{error}</p>}
 
-      <input
-        type="text"
-        className="search-input"
-        placeholder="Search by lot, name, section, date, status..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="filter-bar">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by lot, name, section, date, status..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={payment} onChange={(e) => setPayment(e.target.value)}>
+          <option value="">All payments</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+        </select>
+        <select value={approval} onChange={(e) => setApproval(e.target.value)}>
+          <option value="">All approvals</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
 
       <div className="table-container section-block">
-        {filtered.length === 0 ? (
+        {reservations.length === 0 ? (
           <p className="text-muted">No reservations found.</p>
         ) : (
           <table className="table">
@@ -84,7 +99,7 @@ export default function Reservations() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {reservations.map((r) => (
                 <tr key={r.reservation_id}>
                   <td>{r.reservation_id}</td>
                   <td>{r.lot_code}</td>
