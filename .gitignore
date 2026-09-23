@@ -4,6 +4,8 @@ vendor/
 *.log
 dist/
 dist-root-bak/
+storage/receipts/*
+!storage/receipts/.gitkeep
 .cache/
 .vscode/
 .idea/

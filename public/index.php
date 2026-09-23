@@ -57,7 +57,9 @@ $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
 $router->get('/api/payments', [$payments, 'index']);
 $router->get('/api/payments/mine', [$payments, 'mine']);
 $router->get('/api/payments/{id}', [$payments, 'show']);
+$router->get('/api/payments/{id}/receipt', [$payments, 'receipt']);
 $router->post('/api/payments', [$payments, 'store']);
+$router->post('/api/payments/{id}/upload-receipt', [$payments, 'uploadReceipt']);
 $router->post('/api/payments/{id}/validate', [$payments, 'validate']);
 $router->post('/api/payments/{id}/delete', [$payments, 'destroy']);
 

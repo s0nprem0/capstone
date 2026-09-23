@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
@@ -12,6 +12,9 @@ export default function Payments() {
   const [form, setForm] = useState({ reservation_id: '', amount: '', payment_method: 'gcash', reference_no: '' })
   const [submitting, setSubmitting] = useState(false)
   const [validating, setValidating] = useState(null)
+  const [uploadingId, setUploadingId] = useState(null)
+  const fileInputRef = useRef(null)
+  const uploadTargetRef = useRef(null)
 
   const load = async () => {
     const path = user?.role === 'user' ? '/api/payments/mine' : '/api/payments'
@@ -80,6 +83,32 @@ export default function Payments() {
     else setError(data?.error || 'Validation failed')
   }
 
+  const openReceiptPicker = (id) => {
+    uploadTargetRef.current = id
+    fileInputRef.current?.click()
+  }
+
+  const handleReceiptFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const id = uploadTargetRef.current
+    if (!id) return
+
+    setUploadingId(id)
+    setError('')
+    const fd = new FormData()
+    fd.append('receipt', file)
+    const { ok, data } = await api(`/api/payments/${id}/upload-receipt`, {
+      method: 'POST',
+      body: fd,
+    })
+    setUploadingId(null)
+    uploadTargetRef.current = null
+    if (ok) load()
+    else setError(data?.error || 'Receipt upload failed')
+  }
+
   const isStaffView = user && user.role !== 'user'
 
   return (
@@ -143,6 +172,14 @@ export default function Payments() {
         </div>
       )}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,application/pdf"
+        className="visually-hidden"
+        onChange={handleReceiptFile}
+      />
+
       <div className="table-container">
         {payments.length === 0 ? (
           <p className="text-muted">No payments yet.</p>
@@ -157,6 +194,7 @@ export default function Payments() {
                 <th>Amount</th>
                 <th>Method</th>
                 <th>Reference</th>
+                <th>Receipt</th>
                 <th>Status</th>
                 {isStaffView && <th>Actions</th>}
               </tr>
@@ -171,6 +209,29 @@ export default function Payments() {
                   <td>₱{Number(p.amount).toLocaleString()}</td>
                   <td>{p.payment_method}</td>
                   <td>{p.reference_no || '—'}</td>
+                  <td>
+                    {p.receipt_path ? (
+                      <a
+                        href={`/api/payments/${p.payment_id}/receipt`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-secondary btn-sm"
+                      >
+                        View
+                      </a>
+                    ) : user?.role === 'user' && p.payment_status === 'pending' ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={uploadingId === p.payment_id}
+                        onClick={() => openReceiptPicker(p.payment_id)}
+                      >
+                        {uploadingId === p.payment_id ? 'Uploading...' : 'Upload'}
+                      </button>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
                   <td><span className={`badge badge--${p.payment_status}`}>{p.payment_status}</span></td>
                   {isStaffView && p.payment_status === 'pending' && (
                     <td>

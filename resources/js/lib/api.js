@@ -13,6 +13,7 @@ export async function getCsrf() {
 
 export async function api(path, options = {}) {
   const { method = 'GET', body } = options
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
 
   if (method !== 'GET') {
     const token = await getCsrf()
@@ -24,7 +25,7 @@ export async function api(path, options = {}) {
   const res = await fetch(path, {
     method,
     headers: options.headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
     credentials: 'same-origin',
   })
 
