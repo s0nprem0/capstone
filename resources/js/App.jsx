@@ -12,7 +12,6 @@ import BurialRecords from './pages/BurialRecords'
 import Notifications from './pages/Notifications'
 import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
-import Records from './pages/Records'
 import Users from './pages/Users'
 
 export default function App() {
@@ -27,7 +26,6 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/cemetery" element={<Cemetery />} />
-          <Route path="/records" element={<Records />} />
 
           <Route element={<RequireAuth />}>
             <Route path="/reservations" element={<Reservations />} />
