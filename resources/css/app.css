@@ -602,6 +602,78 @@ select {
   align-items: flex-start;
 }
 
+/* Fit the whole map view (header, toolbar, legend, map) into one page —
+   the SVG fills the remaining viewport height so everything is visible
+   on a single screen (no page scrolling). */
+.map-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+  height: calc(100dvh - 4rem);
+}
+
+.map-page .map-layout {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.map-page .map-svg-wrap {
+  min-height: 0;
+}
+
+.map-page .map-svg {
+  height: 100%;
+  min-height: 0;
+  height: 100%;
+}
+
+.map-page .map-detail {
+  align-self: flex-start;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.map-page .map-hint,
+.map-page .map-toolbar {
+  flex-shrink: 0;
+}
+
+.map-page h2 {
+  margin-bottom: 1rem;
+}
+
+/* Fit the whole map view (header, controls, legend, map) into one screen */
+.map-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+  height: calc(100dvh - 4rem);
+}
+
+.map-page > h2 {
+  margin-bottom: 1rem;
+}
+
+.map-page .map-layout {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.map-page .map-svg-wrap {
+  min-height: 0;
+}
+
+.map-page .map-svg {
+  height: 100%;
+  min-height: 0;
+}
+
+.map-page .map-detail {
+  align-self: flex-start;
+}
+
 .map-detail {
   flex: 0 0 280px;
   background: var(--color-surface);

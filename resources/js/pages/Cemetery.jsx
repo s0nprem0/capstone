@@ -76,7 +76,7 @@ export default function Cemetery() {
   const exitEdit = () => setIsEditing(false)
 
   return (
-    <div>
+    <div className={isEditing ? undefined : 'map-page'}>
       <h2>Cemetery Map</h2>
       {error && <p className="alert alert--error">{error}</p>}
       {!mapData && !error && <p className="text-muted">Loading map...</p>}

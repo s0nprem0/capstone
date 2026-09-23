@@ -399,7 +399,7 @@ export default function LotEditor() {
   const box = sectionRow ? sectionOutline(sectionRow) : null
 
   return (
-    <div>
+    <div className="map-page">
       <div className="page-header">
         <h2>Lot Editor</h2>
         <div className="table-actions">
