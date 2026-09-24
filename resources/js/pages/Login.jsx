@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { homePath } from '../lib/nav'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -20,7 +21,7 @@ export default function Login() {
     setSubmitting(false)
 
     if (res.ok) {
-      navigate(location.state?.from?.pathname || '/', { replace: true })
+      navigate(location.state?.from?.pathname || homePath(res.data?.user?.role), { replace: true })
     } else {
       setError(res.data?.error || 'Login failed')
     }

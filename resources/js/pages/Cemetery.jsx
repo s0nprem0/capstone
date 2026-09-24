@@ -157,7 +157,7 @@ export default function Cemetery() {
                 {selectedLot.status === 'available' &&
                   (user ? (
                     <Link
-                      to={`/reservations/new?lot=${selectedLot.lot_id}`}
+                      to={`/visitor/reserve?lot=${selectedLot.lot_id}`}
                       className="btn btn-primary btn-block"
                     >
                       Reserve this plot
@@ -174,14 +174,9 @@ export default function Cemetery() {
             )}
           </div>
 
-          {user?.role !== 'user' && !selectedLot && (
+          {!user && !selectedLot && (
             <p className="text-muted map-hint">
-              {user ? (
-                <Link to="/reservations/new">Make a reservation</Link>
-              ) : (
-                <Link to="/login">Sign in</Link>
-              )}{' '}
-              to reserve an available plot.
+              <Link to="/login">Sign in</Link> to reserve an available plot.
             </p>
           )}
         </>

@@ -88,7 +88,7 @@ export default function NewReservation() {
 
   return (
     <div>
-      <h2>New Reservation</h2>
+      <h2>Reserve a Lot</h2>
       {error && <p className="alert alert--error">{error}</p>}
       {success && <p className="alert alert--success">{success}</p>}
 
@@ -138,7 +138,7 @@ export default function NewReservation() {
           <p className="total-display">
             Total: <strong>₱{totalAmount.toLocaleString()}</strong>
           </p>
-          <Link to="/reservations" className="btn btn-secondary">Cancel</Link>
+          <Link to="/visitor/reservations" className="btn btn-secondary">Cancel</Link>
           <button type="submit" className="btn btn-primary" disabled={submitting || !selectedLot}>
             {submitting ? 'Submitting...' : 'Submit Reservation'}
           </button>

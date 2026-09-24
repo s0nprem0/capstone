@@ -51,7 +51,7 @@ export default function Reservations() {
       <div className="page-header">
         <h2>{isStaffView ? 'All Reservations' : 'My Reservations'}</h2>
         {user?.role === 'user' && (
-          <Link to="/reservations/new" className="btn btn-primary">New Reservation</Link>
+          <Link to="/visitor/reserve" className="btn btn-primary">New Reservation</Link>
         )}
       </div>
 

@@ -26,25 +26,36 @@ export default function App() {
         </Route>
 
         <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/cemetery" element={<Cemetery />} />
+          <Route path="/" element={<Cemetery />} />
 
           <Route element={<RequireAuth />}>
-            <Route path="/reservations" element={<Reservations />} />
-            <Route path="/reservations/new" element={<NewReservation />} />
-            <Route path="/payments" element={<Payments />} />
             <Route path="/notifications" element={<Notifications />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
 
-          <Route element={<RequireRole roles={['admin', 'staff']} />}>
-            <Route path="/burial-records" element={<BurialRecords />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/users" element={<Users />} />
-          </Route>
+            <Route element={<RequireRole roles={['user']} />}>
+              <Route path="/visitor/reserve" element={<NewReservation />} />
+              <Route path="/visitor/reservations" element={<Reservations />} />
+              <Route path="/visitor/payments" element={<Payments />} />
+              <Route path="/visitor/profile" element={<Profile />} />
+            </Route>
 
-          <Route element={<RequireRole roles={['admin']} />}>
-            <Route path="/settings" element={<Settings />} />
+            <Route element={<RequireRole roles={['staff']} />}>
+              <Route path="/staff" element={<Dashboard />} />
+              <Route path="/staff/reservations" element={<Reservations />} />
+              <Route path="/staff/payments" element={<Payments />} />
+              <Route path="/staff/burial-records" element={<BurialRecords />} />
+              <Route path="/staff/users" element={<Users />} />
+              <Route path="/staff/reports" element={<Reports />} />
+            </Route>
+
+            <Route element={<RequireRole roles={['admin']} />}>
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/admin/reservations" element={<Reservations />} />
+              <Route path="/admin/payments" element={<Payments />} />
+              <Route path="/admin/burial-records" element={<BurialRecords />} />
+              <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/reports" element={<Reports />} />
+              <Route path="/admin/settings" element={<Settings />} />
+            </Route>
           </Route>
         </Route>
 

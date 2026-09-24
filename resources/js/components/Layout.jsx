@@ -4,29 +4,39 @@ import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 
 function roleNav(role) {
-  if (role === 'admin' || role === 'staff') {
-    const items = [
-      { to: '/', label: 'Dashboard' },
-      { to: '/reservations', label: 'Reservations' },
-      { to: '/cemetery', label: 'Cemetery Map' },
-      { to: '/payments', label: 'Payments' },
-      { to: '/burial-records', label: 'Burial Records' },
-      { to: '/reports', label: 'Reports' },
-      { to: '/users', label: 'Users' },
+  if (role === 'user') {
+    return [
+      { to: '/visitor/reserve', label: 'Reserve a Lot', end: true },
+      { to: '/visitor/reservations', label: 'My Reservations', end: true },
+      { to: '/visitor/payments', label: 'My Payments', end: true },
+      { to: '/visitor/profile', label: 'Profile', end: true },
+      { to: '/', label: 'Cemetery Map', end: true },
     ]
-    if (role === 'admin') {
-      items.push({ to: '/settings', label: 'Settings' })
-    }
-    return items
   }
-
-  return [
-    { to: '/', label: 'Dashboard' },
-    { to: '/cemetery', label: 'Cemetery Map' },
-    { to: '/reservations', label: 'My Reservations' },
-    { to: '/payments', label: 'Payments' },
-    { to: '/profile', label: 'Profile' },
-  ]
+  if (role === 'staff') {
+    return [
+      { to: '/staff', label: 'Dashboard', end: true },
+      { to: '/staff/reservations', label: 'Reservations', end: true },
+      { to: '/staff/payments', label: 'Payments', end: true },
+      { to: '/staff/burial-records', label: 'Burial Records', end: true },
+      { to: '/staff/users', label: 'Users', end: true },
+      { to: '/staff/reports', label: 'Reports', end: true },
+      { to: '/', label: 'Cemetery Map', end: true },
+    ]
+  }
+  if (role === 'admin') {
+    return [
+      { to: '/admin', label: 'Dashboard', end: true },
+      { to: '/admin/reservations', label: 'Reservations', end: true },
+      { to: '/admin/payments', label: 'Payments', end: true },
+      { to: '/admin/burial-records', label: 'Burial Records', end: true },
+      { to: '/admin/users', label: 'Users', end: true },
+      { to: '/admin/reports', label: 'Reports', end: true },
+      { to: '/admin/settings', label: 'Settings', end: true },
+      { to: '/', label: 'Cemetery Map', end: true },
+    ]
+  }
+  return [{ to: '/', label: 'Cemetery Map', end: true }]
 }
 
 export default function Layout() {
@@ -54,7 +64,7 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.end}
               className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
             >
               {item.label}

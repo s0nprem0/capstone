@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { homePath } from '../lib/nav'
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -26,7 +27,7 @@ export default function Register() {
     setSubmitting(false)
 
     if (res.ok) {
-      navigate('/', { replace: true })
+      navigate(homePath('user'), { replace: true })
     } else {
       setError(res.data?.error || 'Registration failed')
     }

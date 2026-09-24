@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { homePath } from '../lib/nav'
 
 export function RequireAuth() {
   const { user, loading } = useAuth()
@@ -17,7 +18,7 @@ export function RequireRole({ roles }) {
 
   if (loading) return <p className="text-muted">Loading...</p>
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
-  if (!roles.includes(user.role)) return <Navigate to="/" replace />
+  if (!roles.includes(user.role)) return <Navigate to={homePath(user.role)} replace />
 
   return <Outlet />
 }
@@ -26,7 +27,7 @@ export function GuestOnly() {
   const { user, loading } = useAuth()
 
   if (loading) return <p className="text-muted">Loading...</p>
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to={homePath(user.role)} replace />
 
   return <Outlet />
 }
