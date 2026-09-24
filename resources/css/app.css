@@ -430,6 +430,21 @@ select {
   color: #9b1c1c;
 }
 
+.badge--available {
+  background: #e6f4ea;
+  color: #1e5c33;
+}
+
+.badge--reserved {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge--occupied {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
 .alert {
   padding: 0.75rem 1rem;
   border-radius: var(--radius);
@@ -441,6 +456,12 @@ select {
   background: #fde8e8;
   color: #9b1c1c;
   border: 1px solid #fca5a5;
+}
+
+.alert--success {
+  background: #e6f4ea;
+  color: #1e5c33;
+  border: 1px solid #a5d6a7;
 }
 
 .confirm-inline {
