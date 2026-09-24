@@ -15,11 +15,11 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 ## Features
 
 ### Implemented
-- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint
+- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per IP per 15 minutes (HTTP 429)
 - **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
-- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved), capacity checks per lot type
-- **Payments** — GCash/card/cash recording, receipt upload + staff validation, lot transition to occupied on payment approval
-- **Burial records** — deceased details, lot assignment, burial type, interment status
+- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot
+- **Payments** — GCash/card/cash recording, receipt upload + staff validation, lot transition to occupied on payment approval; amounts are reconciled against the reservation's remaining balance (overpayment rejected)
+- **Burial records** — deceased details, lot assignment, burial type, interment status; creation requires a reserved or occupied lot (a free lot cannot host a burial)
 - **Notifications** — per-user messages on reservation/payment events, unread badge and mark-read
 - **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
 - **Reports** — reservations, payments + revenue, burial records, availability, audit logs (printable)
@@ -31,7 +31,7 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 
 ### Remaining gaps
 - Lot map editor (previously claimed in a commit that is missing from this repo)
-- Responsive layout polish and login rate limiting before production deployment
+- Responsive layout polish before production deployment
 
 ## Getting started
 
@@ -165,7 +165,7 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 
 | Endpoint | Method | Access |
 | --- | --- | --- |
-| `/api/auth/register`, `/api/auth/login` | POST | Public |
+| `/api/auth/register`, `/api/auth/login` | POST | Public (login rate-limited → 429 after 5 failures/15 min) |
 | `/api/auth/logout`, `/api/auth/me` | POST / GET | Auth |
 | `/api/map` | GET | Public |
 | `/api/lots`, `/api/lots/available` | GET | Public |
@@ -219,7 +219,9 @@ make fresh       # rebuild everything from scratch
 - Server-side RBAC on every protected route (not just UI)
 - CSRF token required on all mutating requests
 - Sessions with HttpOnly/SameSite cookies
+- Login rate limiting (5 failed attempts per IP per 15 minutes) against brute force
 - Input validation and uniqueness checks server-side
+- Data-integrity rules: lots are claimed atomically (no double-booking), payments can't exceed the reservation balance, burials require a reserved/occupied lot
 - Personal data minimized per the Data Privacy Act of 2012; audit trail retained
 
 ## Conventions
