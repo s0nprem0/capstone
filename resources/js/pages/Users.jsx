@@ -264,6 +264,7 @@ export default function Users() {
 
       <div className="table-container section-block">
         <table className="table">
+          <caption className="visually-hidden">User accounts</caption>
           <thead>
             <tr>
               <th>Name</th>
@@ -275,7 +276,12 @@ export default function Users() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="empty-state">No users found.</td>
+              </tr>
+            ) : (
+              users.map((u) => (
               <tr key={u.user_id}>
                 <td>{u.fullname}</td>
                 <td>{u.email}</td>
@@ -317,7 +323,8 @@ export default function Users() {
                   </div>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

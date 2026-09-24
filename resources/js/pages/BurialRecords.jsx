@@ -183,6 +183,7 @@ export default function BurialRecords() {
           <p className="text-muted">No burial records found.</p>
         ) : (
           <table className="table">
+            <caption className="visually-hidden">Burial records</caption>
             <thead>
               <tr>
                 <th>ID</th>

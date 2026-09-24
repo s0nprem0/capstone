@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
+import Loading from '../components/Loading'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -67,6 +68,7 @@ export default function Dashboard() {
             <div className="section-block table-container">
               <h3 className="section-title">Recent Reservations</h3>
               <table className="table">
+                <caption className="visually-hidden">Recent reservations</caption>
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -92,7 +94,7 @@ export default function Dashboard() {
           )}
         </>
       ) : !error ? (
-        <p className="text-muted">Loading stats...</p>
+        <Loading message="Loading stats..." />
       ) : null}
     </div>
   )

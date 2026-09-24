@@ -84,6 +84,7 @@ export default function Reservations() {
           <p className="text-muted">No reservations found.</p>
         ) : (
           <table className="table">
+            <caption className="visually-hidden">Reservations</caption>
             <thead>
               <tr>
                 <th>ID</th>

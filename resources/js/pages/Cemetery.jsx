@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS } from '../components/CemeterySvgMap'
+import Loading from '../components/Loading'
 
 const STATUS_LABELS = {
   available: 'Available',
@@ -63,7 +64,7 @@ export default function Cemetery() {
     <div>
       <h2>Cemetery Map</h2>
       {error && <p className="alert alert--error">{error}</p>}
-      {!mapData && !error && <p className="text-muted">Loading map...</p>}
+      {!mapData && !error && <Loading message="Loading map..." />}
 
       {mapData && (
         <>

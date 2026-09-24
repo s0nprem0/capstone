@@ -214,6 +214,7 @@ export default function Payments() {
           <p className="text-muted">No payments yet.</p>
         ) : (
           <table className="table">
+            <caption className="visually-hidden">Payments</caption>
             <thead>
               <tr>
                 <th>ID</th>
