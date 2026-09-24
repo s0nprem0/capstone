@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/bootstrap.php';
 
 use App\Core\Router;
+use App\Core\Response;
 use App\Core\Session;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
@@ -97,7 +98,12 @@ $router->post('/api/backup/import', [$backup, 'import']);
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 if (str_starts_with($uri, '/api/')) {
-    $router->dispatch();
+    try {
+        $router->dispatch();
+    } catch (\Throwable $e) {
+        error_log('[api] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        Response::json(['error' => 'Internal server error'], 500);
+    }
 } else {
     $vite = '';
     $manifestFile = __DIR__ . '/../dist/.vite/manifest.json';
