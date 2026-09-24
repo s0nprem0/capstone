@@ -59,6 +59,8 @@ export default function CemeterySvgMap({
   const rafRef = useRef(null)
   const dragRef = useRef(null)
   const movedRef = useRef(false)
+  const pointersRef = useRef(new Map())
+  const pinchRef = useRef(null)
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
   const focusKey = activeSection ? activeSection.section_id : null
@@ -124,14 +126,54 @@ export default function CemeterySvgMap({
   }, [zoomAt])
 
   const onPointerDown = (e) => {
-    dragRef.current = { x: e.clientX, y: e.clientY }
-    movedRef.current = false
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     e.currentTarget.setPointerCapture?.(e.pointerId)
+
+    if (pointersRef.current.size === 2) {
+      // Two fingers down → start a pinch gesture.
+      const [a, b] = [...pointersRef.current.values()]
+      pinchRef.current = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        vb: [...vbRef.current],
+        cx: (a.x + b.x) / 2,
+        cy: (a.y + b.y) / 2,
+      }
+      dragRef.current = null
+      movedRef.current = true
+    } else if (pointersRef.current.size === 1) {
+      dragRef.current = { x: e.clientX, y: e.clientY }
+      movedRef.current = false
+    }
   }
 
   const onPointerMove = (e) => {
-    if (!dragRef.current || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
+    const el = svgRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+
+    if (pointersRef.current.has(e.pointerId)) {
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    }
+
+    if (pinchRef.current && pointersRef.current.size === 2) {
+      const [a, b] = [...pointersRef.current.values()]
+      const start = pinchRef.current
+      const dist = Math.hypot(a.x - b.x, a.y - b.y)
+      if (start.dist <= 0) return
+      const factor = dist / start.dist
+      const [x, y, w, h] = start.vb
+      const nw = Math.min(2500, Math.max(120, w / factor))
+      const nh = (nw / w) * h
+      const px = (start.cx - rect.left) / rect.width
+      const py = (start.cy - rect.top) / rect.height
+      const nx = x + px * w - px * nw
+      const ny = y + py * h - py * nh
+      setVbBoth([nx, ny, nw, nh])
+      movedRef.current = true
+      return
+    }
+
+    if (!dragRef.current) return
     const dx = e.clientX - dragRef.current.x
     const dy = e.clientY - dragRef.current.y
     if (Math.abs(dx) + Math.abs(dy) > 3) movedRef.current = true
@@ -141,7 +183,9 @@ export default function CemeterySvgMap({
   }
 
   const onPointerUp = (e) => {
-    dragRef.current = null
+    pointersRef.current.delete(e.pointerId)
+    if (pointersRef.current.size < 2) pinchRef.current = null
+    if (pointersRef.current.size === 0) dragRef.current = null
   }
 
   const onSvgClick = (e) => {
@@ -184,6 +228,7 @@ export default function CemeterySvgMap({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         onClick={onSvgClick}
       >
         <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
@@ -240,13 +285,14 @@ export default function CemeterySvgMap({
       </svg>
 
       <div className="map-zoom-controls">
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in">+</button>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out">−</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in" aria-label="Zoom in">+</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out" aria-label="Zoom out">−</button>
         <button
           type="button"
           className="btn btn-secondary btn-sm"
           onClick={() => flyTo(activeSection ? parseViewBox(activeSection.viewBox) : [...MAP_VIEWBOX])}
           title="Fit view"
+          aria-label="Fit view"
         >
           ⌂
         </button>
