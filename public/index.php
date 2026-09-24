@@ -17,6 +17,7 @@ use App\Controllers\NotificationController;
 use App\Controllers\StatsController;
 use App\Controllers\ReportController;
 use App\Controllers\LotController;
+use App\Controllers\SectionController;
 use App\Controllers\BackupController;
 
 $router = new Router();
@@ -32,6 +33,7 @@ $notifications = new NotificationController($router);
 $stats = new StatsController($router);
 $reports = new ReportController($router);
 $lots = new LotController($router);
+$sections = new SectionController($router);
 $backup = new BackupController($router);
 
 $router->get('/api/map', [$map, 'map']);
@@ -91,6 +93,12 @@ $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
+
+$router->get('/api/sections', [$sections, 'index']);
+$router->get('/api/sections/{id}', [$sections, 'show']);
+$router->post('/api/sections', [$sections, 'store']);
+$router->post('/api/sections/{id}', [$sections, 'update']);
+$router->post('/api/sections/{id}/delete', [$sections, 'destroy']);
 
 $router->get('/api/backup/export', [$backup, 'export']);
 $router->post('/api/backup/import', [$backup, 'import']);
