@@ -10,6 +10,7 @@ use App\Core\Router;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Notification;
+use App\Models\Payment;
 use App\Models\Reservation;
 
 class ReservationController
@@ -111,19 +112,44 @@ class ReservationController
         $input = $this->router->input();
         $data = [];
 
-        if (isset($input['reservation_date'])) {
+        if (isset($input['reservation_date']) && $input['reservation_date'] !== '') {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $input['reservation_date'])) {
+                Response::json(['error' => 'reservation_date must be in YYYY-MM-DD format'], 422);
+                return;
+            }
             $data['reservation_date'] = $input['reservation_date'];
         }
         if (isset($input['purpose'])) {
-            $data['purpose'] = $input['purpose'];
+            $data['purpose'] = $input['purpose'] !== '' ? $input['purpose'] : null;
         }
         if (isset($input['number_of_slots'])) {
-            $data['number_of_slots'] = (int) $input['number_of_slots'];
+            $slots = (int) $input['number_of_slots'];
+            if ($slots < 1) {
+                Response::json(['error' => 'number_of_slots must be at least 1'], 422);
+                return;
+            }
+            $lot = Lot::find((int) $reservation['lot_id']);
+            $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
+            $maxSlots = $lot ? ($capacity[$lot['lot_type']] ?? 1) : 1;
+            if ($slots > $maxSlots) {
+                Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
+                return;
+            }
+            $data['number_of_slots'] = $slots;
         }
         if (isset($input['total_amount'])) {
-            $data['total_amount'] = (float) $input['total_amount'];
+            $amount = (float) $input['total_amount'];
+            if ($amount < 0) {
+                Response::json(['error' => 'total_amount must not be negative'], 422);
+                return;
+            }
+            $data['total_amount'] = $amount;
         }
         if (isset($input['payment_status'])) {
+            if (!in_array($input['payment_status'], ['pending', 'paid', 'failed'], true)) {
+                Response::json(['error' => 'Invalid payment_status'], 422);
+                return;
+            }
             $data['payment_status'] = $input['payment_status'];
         }
 
@@ -178,6 +204,10 @@ class ReservationController
         $reservation = Reservation::find($id);
         if (!$reservation) {
             Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        if ($reservation['payment_status'] === 'paid' || Payment::forReservation($id) !== []) {
+            Response::json(['error' => 'Cannot delete a reservation with payment records; reject the reservation instead'], 422);
             return;
         }
         Reservation::delete($id);
