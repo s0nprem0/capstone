@@ -76,6 +76,19 @@ class PaymentController
             exit;
         }
 
+        $committed = array_sum(array_map(
+            fn($p) => $p['payment_status'] === 'failed' ? 0.0 : (float) $p['amount'],
+            Payment::forReservation($reservationId)
+        ));
+        $remaining = (float) $reservation['total_amount'] - $committed;
+        if ($amount > $remaining) {
+            $message = $remaining <= 0
+                ? 'This reservation has already been fully paid'
+                : 'Amount exceeds the remaining balance of ₱' . number_format($remaining, 2);
+            Response::json(['error' => $message], 422);
+            return;
+        }
+
         $paymentId = Payment::create([
             'reservation_id' => $reservationId,
             'amount' => $amount,
