@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\RateLimiter;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Router;
@@ -83,14 +84,22 @@ class AuthController
         $input = $this->router->input();
         $email = strtolower(trim($input['email'] ?? ''));
         $password = $input['password'] ?? '';
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+
+        if (RateLimiter::blocked($ip)) {
+            Response::json(['error' => 'Too many failed login attempts. Try again in 15 minutes.'], 429);
+            return;
+        }
 
         if (Auth::attempt($email, $password)) {
+            RateLimiter::clear($ip);
             $userId = Auth::id();
             AuditLog::record($userId, 'login', 'users', $userId);
             Response::json(['user' => Auth::user()]);
             return;
         }
 
+        RateLimiter::recordFailure($ip, $email);
         Response::json(['error' => 'Invalid credentials or inactive account'], 401);
     }
 

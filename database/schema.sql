@@ -132,6 +132,16 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_action` (`action`)
 ) ENGINE=InnoDB;
 
+-- 9. LOGIN_ATTEMPTS (brute-force rate limiting)
+CREATE TABLE `login_attempts` (
+  `attempt_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `ip_address` VARCHAR(45) NOT NULL,
+  `email` VARCHAR(100) NULL,
+  `attempted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY `idx_attempts_ip_time` (`ip_address`, `attempted_at`),
+  KEY `idx_attempts_email_time` (`email`, `attempted_at`)
+) ENGINE=InnoDB;
+
 -- ===== Seed data =====
 -- Default admin (password: admin123)
 INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`) VALUES
