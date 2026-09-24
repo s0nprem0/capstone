@@ -96,31 +96,59 @@ class BurialRecordController
         $input = $this->router->input();
         $data = [];
 
-        if (isset($input['deceased_fullname'])) {
-            $data['deceased_fullname'] = $input['deceased_fullname'];
+        if (array_key_exists('deceased_fullname', $input)) {
+            $name = trim((string) $input['deceased_fullname']);
+            if ($name === '') {
+                Response::json(['error' => 'deceased_fullname cannot be empty'], 422);
+                return;
+            }
+            $data['deceased_fullname'] = $name;
         }
-        if (isset($input['date_of_birth'])) {
-            $data['date_of_birth'] = $input['date_of_birth'] ?: null;
+        foreach (['date_of_birth', 'date_of_death'] as $field) {
+            if (isset($input[$field])) {
+                if ($input[$field] === '') {
+                    $data[$field] = null;
+                    continue;
+                }
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input[$field])) {
+                    Response::json(['error' => "$field must be in YYYY-MM-DD format"], 422);
+                    return;
+                }
+                $data[$field] = $input[$field];
+            }
         }
-        if (isset($input['date_of_death'])) {
-            $data['date_of_death'] = $input['date_of_death'] ?: null;
-        }
-        if (isset($input['burial_date'])) {
+        if (array_key_exists('burial_date', $input)) {
+            if ($input['burial_date'] === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input['burial_date'])) {
+                Response::json(['error' => 'burial_date must be in YYYY-MM-DD format'], 422);
+                return;
+            }
             $data['burial_date'] = $input['burial_date'];
         }
         if (isset($input['lot_id'])) {
-            $data['lot_id'] = (int) $input['lot_id'];
+            $lotId = (int) $input['lot_id'];
+            if ($lotId <= 0 || !Lot::find($lotId)) {
+                Response::json(['error' => 'Lot not found'], 422);
+                return;
+            }
+            $data['lot_id'] = $lotId;
         }
         if (isset($input['burial_type'])) {
+            if (!in_array($input['burial_type'], ['single', 'double', 'family', 'cremation'], true)) {
+                Response::json(['error' => 'Invalid burial_type'], 422);
+                return;
+            }
             $data['burial_type'] = $input['burial_type'];
         }
-        if (isset($input['next_of_kin_name'])) {
-            $data['next_of_kin_name'] = $input['next_of_kin_name'] ?: null;
-        }
-        if (isset($input['next_of_kin_phone'])) {
-            $data['next_of_kin_phone'] = $input['next_of_kin_phone'] ?: null;
+        foreach (['next_of_kin_name', 'next_of_kin_phone'] as $field) {
+            if (isset($input[$field])) {
+                $data[$field] = $input[$field] !== '' ? trim($input[$field]) : null;
+            }
         }
         if (isset($input['interment_status'])) {
+            if (!in_array($input['interment_status'], ['scheduled', 'interred'], true)) {
+                Response::json(['error' => 'Invalid interment_status'], 422);
+                return;
+            }
             $data['interment_status'] = $input['interment_status'];
         }
 

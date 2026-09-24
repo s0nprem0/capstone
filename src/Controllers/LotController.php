@@ -69,6 +69,11 @@ class LotController
             }
         }
 
+        if (Lot::findBy('lot_code', $input['lot_code'])) {
+            Response::json(['error' => 'lot_code already exists'], 422);
+            return;
+        }
+
         $latitude = $this->coordinate($input['latitude'] ?? null);
         $longitude = $this->coordinate($input['longitude'] ?? null);
         if (!$this->validCoordinate($latitude, $longitude)) {
@@ -105,6 +110,38 @@ class LotController
         }
 
         $input = $this->router->input();
+        if (array_key_exists('lot_code', $input)) {
+            $code = trim((string) $input['lot_code']);
+            if ($code === '') {
+                Response::json(['error' => 'lot_code is required'], 422);
+                return;
+            }
+            $existing = Lot::findBy('lot_code', $code);
+            if ($existing && (int) $existing['lot_id'] !== $id) {
+                Response::json(['error' => 'lot_code already exists'], 422);
+                return;
+            }
+        }
+        if (isset($input['section_id'])) {
+            $sectionId = (int) $input['section_id'];
+            if ($sectionId <= 0 || !\App\Models\CemeterySection::find($sectionId)) {
+                Response::json(['error' => 'Unknown section'], 422);
+                return;
+            }
+        }
+        if (isset($input['lot_type']) && !in_array($input['lot_type'], ['single', 'double', 'family'], true)) {
+            Response::json(['error' => 'Invalid lot_type'], 422);
+            return;
+        }
+        if (isset($input['status']) && !in_array($input['status'], ['available', 'reserved', 'occupied'], true)) {
+            Response::json(['error' => 'Invalid status'], 422);
+            return;
+        }
+        if (isset($input['price']) && (float) $input['price'] < 0) {
+            Response::json(['error' => 'price must not be negative'], 422);
+            return;
+        }
+
         $data = array_intersect_key($input, array_flip([
             'lot_code', 'section_id', 'block', 'lot_type', 'price', 'status', 'description',
             'latitude', 'longitude', 'svg_x', 'svg_y', 'svg_w', 'svg_h',
