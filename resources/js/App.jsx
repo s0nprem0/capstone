@@ -14,6 +14,7 @@ import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
 import Users from './pages/Users'
 import Settings from './pages/Settings'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="/reservations/new" element={<NewReservation />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           <Route element={<RequireRole roles={['admin', 'staff']} />}>

@@ -25,6 +25,7 @@ function roleNav(role) {
     { to: '/cemetery', label: 'Cemetery Map' },
     { to: '/reservations', label: 'My Reservations' },
     { to: '/payments', label: 'Payments' },
+    { to: '/profile', label: 'Profile' },
   ]
 }
 

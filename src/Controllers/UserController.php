@@ -84,7 +84,16 @@ class UserController
 
     public function update(int $id): void
     {
-        Auth::requireRole(['admin', 'staff']);
+        $role = Auth::role();
+        if ($role === null) {
+            Response::json(['error' => 'Unauthenticated'], 401);
+            return;
+        }
+        if (!in_array($role, ['admin', 'staff', 'user'], true)) {
+            Response::json(['error' => 'Forbidden'], 403);
+            return;
+        }
+
         $user = User::find($id);
         if (!$user) {
             Response::json(['error' => 'Not found'], 404);
@@ -92,7 +101,11 @@ class UserController
         }
 
         $self = (int) $id === (int) Auth::id();
-        if (Auth::role() !== 'admin' && $user['role'] === 'admin') {
+        if ($role === 'user' && !$self) {
+            Response::json(['error' => 'Forbidden'], 403);
+            return;
+        }
+        if ($role !== 'admin' && $user['role'] === 'admin') {
             Response::json(['error' => 'Admin accounts can only be managed by an administrator'], 403);
             return;
         }
@@ -120,6 +133,10 @@ class UserController
             $data['phone'] = trim($input['phone']) !== '' ? trim($input['phone']) : null;
         }
         if (isset($input['status'])) {
+            if ($role === 'user') {
+                Response::json(['error' => 'Users cannot change their account status'], 403);
+                return;
+            }
             if (!in_array($input['status'], ['active', 'inactive'], true)) {
                 Response::json(['error' => 'Invalid status'], 422);
                 return;
@@ -131,6 +148,10 @@ class UserController
             $data['status'] = $input['status'];
         }
         if (isset($input['role'])) {
+            if ($role === 'user') {
+                Response::json(['error' => 'Users cannot change their role'], 403);
+                return;
+            }
             Auth::requireRole(['admin']);
             if (!in_array($input['role'], ['admin', 'staff', 'user'], true)) {
                 Response::json(['error' => 'Invalid role'], 422);
@@ -143,6 +164,13 @@ class UserController
             $data['role'] = $input['role'];
         }
         if (isset($input['password']) && $input['password'] !== '') {
+            if ($self) {
+                $current = (string) ($input['current_password'] ?? '');
+                if (!User::verifyPassword($user, $current)) {
+                    Response::json(['error' => 'Current password is incorrect'], 422);
+                    return;
+                }
+            }
             if (strlen($input['password']) < 8) {
                 Response::json(['error' => 'Password must be at least 8 characters'], 422);
                 return;
