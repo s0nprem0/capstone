@@ -9,20 +9,29 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **Backend:** PHP >= 8.1, PDO prepared statements only, lightweight custom MVC (`App\`)
 - **Database:** MySQL 8.0, `utf8mb4` — schema authoritative in `database/schema.sql`
 - **Frontend:** React 18 SPA, Vite, pnpm (pinned `pnpm@10.4.1`), `react-router-dom` v6
-- **Mapping:** Leaflet.js + OpenStreetMap tiles
+- **Mapping:** pure SVG digital map — traced layout paths + grid lot boxes rendered client-side (no map tiles)
 - **Containerization:** Docker Compose (PHP, Node, MySQL) + Makefile
 
 ## Features
 
 ### Implemented
-- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles: `admin`, `staff`, `user`
-- **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles
-- **Cemetery map** — Leaflet + OSM with lots color-coded by status (available/reserved/occupied), popups with details, reserve flow from the map
-- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved)
-- **Audit trail** — logs logins and every create/update/approve/delete action
+- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint
+- **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
+- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved), capacity checks per lot type
+- **Payments** — GCash/card/cash recording, receipt upload + staff validation, lot transition to occupied on payment approval
+- **Burial records** — deceased details, lot assignment, burial type, interment status
+- **Notifications** — per-user messages on reservation/payment events, unread badge and mark-read
+- **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
+- **Reports** — reservations, payments + revenue, burial records, availability, audit logs (printable)
+- **Dashboards** — stats cards + recent activity for staff/admin
+- **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles; visitors manage their own profile and password
+- **Backup & restore** — admin-only SQL export/import, audit-logged
+- **Audit trail** — logs logins and every create/update/approve/validate/delete action
 
-### Roadmap
-Payments & receipt validation → Burial records → Notifications → Search/filter → Reports → Dashboards → Backup/restore
+### Remaining gaps
+- Section management UI (admin CRUD for `cemetery_sections`)
+- Lot map editor (previously claimed in a commit that is missing from this repo)
+- Responsive layout polish and login rate limiting before production deployment
 
 ## Getting started
 
@@ -156,20 +165,38 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 
 | Endpoint | Method | Access |
 | --- | --- | --- |
-| `/api/auth/register` | POST | Public |
-| `/api/auth/login` | POST | Public |
-| `/api/auth/logout` | POST | Auth |
-| `/api/auth/me` | GET | Auth |
-| `/api/users` | GET/POST | admin, staff |
-| `/api/users/{id}` | GET/POST | admin, staff |
+| `/api/auth/register`, `/api/auth/login` | POST | Public |
+| `/api/auth/logout`, `/api/auth/me` | POST / GET | Auth |
 | `/api/map` | GET | Public |
-| `/api/lots` | GET | Public |
-| `/api/lots/available` | GET | Public |
+| `/api/lots`, `/api/lots/available` | GET | Public |
+| `/api/lots` | POST | admin |
+| `/api/lots/import-grid` | POST | admin |
+| `/api/lots/{id}` | GET | Public |
+| `/api/lots/{id}` | POST | admin, staff |
+| `/api/lots/{id}/delete` | POST | admin |
+| `/api/users`, `/api/users/{id}` | GET | admin, staff |
+| `/api/users` | POST | admin, staff |
+| `/api/users/{id}` | POST | admin, staff, user (self) |
+| `/api/users/{id}/delete` | POST | admin |
 | `/api/reservations` | GET | admin, staff |
 | `/api/reservations/mine` | GET | user |
 | `/api/reservations` | POST | Auth |
-| `/api/reservations/{id}/approve` | POST | admin, staff |
-| `/api/reservations/{id}/reject` | POST | admin, staff |
+| `/api/reservations/{id}`, `/api/reservations/{id}/delete` | POST | admin, staff |
+| `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject` | POST | admin, staff |
+| `/api/payments`, `/api/payments/{id}` | GET | admin, staff |
+| `/api/payments/mine` | GET | user |
+| `/api/payments` | POST | Auth (own reservation) |
+| `/api/payments/{id}/receipt` | GET | Auth (owner) / admin, staff |
+| `/api/payments/{id}/upload-receipt` | POST | Auth (owner) / admin, staff |
+| `/api/payments/{id}/validate`, `/api/payments/{id}/delete` | POST | admin, staff |
+| `/api/burial-records` | GET/POST | admin, staff |
+| `/api/burial-records/{id}`, `/api/burial-records/{id}/delete` | POST | admin, staff |
+| `/api/notifications` | GET | Auth |
+| `/api/notifications/{id}/read`, `/api/notifications/read-all` | POST | Auth |
+| `/api/stats/dashboard` | GET | admin, staff |
+| `/api/reports/{reservations,payments,burial-records,availability,audit-logs}` | GET | admin, staff |
+| `/api/backup/export` | GET | admin |
+| `/api/backup/import` | POST | admin |
 
 ## Development workflow
 
