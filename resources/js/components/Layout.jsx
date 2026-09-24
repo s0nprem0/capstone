@@ -27,6 +27,7 @@ function roleNav(role) {
   if (role === 'admin') {
     return [
       { to: '/admin', label: 'Dashboard', end: true },
+      { to: '/admin/sections', label: 'Sections', end: true },
       { to: '/admin/reservations', label: 'Reservations', end: true },
       { to: '/admin/payments', label: 'Payments', end: true },
       { to: '/admin/burial-records', label: 'Burial Records', end: true },

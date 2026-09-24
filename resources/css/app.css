@@ -203,11 +203,17 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   padding: 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font-size: 0.875rem;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 5rem;
 }
 
 .form-actions {

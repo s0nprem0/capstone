@@ -13,6 +13,7 @@ import Notifications from './pages/Notifications'
 import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
 import Users from './pages/Users'
+import Sections from './pages/Sections'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="/admin/payments" element={<Payments />} />
               <Route path="/admin/burial-records" element={<BurialRecords />} />
               <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/sections" element={<Sections />} />
               <Route path="/admin/reports" element={<Reports />} />
               <Route path="/admin/settings" element={<Settings />} />
             </Route>
