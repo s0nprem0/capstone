@@ -16,6 +16,7 @@ use App\Controllers\NotificationController;
 use App\Controllers\StatsController;
 use App\Controllers\ReportController;
 use App\Controllers\LotController;
+use App\Controllers\BackupController;
 
 $router = new Router();
 Session::start();
@@ -30,6 +31,7 @@ $notifications = new NotificationController($router);
 $stats = new StatsController($router);
 $reports = new ReportController($router);
 $lots = new LotController($router);
+$backup = new BackupController($router);
 
 $router->get('/api/map', [$map, 'map']);
 
@@ -88,6 +90,9 @@ $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
+
+$router->get('/api/backup/export', [$backup, 'export']);
+$router->post('/api/backup/import', [$backup, 'import']);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 

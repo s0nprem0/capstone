@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 
 function roleNav(role) {
   if (role === 'admin' || role === 'staff') {
-    return [
+    const items = [
       { to: '/', label: 'Dashboard' },
       { to: '/reservations', label: 'Reservations' },
       { to: '/cemetery', label: 'Cemetery Map' },
@@ -14,6 +14,10 @@ function roleNav(role) {
       { to: '/reports', label: 'Reports' },
       { to: '/users', label: 'Users' },
     ]
+    if (role === 'admin') {
+      items.push({ to: '/settings', label: 'Settings' })
+    }
+    return items
   }
 
   return [

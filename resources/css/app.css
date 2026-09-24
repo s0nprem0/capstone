@@ -323,6 +323,12 @@ select {
   color: var(--color-text);
 }
 
+.file-input {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
 .sidebar-footer {
   margin-top: auto;
   display: flex;

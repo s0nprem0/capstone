@@ -13,6 +13,7 @@ import Notifications from './pages/Notifications'
 import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
 import Users from './pages/Users'
+import Settings from './pages/Settings'
 
 export default function App() {
   return (
@@ -38,6 +39,10 @@ export default function App() {
             <Route path="/burial-records" element={<BurialRecords />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
+          </Route>
+
+          <Route element={<RequireRole roles={['admin']} />}>
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
 
