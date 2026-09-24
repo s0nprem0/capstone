@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Config\Database;
 use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
@@ -70,32 +71,48 @@ class ReservationController
             exit;
         }
 
-        $lot = Lot::find($lotId);
-        if (!$lot || $lot['status'] !== 'available') {
-            Response::json(['error' => 'Lot is not available'], 422);
-            return;
+        $pdo = Database::connection();
+
+        try {
+            $pdo->beginTransaction();
+
+            // Lock the lot row so concurrent requests cannot both claim it.
+            $lot = Lot::findForUpdate($lotId);
+            if (!$lot || $lot['status'] !== 'available') {
+                $pdo->rollBack();
+                Response::json(['error' => 'Lot is not available'], 422);
+                return;
+            }
+
+            $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
+            $maxSlots = $capacity[$lot['lot_type']] ?? 1;
+            if ($slots > $maxSlots) {
+                $pdo->rollBack();
+                Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
+                return;
+            }
+
+            $reservationId = Reservation::create([
+                'user_id' => $userId,
+                'lot_id' => $lotId,
+                'reservation_date' => $date,
+                'purpose' => $input['purpose'] ?? null,
+                'number_of_slots' => $slots,
+                'total_amount' => (float) ($lot['price'] * $slots),
+                'payment_status' => 'pending',
+                'approved_status' => 'pending',
+            ]);
+
+            Lot::reserve($lotId);
+            AuditLog::record(Auth::id(), 'create', 'reservations', $reservationId);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
-
-        $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
-        $maxSlots = $capacity[$lot['lot_type']] ?? 1;
-        if ($slots > $maxSlots) {
-            Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
-            return;
-        }
-
-        $reservationId = Reservation::create([
-            'user_id' => $userId,
-            'lot_id' => $lotId,
-            'reservation_date' => $date,
-            'purpose' => $input['purpose'] ?? null,
-            'number_of_slots' => $slots,
-            'total_amount' => (float) ($lot['price'] * $slots),
-            'payment_status' => 'pending',
-            'approved_status' => 'pending',
-        ]);
-
-        Lot::reserve($lotId);
-        AuditLog::record(Auth::id(), 'create', 'reservations', $reservationId);
 
         Response::json(Reservation::withLot($reservationId), 201);
     }

@@ -15,6 +15,15 @@ class Lot extends Model
         return $stmt->fetchAll();
     }
 
+    public static function findForUpdate(int $id): ?array
+    {
+        $stmt = self::db()->prepare(
+            "SELECT * FROM `" . static::$table . "` WHERE `" . static::$primaryKey . "` = :id FOR UPDATE"
+        );
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
     public static function reserve(int $id): bool
     {
         return self::update($id, ['status' => 'reserved']);
