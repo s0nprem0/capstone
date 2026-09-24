@@ -27,9 +27,9 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles; visitors manage their own profile and password
 - **Backup & restore** — admin-only SQL export/import, audit-logged
 - **Audit trail** — logs logins and every create/update/approve/validate/delete action
+- **Section management** — admin CRUD for `cemetery_sections` (name, location, description, SVG view box) with per-section lot/status counts and a guard that blocks deleting non-empty sections
 
 ### Remaining gaps
-- Section management UI (admin CRUD for `cemetery_sections`)
 - Lot map editor (previously claimed in a commit that is missing from this repo)
 - Responsive layout polish and login rate limiting before production deployment
 
@@ -174,6 +174,10 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/lots/{id}` | GET | Public |
 | `/api/lots/{id}` | POST | admin, staff |
 | `/api/lots/{id}/delete` | POST | admin |
+| `/api/sections`, `/api/sections/{id}` | GET | admin, staff |
+| `/api/sections` | POST | admin |
+| `/api/sections/{id}` | POST | admin |
+| `/api/sections/{id}/delete` | POST | admin |
 | `/api/users`, `/api/users/{id}` | GET | admin, staff |
 | `/api/users` | POST | admin, staff |
 | `/api/users/{id}` | POST | admin, staff, user (self) |
