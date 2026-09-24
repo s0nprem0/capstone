@@ -62,6 +62,10 @@ class BurialRecordController
             Response::json(['error' => 'Lot not found'], 404);
             return;
         }
+        if (!in_array($lot['status'], ['reserved', 'occupied'], true)) {
+            Response::json(['error' => 'A burial record requires a reserved or occupied lot; this lot is ' . $lot['status']], 422);
+            return;
+        }
 
         $intermentStatus = $input['interment_status'] ?? 'scheduled';
         if (!in_array($intermentStatus, ['scheduled', 'interred'], true)) {
@@ -88,7 +92,8 @@ class BurialRecordController
     public function update(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        if (!BurialRecord::find($id)) {
+        $record = BurialRecord::find($id);
+        if (!$record) {
             Response::json(['error' => 'Not found'], 404);
             return;
         }
@@ -129,6 +134,13 @@ class BurialRecordController
             if ($lotId <= 0 || !Lot::find($lotId)) {
                 Response::json(['error' => 'Lot not found'], 422);
                 return;
+            }
+            if ($lotId !== (int) $record['lot_id']) {
+                $lot = Lot::find($lotId);
+                if (!in_array($lot['status'], ['reserved', 'occupied'], true)) {
+                    Response::json(['error' => 'A burial record requires a reserved or occupied lot; this lot is ' . $lot['status']], 422);
+                    return;
+                }
             }
             $data['lot_id'] = $lotId;
         }
