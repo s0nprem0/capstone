@@ -43,6 +43,7 @@ export default function Layout() {
   const { user, logout } = useAuth()
   const items = roleNav(user?.role)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -55,11 +56,14 @@ export default function Layout() {
     return () => clearInterval(interval)
   }, [user])
 
+  const closeSidebar = () => setSidebarOpen(false)
+
   return (
     <div className="app-layout">
-      <aside className="sidebar">
-        <h1 className="sidebar-title">Cemetery System</h1>
-        <nav>
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} />}
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
+        <h1 className="sidebar-title">St. John Memorial Garden &amp; Parks</h1>
+        <nav onClick={closeSidebar}>
           {items.map((item) => (
             <NavLink
               key={item.to}
@@ -95,6 +99,18 @@ export default function Layout() {
         </div>
       </aside>
       <main className="main-content">
+        <div className="topbar">
+          <button
+            type="button"
+            className="btn btn-secondary topbar-menu"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation menu"
+            aria-expanded={sidebarOpen}
+          >
+            ☰
+          </button>
+          <span className="topbar-title">St. John Memorial Garden &amp; Parks</span>
+        </div>
         <Outlet />
       </main>
     </div>
