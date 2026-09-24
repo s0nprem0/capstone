@@ -34,11 +34,11 @@ export default function Login() {
         {error && <p className="alert alert--error">{error}</p>}
         <label>
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? 'Signing in...' : 'Sign In'}

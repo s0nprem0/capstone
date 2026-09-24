@@ -125,7 +125,10 @@ if (str_starts_with($uri, '/api/')) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cemetery Reservation System</title>
+    <meta name="description" content="St. John Memorial Garden & Parks — reserve cemetery lots, track payments, and manage burial records online.">
+    <meta name="theme-color" content="#2c5530">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>St. John Memorial Garden &amp; Parks — Cemetery Reservation &amp; Records</title>
     <?php if ($vite): ?>
     <?php echo $vite; ?>
     <?php endif; ?>

@@ -40,23 +40,24 @@ export default function Register() {
         {error && <p className="alert alert--error">{error}</p>}
         <label>
           Full Name
-          <input name="fullname" value={form.fullname} onChange={handleChange} required />
+          <input name="fullname" value={form.fullname} onChange={handleChange} autoComplete="name" required />
         </label>
         <label>
           Email
-          <input type="email" name="email" value={form.email} onChange={handleChange} required />
+          <input type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" required />
         </label>
         <label>
           Phone
-          <input name="phone" value={form.phone} onChange={handleChange} />
+          <input name="phone" value={form.phone} onChange={handleChange} autoComplete="tel" />
         </label>
         <label>
           Password
-          <input type="password" name="password" value={form.password} onChange={handleChange} required />
+          <input type="password" name="password" value={form.password} onChange={handleChange} minLength={8} autoComplete="new-password" required />
+          <small className="text-muted">At least 8 characters.</small>
         </label>
         <label>
           Confirm Password
-          <input type="password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} required />
+          <input type="password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} autoComplete="new-password" required />
         </label>
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? 'Creating...' : 'Register'}
