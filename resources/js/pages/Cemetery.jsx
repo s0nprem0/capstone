@@ -61,7 +61,7 @@ export default function Cemetery() {
   }
 
   return (
-    <div>
+    <div className="map-page">
       <h2>Cemetery Map</h2>
       {error && <p className="alert alert--error">{error}</p>}
       {!mapData && !error && <Loading message="Loading map..." />}

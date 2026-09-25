@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
@@ -84,6 +85,21 @@ export default function Sections() {
       load()
     } else {
       setError(data?.error || 'Delete failed')
+    }
+  }
+
+  const reflowLots = async (s) => {
+    const key = `reflow-${s.section_id}`
+    setError('')
+    setSuccess('')
+    setBusyId(key)
+    const { ok, data } = await api('/api/lots/regrid', { method: 'POST', body: { section_id: s.section_id } })
+    setBusyId(null)
+    if (ok) {
+      setSuccess(`Reflowed ${data.updated} lot${data.updated === 1 ? '' : 's'} into ${s.section_name}'s outline.`)
+      load()
+    } else {
+      setError(data?.error || 'Reflow failed')
     }
   }
 
@@ -198,6 +214,17 @@ export default function Sections() {
                   <td><code>{s.svg_viewbox}</code></td>
                   <td>
                     <div className="table-actions">
+                      <Link to={`/admin/lots?section=${s.section_id}`} className="btn btn-secondary btn-sm">
+                        Edit lots
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={busyId === `reflow-${s.section_id}`}
+                        onClick={() => reflowLots(s)}
+                      >
+                        {busyId === `reflow-${s.section_id}` ? 'Reflowing...' : 'Reflow lots'}
+                      </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>Edit</button>
                       <ConfirmButton
                         label="Delete"
