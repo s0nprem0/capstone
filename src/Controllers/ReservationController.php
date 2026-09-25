@@ -43,9 +43,18 @@ class ReservationController
             return;
         }
 
-        if (Auth::role() === 'user' && (int) $reservation['user_id'] !== Auth::id()) {
-            Response::json(['error' => 'Forbidden'], 403);
-            exit;
+        $role = Auth::role();
+        $isStaff = in_array($role, ['admin', 'staff'], true);
+
+        if (!$isStaff) {
+            if (!Auth::check()) {
+                Response::json(['error' => 'Unauthenticated'], 401);
+                return;
+            }
+            if ((int) $reservation['user_id'] !== Auth::id()) {
+                Response::json(['error' => 'Forbidden'], 403);
+                return;
+            }
         }
 
         Response::json($reservation);

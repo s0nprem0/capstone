@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Headers;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
@@ -218,9 +219,13 @@ class PaymentController
         }
 
         $isStaff = in_array(Auth::role(), ['admin', 'staff'], true);
-        if (!Auth::check() || (!$isStaff && (int) $payment['user_id'] !== Auth::id())) {
+        if (!Auth::check()) {
+            Response::json(['error' => 'Unauthenticated'], 401);
+            return;
+        }
+        if (!$isStaff && (int) $payment['user_id'] !== Auth::id()) {
             Response::json(['error' => 'Forbidden'], 403);
-            exit;
+            return;
         }
 
         $path = dirname(__DIR__, 2) . '/storage/' . $payment['receipt_path'];
@@ -230,6 +235,7 @@ class PaymentController
         }
 
         $mime = mime_content_type($path) ?: 'application/octet-stream';
+        Headers::apply();
         header('Content-Type: ' . $mime);
         header('Content-Disposition: inline; filename="' . basename($path) . '"');
         readfile($path);

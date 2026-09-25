@@ -46,6 +46,12 @@ class Router
 
             if (preg_match($pattern, $uri, $matches)) {
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                // Route params are strings from the URL; numeric ones map to
+                // int-typed controller signatures (strict types), so coerce them.
+                $params = array_map(
+                    fn($v) => ctype_digit((string) $v) ? (int) $v : $v,
+                    $params
+                );
                 call_user_func_array($handler, array_values($params));
                 return;
             }

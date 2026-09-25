@@ -75,6 +75,24 @@ class LotController
             return;
         }
 
+        $sectionId = (int) ($input['section_id'] ?? 0);
+        if ($sectionId <= 0 || !CemeterySection::find($sectionId)) {
+            Response::json(['error' => 'Unknown section'], 422);
+            return;
+        }
+        if (isset($input['lot_type']) && !in_array($input['lot_type'], ['single', 'double', 'family'], true)) {
+            Response::json(['error' => 'Invalid lot_type'], 422);
+            return;
+        }
+        if (isset($input['status']) && !in_array($input['status'], ['available', 'reserved', 'occupied'], true)) {
+            Response::json(['error' => 'Invalid status'], 422);
+            return;
+        }
+        if ((float) ($input['price'] ?? 0) < 0) {
+            Response::json(['error' => 'price must not be negative'], 422);
+            return;
+        }
+
         $latitude = $this->coordinate($input['latitude'] ?? null);
         $longitude = $this->coordinate($input['longitude'] ?? null);
         if (!$this->validCoordinate($latitude, $longitude)) {
@@ -84,7 +102,7 @@ class LotController
 
         $id = Lot::create([
             'lot_code' => $input['lot_code'],
-            'section_id' => (int) $input['section_id'],
+            'section_id' => $sectionId,
             'block' => $input['block'] ?? null,
             'lot_type' => $input['lot_type'] ?? 'single',
             'price' => (float) $input['price'],

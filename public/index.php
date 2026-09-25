@@ -6,6 +6,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 use App\Core\Router;
 use App\Core\Response;
+use App\Core\Headers;
 use App\Core\Session;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
@@ -109,11 +110,16 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (str_starts_with($uri, '/api/')) {
     try {
         $router->dispatch();
+    } catch (\TypeError $e) {
+        // e.g. a non-numeric {id} on an int-typed controller signature —
+        // that is a client error, not a server fault.
+        Response::json(['error' => 'Bad request'], 400);
     } catch (\Throwable $e) {
         error_log('[api] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         Response::json(['error' => 'Internal server error'], 500);
     }
 } else {
+    Headers::apply();
     $vite = '';
     $manifestFile = __DIR__ . '/../dist/.vite/manifest.json';
 
