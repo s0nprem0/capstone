@@ -50,6 +50,9 @@ export default function LotEditor() {
   const saveTimerRef = useRef(null)
   const savedTimerRef = useRef(null)
   const pendingRef = useRef({}) // lot_id -> { svg_x, svg_y, svg_w, svg_h }
+  const undoRef = useRef(null) // { lotId, prev: { svg_x, svg_y, svg_w, svg_h } }
+  const [undoStamp, setUndoStamp] = useState(null)
+  const dragArmedRef = useRef(false)
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -113,6 +116,23 @@ export default function LotEditor() {
     clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => flushPending(), 400)
   }, [flushPending])
+
+  const undo = useCallback(async () => {
+    const entry = undoRef.current
+    if (!entry) return
+    setError('')
+    clearTimeout(saveTimerRef.current)
+    delete pendingRef.current[entry.lotId]
+    const { ok, data } = await api(`/api/lots/${entry.lotId}`, { method: 'POST', body: entry.prev })
+    if (ok) {
+      setLots((prev) => prev.map((l) => (l.lot_id === entry.lotId ? { ...l, ...data } : l)))
+      flashSaved()
+    } else {
+      setError(data?.error || 'Undo failed')
+    }
+    undoRef.current = null
+    setUndoStamp(null)
+  }, [flashSaved])
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -211,6 +231,7 @@ export default function LotEditor() {
     e.stopPropagation()
     setSelectedId(lot.lot_id)
     setForm(fromLot(lot))
+    dragArmedRef.current = false
     setDrag({
       mode,
       lotId: lot.lot_id,
@@ -234,16 +255,21 @@ export default function LotEditor() {
       const pt = toSvg(e)
       const lot = lots.find((l) => l.lot_id === drag.lotId)
       if (!lot) return
+      // Ignore sub-threshold jitter so a plain click never moves a lot.
+      const dx = pt.x - drag.start.x
+      const dy = pt.y - drag.start.y
+      if (!dragArmedRef.current && Math.abs(dx) + Math.abs(dy) < 3) return
+      dragArmedRef.current = true
       let next
       if (drag.mode === 'move') {
         next = {
-          svg_x: Math.round(drag.origX + (pt.x - drag.start.x)),
-          svg_y: Math.round(drag.origY + (pt.y - drag.start.y)),
+          svg_x: Math.round(drag.origX + dx),
+          svg_y: Math.round(drag.origY + dy),
         }
       } else {
         next = {
-          svg_w: Math.max(MIN_SIZE, Math.round(drag.origW + (pt.x - drag.start.x))),
-          svg_h: Math.max(MIN_SIZE, Math.round(drag.origH + (pt.y - drag.start.y))),
+          svg_w: Math.max(MIN_SIZE, Math.round(drag.origW + dx)),
+          svg_h: Math.max(MIN_SIZE, Math.round(drag.origH + dy)),
         }
       }
       setLots((prev) => prev.map((l) => (l.lot_id === drag.lotId ? { ...l, ...next } : l)))
@@ -266,14 +292,32 @@ export default function LotEditor() {
     if (panRef.current && !movedRef.current && !drag) setSelectedId(null)
     panRef.current = null
     if (drag) {
+      if (dragArmedRef.current) {
+        undoRef.current = {
+          lotId: drag.lotId,
+          prev: { svg_x: drag.origX, svg_y: drag.origY, svg_w: drag.origW, svg_h: drag.origH },
+        }
+        setUndoStamp(Date.now())
+      }
       setDrag(null)
       flushPending()
     }
   }
 
-  // Arrow keys nudge the selected lot; Escape deselects.
+  // Arrow keys nudge the selected lot (Shift+arrows resize), Ctrl/Cmd+Z undoes
+  // the last geometry change, Escape deselects.
   useEffect(() => {
+    const isEditable = (t) =>
+      t instanceof HTMLElement &&
+      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')
+
     const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'z') {
+        if (isEditable(e.target)) return
+        e.preventDefault()
+        undo()
+        return
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape') {
         setSelectedId(null)
@@ -285,14 +329,25 @@ export default function LotEditor() {
       e.preventDefault()
       const lot = lots.find((l) => l.lot_id === selectedId)
       if (!lot) return
-      const next = { svg_x: Math.round(lot.svg_x + dir[0]), svg_y: Math.round(lot.svg_y + dir[1]) }
-      setLots((prev) => prev.map((l) => (l.lot_id === selectedId ? { ...l, ...next } : l)))
+      const prev = { svg_x: lot.svg_x, svg_y: lot.svg_y, svg_w: lot.svg_w, svg_h: lot.svg_h }
+      let next
+      if (e.shiftKey) {
+        next = {
+          svg_w: Math.max(MIN_SIZE, Math.round(lot.svg_w + dir[0])),
+          svg_h: Math.max(MIN_SIZE, Math.round(lot.svg_h + dir[1])),
+        }
+      } else {
+        next = { svg_x: Math.round(lot.svg_x + dir[0]), svg_y: Math.round(lot.svg_y + dir[1]) }
+      }
+      setLots((p) => p.map((l) => (l.lot_id === selectedId ? { ...l, ...next } : l)))
       pendingRef.current[selectedId] = { ...next }
+      undoRef.current = { lotId: selectedId, prev }
+      setUndoStamp(Date.now())
       queueSave()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedId, lots, queueSave])
+  }, [selectedId, lots, queueSave, undo])
 
   const handleSaveForm = async (e) => {
     e.preventDefault()
@@ -409,13 +464,29 @@ export default function LotEditor() {
           <button type="button" className="btn btn-primary btn-sm" onClick={addLot} disabled={!sectionRow || saving}>
             + Add lot
           </button>
-          <span className={`editor-dirty${saving || savedAt ? '' : ' editor-dirty--muted'}`}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={undo}
+            disabled={!undoStamp || saving}
+            title="Undo last move, resize or nudge (Ctrl/Cmd+Z)"
+          >
+            ↶ Undo
+          </button>
+          <span
+            className={`editor-dirty${saving || savedAt ? '' : ' editor-dirty--muted'}`}
+            aria-live="polite"
+          >
             {saving ? 'Saving…' : savedAt ? 'Saved ✓' : 'changes auto-save'}
           </span>
         </div>
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && (
+        <p role="alert" className="alert alert--error">
+          {error}
+        </p>
+      )}
 
       <div className="editor-chips">
         <div className="editor-chips-list">
@@ -492,8 +563,11 @@ export default function LotEditor() {
                       className="lot-editor-lot"
                       onPointerDown={(e) => onLotPointerDown(e, lot, 'move')}
                       style={{ cursor: 'move' }}
+                      role="img"
+                      aria-label={`${lot.lot_code} · ${STATUS_LABELS[lot.status] || lot.status} lot`}
                     >
                       <rect
+                        className="lot-shape"
                         x={lot.svg_x}
                         y={lot.svg_y}
                         width={Math.max(0, lot.svg_w)}
@@ -503,6 +577,7 @@ export default function LotEditor() {
                         fillOpacity={isSel ? 1 : 0.85}
                         stroke={isSel ? '#111' : '#fff'}
                         strokeWidth={isSel ? 3 : 1}
+                        strokeDasharray={lot.status === 'reserved' && !isSel ? '5 4' : undefined}
                       />
                       {showLabels && (
                         <text
@@ -517,20 +592,27 @@ export default function LotEditor() {
                         </text>
                       )}
                       {isSel && (
-                        <rect
-                          x={lot.svg_x + lot.svg_w - 9}
-                          y={lot.svg_y + lot.svg_h - 9}
-                          width={10}
-                          height={10}
-                          rx={2}
-                          fill="#fff"
-                          stroke="#111"
-                          strokeWidth={1.5}
-                          onPointerDown={(e) => onLotPointerDown(e, lot, 'resize')}
-                          style={{ cursor: 'nwse-resize' }}
-                        >
+                        <g onPointerDown={(e) => onLotPointerDown(e, lot, 'resize')} style={{ cursor: 'nwse-resize' }}>
+                          <rect
+                            x={lot.svg_x + lot.svg_w - 26}
+                            y={lot.svg_y + lot.svg_h - 26}
+                            width={26}
+                            height={26}
+                            fill="transparent"
+                          />
+                          <rect
+                            x={lot.svg_x + lot.svg_w - 12}
+                            y={lot.svg_y + lot.svg_h - 12}
+                            width={12}
+                            height={12}
+                            rx={2}
+                            fill="#fff"
+                            stroke="#111"
+                            strokeWidth={1.5}
+                            pointerEvents="none"
+                          />
                           <title>Drag to resize</title>
-                        </rect>
+                        </g>
                       )}
                       <title>{`${lot.lot_code} · ${STATUS_LABELS[lot.status] || lot.status} · ₱${Number(lot.price || 0).toLocaleString()}`}</title>
                     </g>
@@ -539,14 +621,20 @@ export default function LotEditor() {
               </g>
             </svg>
 
+            {mapData && sectionRow && lots.length === 0 && (
+              <div className="editor-empty">
+                No lots in this section yet — click <b>+ Add lot</b> to place the first one.
+              </div>
+            )}
+
             <div className="map-zoom-controls">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in">+</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out">−</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view">⌂</button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in" aria-label="Zoom in">+</button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out" aria-label="Zoom out">−</button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view" aria-label="Fit view">⌂</button>
             </div>
 
             <div className="map-drag-hint">
-              Click a lot to select · drag a lot to move it · drag its corner to resize · arrow keys nudge
+              Click to select · drag to move · corner handle to resize · arrows nudge · Shift+arrows resize · Ctrl/Cmd+Z undo
             </div>
           </div>
 
@@ -593,17 +681,24 @@ export default function LotEditor() {
                 </label>
 
                 <div className="editor-status-chips">
-                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`chip${form.status === k ? ' chip--active' : ''}`}
-                      onClick={() => setStatusQuick(k)}
-                      style={{ borderColor: STATUS_COLORS[k] }}
-                    >
-                      {v}
-                    </button>
-                  ))}
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => {
+                    const isActive = form.status === k
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        className="chip"
+                        aria-pressed={isActive}
+                        onClick={() => setStatusQuick(k)}
+                        style={{
+                          borderColor: STATUS_COLORS[k],
+                          ...(isActive ? { background: STATUS_COLORS[k], color: '#fff' } : {}),
+                        }}
+                      >
+                        {v}
+                      </button>
+                    )
+                  })}
                 </div>
 
                 <label className="editor-block-label">
