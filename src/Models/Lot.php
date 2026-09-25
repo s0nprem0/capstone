@@ -59,6 +59,20 @@ class Lot extends Model
         return $stmt->fetchAll();
     }
 
+    /** Count of reservations/payments/burials attached to a lot (deletion guard). */
+    public static function usage(int $id): array
+    {
+        $stmt = self::db()->prepare(
+            "SELECT
+                (SELECT COUNT(*) FROM `reservations` r WHERE r.`lot_id` = ?) AS `reservations`,
+                (SELECT COUNT(*) FROM `payments` p JOIN `reservations` r ON r.`reservation_id` = p.`reservation_id` WHERE r.`lot_id` = ?) AS `payments`,
+                (SELECT COUNT(*) FROM `burial_records` b WHERE b.`lot_id` = ?) AS `burials`"
+        );
+        $stmt->execute([$id, $id, $id]);
+        $row = $stmt->fetch();
+        return $row ?: ['reservations' => 0, 'payments' => 0, 'burials' => 0];
+    }
+
     public static function search(array $filters): array
     {
         $where = [];

@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
+use App\Models\CemeterySection;
 use App\Models\Lot;
 
 class LotController
@@ -225,8 +226,72 @@ class LotController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        $usage = Lot::usage($id);
+        if (($usage['reservations'] + $usage['payments'] + $usage['burials']) > 0) {
+            Response::json([
+                'error' => 'This lot is linked to reservations, payments, or burial records and cannot be deleted.',
+                'usage' => $usage,
+            ], 409);
+            return;
+        }
         Lot::delete($id);
         AuditLog::record(Auth::id(), 'delete', 'cemetery_lots', $id);
         Response::json(['message' => 'Deleted']);
+    }
+
+    /**
+     * Reposition a section's lots into a uniform grid inside its current
+     * outline (svg_viewbox). Keeps lot_code/type/price/status; only the SVG
+     * coordinates are rewritten. Placeholder placement — staff refine via
+     * the Lot Editor or CSV import (POST /api/lots/import-grid).
+     */
+    public function regrid(): void
+    {
+        Auth::requireRole(['admin']);
+        $input = $this->router->input();
+        $sectionId = (int) ($input['section_id'] ?? 0);
+
+        $section = CemeterySection::find($sectionId);
+        if (!$section) {
+            Response::json(['error' => 'Unknown section'], 422);
+            return;
+        }
+
+        $parts = preg_split('/\s+/', trim((string) $section['svg_viewbox'])) ?: [];
+        $vb = array_map('intval', $parts);
+        if (count($vb) !== 4 || $vb[2] <= 0 || $vb[3] <= 0) {
+            Response::json(['error' => 'Section has no usable outline'], 422);
+            return;
+        }
+        [$bx, $by, $bw, $bh] = $vb;
+
+        $lots = Lot::grid($sectionId);
+        $n = count($lots);
+        if ($n === 0) {
+            Response::json(['section_id' => $sectionId, 'updated' => 0]);
+            return;
+        }
+
+        $cols = max(1, (int) ceil(sqrt($n * ($bw / max(1, $bh)))));
+        $rows = max(1, (int) ceil($n / $cols));
+        $cellW = $bw / $cols;
+        $cellH = $bh / $rows;
+        $pad = 2;
+
+        $updated = 0;
+        foreach ($lots as $i => $lot) {
+            $col = $i % $cols;
+            $row = intdiv($i, $cols);
+            Lot::update((int) $lot['lot_id'], [
+                'svg_x' => (int) round($bx + $col * $cellW),
+                'svg_y' => (int) round($by + $row * $cellH),
+                'svg_w' => max(8, (int) floor($cellW) - $pad),
+                'svg_h' => max(8, (int) floor($cellH) - $pad),
+            ]);
+            $updated++;
+        }
+
+        AuditLog::record(Auth::id(), 'regrid-lots', 'cemetery_sections', $sectionId);
+        Response::json(['section_id' => $sectionId, 'updated' => $updated]);
     }
 }
