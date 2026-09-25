@@ -11,3 +11,6 @@ storage/receipts/*
 .idea/
 *.swp
 *.swo
+
+# pnpm local store created by in-container installs
+.pnpm-store/
