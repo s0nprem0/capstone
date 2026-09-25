@@ -29,7 +29,9 @@ CREATE TABLE `cemetery_sections` (
   `location` VARCHAR(100) NULL,
   `description` TEXT NULL,
   `svg_viewbox` VARCHAR(50) NOT NULL DEFAULT '0 0 1791 1457' COMMENT 'SVG crop region (x y w h) in map space',
-  `svg_image` VARCHAR(255) NULL COMMENT 'trace background image path'
+  `svg_image` VARCHAR(255) NULL COMMENT 'trace background image path',
+  `svg_points` VARCHAR(1024) NULL COMMENT 'SVG polygon outline "x y x y ..." in map space (drawn with the section editor)',
+  `is_locked` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Freezes the outline and lot geometry until unlocked'
 ) ENGINE=InnoDB;
 
 -- 3. CEMETERY_LOTS

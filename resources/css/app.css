@@ -470,6 +470,12 @@ textarea {
   border: 1px solid #a5d6a7;
 }
 
+.alert--info {
+  background: #e8f1fb;
+  color: #1a4d8f;
+  border: 1px solid #a9c9ee;
+}
+
 .confirm-inline {
   display: inline-flex;
   align-items: center;

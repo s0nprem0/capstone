@@ -103,6 +103,21 @@ export default function Sections() {
     }
   }
 
+  const toggleLock = async (s) => {
+    const key = `lock-${s.section_id}`
+    setError('')
+    setSuccess('')
+    setBusyId(key)
+    const { ok, data } = await api(`/api/sections/${s.section_id}`, { method: 'POST', body: { is_locked: !s.is_locked } })
+    setBusyId(null)
+    if (ok) {
+      setSuccess(data.is_locked ? `Locked ${data.section_name} — outline and lot geometry are frozen.` : `Unlocked ${data.section_name}.`)
+      load()
+    } else {
+      setError(data?.error || 'Failed to update lock')
+    }
+  }
+
   const countBadge = (count, status) => (
     <span
       className="badge"
@@ -201,7 +216,7 @@ export default function Sections() {
               sections.map((s) => (
                 <tr key={s.section_id}>
                   <td>{s.section_id}</td>
-                  <td>{s.section_name}</td>
+                  <td>{s.is_locked ? `${s.section_name} 🔒` : s.section_name}</td>
                   <td>{s.location || '—'}</td>
                   <td>{s.lot_count}</td>
                   <td>
@@ -214,21 +229,35 @@ export default function Sections() {
                   <td><code>{s.svg_viewbox}</code></td>
                   <td>
                     <div className="table-actions">
+                      <Link to={`/admin/sections/editor?section=${s.section_id}`} className="btn btn-secondary btn-sm">
+                        {s.is_locked ? 'View outline' : 'Edit outline'}
+                      </Link>
                       <Link to={`/admin/lots?section=${s.section_id}`} className="btn btn-secondary btn-sm">
                         Edit lots
                       </Link>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
-                        disabled={busyId === `reflow-${s.section_id}`}
+                        disabled={busyId === `reflow-${s.section_id}` || s.is_locked}
+                        title={s.is_locked ? 'Unlock the section to reflow lots' : 'Redraw lots into a grid inside the outline'}
                         onClick={() => reflowLots(s)}
                       >
                         {busyId === `reflow-${s.section_id}` ? 'Reflowing...' : 'Reflow lots'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={busyId === `lock-${s.section_id}`}
+                        onClick={() => toggleLock(s)}
+                        title={s.is_locked ? 'Unlock this section (allows editing its outline and lots)' : 'Lock this section (freezes outline and lot geometry)'}
+                      >
+                        {busyId === `lock-${s.section_id}` ? '…' : s.is_locked ? 'Unlock' : 'Lock'}
                       </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>Edit</button>
                       <ConfirmButton
                         label="Delete"
                         danger
+                        disabled={Boolean(s.is_locked)}
                         onConfirm={() => handleDelete(s)}
                         busy={busyId === s.section_id}
                         message={`Delete ${s.section_name}? Only empty sections can be deleted.`}

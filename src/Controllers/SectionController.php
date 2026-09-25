@@ -29,6 +29,17 @@ class SectionController
         return (float) $parts[2] > 0 && (float) $parts[3] > 0;
     }
 
+    /** "x y x y ..." — an even number of numbers, at least 3 vertices. */
+    private function validSvgPoints(mixed $value): bool
+    {
+        $parts = preg_split('/\s+/', trim((string) $value)) ?: [];
+        if (count($parts) < 6 || count($parts) % 2 !== 0) return false;
+        foreach ($parts as $n) {
+            if (!is_numeric($n)) return false;
+        }
+        return true;
+    }
+
     public function index(): void
     {
         Auth::requireRole(['staff', 'admin']);
@@ -73,6 +84,14 @@ class SectionController
             Response::json(['error' => 'svg_viewbox must be 4 numbers (x y width height) with positive width and height'], 422);
             return;
         }
+        $points = null;
+        if (array_key_exists('points', $input) && trim((string) $input['points']) !== '') {
+            if (!$this->validSvgPoints($input['points'])) {
+                Response::json(['error' => 'points must be an even list of numbers, e.g. "10 20 30 40 50 60" (at least three vertices)'], 422);
+                return;
+            }
+            $points = trim((string) $input['points']);
+        }
 
         $id = CemeterySection::create([
             'section_name' => $name,
@@ -80,6 +99,8 @@ class SectionController
             'description' => $input['description'] ?? null,
             'svg_viewbox' => $viewbox !== '' ? $viewbox : '0 0 1791 1457',
             'svg_image' => $input['svg_image'] ?? null,
+            'svg_points' => $points,
+            'is_locked' => !empty($input['is_locked']) ? 1 : 0,
         ]);
 
         AuditLog::record(Auth::id(), 'create', 'cemetery_sections', $id);
@@ -89,12 +110,20 @@ class SectionController
     public function update(int $id): void
     {
         Auth::requireRole(['admin']);
-        if (!CemeterySection::find($id)) {
+        $section = CemeterySection::find($id);
+        if (!$section) {
             Response::json(['error' => 'Not found'], 404);
             return;
         }
 
+        $locked = (int) ($section['is_locked'] ?? 0) === 1;
         $input = $this->router->input();
+
+        if ($locked && array_intersect(['points', 'svg_viewbox', 'svg_image'], array_keys($input)) !== []) {
+            Response::json(['error' => 'Section is locked — unlock it to edit its outline.'], 422);
+            return;
+        }
+
         if (array_key_exists('section_name', $input)) {
             $name = trim((string) $input['section_name']);
             if ($name === '') {
@@ -119,10 +148,20 @@ class SectionController
             Response::json(['error' => 'svg_viewbox must be 4 numbers (x y width height) with positive width and height'], 422);
             return;
         }
+        if (array_key_exists('points', $input) && trim((string) $input['points']) !== '' && !$this->validSvgPoints($input['points'])) {
+            Response::json(['error' => 'points must be an even list of numbers, e.g. "10 20 30 40 50 60" (at least three vertices)'], 422);
+            return;
+        }
 
         $data = array_intersect_key($input, array_flip([
-            'section_name', 'location', 'description', 'svg_viewbox', 'svg_image',
+            'section_name', 'location', 'description', 'svg_viewbox', 'svg_image', 'is_locked',
         ]));
+        if (array_key_exists('points', $input)) {
+            $data['svg_points'] = trim((string) $input['points']) !== '' ? trim((string) $input['points']) : null;
+        }
+        if (array_key_exists('is_locked', $data)) {
+            $data['is_locked'] = !empty($data['is_locked']) ? 1 : 0;
+        }
 
         if ($data !== []) {
             CemeterySection::update($id, $data);
@@ -135,8 +174,13 @@ class SectionController
     public function destroy(int $id): void
     {
         Auth::requireRole(['admin']);
-        if (!CemeterySection::find($id)) {
+        $section = CemeterySection::find($id);
+        if (!$section) {
             Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        if ((int) ($section['is_locked'] ?? 0) === 1) {
+            Response::json(['error' => 'Section is locked — unlock it before deleting.'], 409);
             return;
         }
 

@@ -14,6 +14,7 @@ import Reports from './pages/Reports'
 import Cemetery from './pages/Cemetery'
 import Users from './pages/Users'
 import Sections from './pages/Sections'
+import SectionEditor from './pages/SectionEditor'
 import LotEditor from './pages/LotEditor'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
@@ -56,6 +57,7 @@ export default function App() {
               <Route path="/admin/burial-records" element={<BurialRecords />} />
               <Route path="/admin/users" element={<Users />} />
               <Route path="/admin/sections" element={<Sections />} />
+              <Route path="/admin/sections/editor" element={<SectionEditor />} />
               <Route path="/admin/lots" element={<LotEditor />} />
               <Route path="/admin/reports" element={<Reports />} />
               <Route path="/admin/settings" element={<Settings />} />

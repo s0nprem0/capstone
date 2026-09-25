@@ -37,6 +37,37 @@ class LotController
         return max(0, (int) $value);
     }
 
+    private function sectionLocked(int $sectionId): bool
+    {
+        $section = CemeterySection::find($sectionId);
+        return $section !== null && (int) ($section['is_locked'] ?? 0) === 1;
+    }
+
+    /** "x y x y ..." — an even number of numbers, at least 3 vertices. */
+    private function validSvgPoints(mixed $value): bool
+    {
+        $parts = preg_split('/\s+/', trim((string) $value)) ?: [];
+        if (count($parts) < 6 || count($parts) % 2 !== 0) return false;
+        foreach ($parts as $n) {
+            if (!is_numeric($n)) return false;
+        }
+        return true;
+    }
+
+    private function pointInPolygon(array $poly, float $px, float $py): bool
+    {
+        $inside = false;
+        $n = count($poly);
+        for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
+            [$xi, $yi] = $poly[$i];
+            [$xj, $yj] = $poly[$j];
+            if ((($yi > $py) !== ($yj > $py)) && ($px < ($xj - $xi) * ($py - $yi) / ($yj - $yi) + $xi)) {
+                $inside = !$inside;
+            }
+        }
+        return $inside;
+    }
+
     public function index(): void
     {
         Response::json(Lot::search($_GET));
@@ -78,6 +109,10 @@ class LotController
         $sectionId = (int) ($input['section_id'] ?? 0);
         if ($sectionId <= 0 || !CemeterySection::find($sectionId)) {
             Response::json(['error' => 'Unknown section'], 422);
+            return;
+        }
+        if ($this->sectionLocked($sectionId)) {
+            Response::json(['error' => 'Section is locked — its layout is frozen. Unlock the section to add lots.'], 409);
             return;
         }
         if (isset($input['lot_type']) && !in_array($input['lot_type'], ['single', 'double', 'family'], true)) {
@@ -123,12 +158,18 @@ class LotController
     public function update(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        if (!Lot::find($id)) {
+        $lot = Lot::find($id);
+        if (!$lot) {
             Response::json(['error' => 'Not found'], 404);
             return;
         }
 
         $input = $this->router->input();
+        if (array_intersect(['section_id', 'svg_x', 'svg_y', 'svg_w', 'svg_h'], array_keys($input)) !== []
+            && $this->sectionLocked((int) $lot['section_id'])) {
+            Response::json(['error' => 'This section is locked — lot positions are frozen. Unlock the section to move or resize lots.'], 422);
+            return;
+        }
         if (array_key_exists('lot_code', $input)) {
             $code = trim((string) $input['lot_code']);
             if ($code === '') {
@@ -206,6 +247,10 @@ class LotController
             Response::json(['error' => 'Unknown section'], 422);
             return;
         }
+        if ($this->sectionLocked($sectionId)) {
+            Response::json(['error' => 'Section is locked — its layout is frozen. Unlock the section to import lots.'], 409);
+            return;
+        }
 
         $created = 0;
         $skipped = 0;
@@ -240,8 +285,13 @@ class LotController
     public function destroy(int $id): void
     {
         Auth::requireRole(['admin']);
-        if (!Lot::find($id)) {
+        $lot = Lot::find($id);
+        if (!$lot) {
             Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        if ($this->sectionLocked((int) $lot['section_id'])) {
+            Response::json(['error' => 'Section is locked — its layout is frozen. Unlock the section to delete lots.'], 409);
             return;
         }
         $usage = Lot::usage($id);
@@ -259,9 +309,10 @@ class LotController
 
     /**
      * Reposition a section's lots into a uniform grid inside its current
-     * outline (svg_viewbox). Keeps lot_code/type/price/status; only the SVG
-     * coordinates are rewritten. Placeholder placement — staff refine via
-     * the Lot Editor or CSV import (POST /api/lots/import-grid).
+     * outline (the traced svg_points polygon, or the svg_viewbox rectangle
+     * when the section has no outline). Keeps lot_code/type/price/status;
+     * only the SVG coordinates are rewritten. Placeholder placement — staff
+     * refine via the Lot Editor or CSV import (POST /api/lots/import-grid).
      */
     public function regrid(): void
     {
@@ -274,14 +325,35 @@ class LotController
             Response::json(['error' => 'Unknown section'], 422);
             return;
         }
-
-        $parts = preg_split('/\s+/', trim((string) $section['svg_viewbox'])) ?: [];
-        $vb = array_map('intval', $parts);
-        if (count($vb) !== 4 || $vb[2] <= 0 || $vb[3] <= 0) {
-            Response::json(['error' => 'Section has no usable outline'], 422);
+        if ($this->sectionLocked($sectionId)) {
+            Response::json(['error' => 'Section is locked — its layout is frozen. Unlock the section to reflow lots.'], 409);
             return;
         }
-        [$bx, $by, $bw, $bh] = $vb;
+
+        $poly = [];
+        if (!empty($section['svg_points']) && $this->validSvgPoints($section['svg_points'])) {
+            $nums = array_map('floatval', preg_split('/\s+/', trim($section['svg_points'])) ?: []);
+            for ($i = 0; $i + 1 < count($nums); $i += 2) {
+                $poly[] = [$nums[$i], $nums[$i + 1]];
+            }
+        }
+
+        if ($poly) {
+            $xs = array_column($poly, 0);
+            $ys = array_column($poly, 1);
+            $bx = min($xs);
+            $by = min($ys);
+            $bw = max(1.0, max($xs) - $bx);
+            $bh = max(1.0, max($ys) - $by);
+        } else {
+            $parts = preg_split('/\s+/', trim((string) $section['svg_viewbox'])) ?: [];
+            $vb = array_map('intval', $parts);
+            if (count($vb) !== 4 || $vb[2] <= 0 || $vb[3] <= 0) {
+                Response::json(['error' => 'Section has no usable outline'], 422);
+                return;
+            }
+            [$bx, $by, $bw, $bh] = $vb;
+        }
 
         $lots = Lot::grid($sectionId);
         $n = count($lots);
@@ -295,11 +367,23 @@ class LotController
         $cellW = $bw / $cols;
         $cellH = $bh / $rows;
         $pad = 2;
+        $cells = $cols * $rows;
 
         $updated = 0;
-        foreach ($lots as $i => $lot) {
-            $col = $i % $cols;
-            $row = intdiv($i, $cols);
+        $cellIndex = 0;
+        foreach ($lots as $lot) {
+            // Find the next grid cell whose center sits inside the outline.
+            while ($cellIndex < $cells) {
+                $col = $cellIndex % $cols;
+                $row = intdiv($cellIndex, $cols);
+                $cellIndex++;
+                if (!$poly || $this->pointInPolygon($poly, $bx + $col * $cellW + $cellW / 2, $by + $row * $cellH + $cellH / 2)) {
+                    break;
+                }
+            }
+            if ($cellIndex > $cells) break; // no cells left; leave the rest untouched
+            $col = ($cellIndex - 1) % $cols;
+            $row = intdiv($cellIndex - 1, $cols);
             Lot::update((int) $lot['lot_id'], [
                 'svg_x' => (int) round($bx + $col * $cellW),
                 'svg_y' => (int) round($by + $row * $cellH),

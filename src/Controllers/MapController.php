@@ -40,6 +40,8 @@ class MapController
                 'location' => $section['location'] ?? null,
                 'viewBox' => $section['svg_viewbox'] ?? '0 0 1791 1457',
                 'image' => $section['svg_image'] ?? null,
+                'points' => $section['svg_points'] ?? null,
+                'is_locked' => (int) ($section['is_locked'] ?? 0) === 1,
                 'counts' => $counts,
                 'lots' => $sectionLots,
             ];
