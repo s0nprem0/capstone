@@ -107,24 +107,28 @@ export default function Reservations() {
                   <td>₱{Number(r.total_amount).toLocaleString()}</td>
                   <td><span className={`badge badge--${r.payment_status}`}>{r.payment_status}</span></td>
                   <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
-                  {isStaffView && r.approved_status === 'pending' && (
+                  {isStaffView && (
                     <td>
-                      <div className="table-actions">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={!!busy}
-                          onClick={() => decide(r.reservation_id, 'approve')}
-                        >
-                          {busy === `${r.reservation_id}:approve` ? 'Working...' : 'Approve'}
-                        </button>
-                        <ConfirmButton
-                          label="Reject"
-                          danger
-                          onConfirm={() => decide(r.reservation_id, 'reject')}
-                          busy={busy === `${r.reservation_id}:reject`}
-                          message="Reject this reservation? The lot will be released."
-                        />
-                      </div>
+                      {r.approved_status === 'pending' ? (
+                        <div className="table-actions">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={!!busy}
+                            onClick={() => decide(r.reservation_id, 'approve')}
+                          >
+                            {busy === `${r.reservation_id}:approve` ? 'Working...' : 'Approve'}
+                          </button>
+                          <ConfirmButton
+                            label="Reject"
+                            danger
+                            onConfirm={() => decide(r.reservation_id, 'reject')}
+                            busy={busy === `${r.reservation_id}:reject`}
+                            message="Reject this reservation? The lot will be released."
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </td>
                   )}
                 </tr>

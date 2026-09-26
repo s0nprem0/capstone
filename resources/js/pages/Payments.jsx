@@ -259,24 +259,28 @@ export default function Payments() {
                     )}
                   </td>
                   <td><span className={`badge badge--${p.payment_status}`}>{p.payment_status}</span></td>
-                  {isStaffView && p.payment_status === 'pending' && (
+                  {isStaffView && (
                     <td>
-                      <div className="table-actions">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={validating === p.payment_id}
-                          onClick={() => validatePayment(p.payment_id, 'paid')}
-                        >
-                          {validating === p.payment_id ? 'Working...' : 'Approve'}
-                        </button>
-                        <ConfirmButton
-                          label="Reject"
-                          danger
-                          onConfirm={() => validatePayment(p.payment_id, 'failed')}
-                          busy={validating === p.payment_id}
-                          message="Reject this payment? The client will be notified."
-                        />
-                      </div>
+                      {p.payment_status === 'pending' ? (
+                        <div className="table-actions">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={validating === p.payment_id}
+                            onClick={() => validatePayment(p.payment_id, 'paid')}
+                          >
+                            {validating === p.payment_id ? 'Working...' : 'Approve'}
+                          </button>
+                          <ConfirmButton
+                            label="Reject"
+                            danger
+                            onConfirm={() => validatePayment(p.payment_id, 'failed')}
+                            busy={validating === p.payment_id}
+                            message="Reject this payment? The client will be notified."
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </td>
                   )}
                 </tr>
