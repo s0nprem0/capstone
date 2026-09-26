@@ -195,11 +195,15 @@ class ReservationController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        if ($reservation['approved_status'] !== 'pending') {
+            Response::json(['error' => 'Only pending reservations can be approved'], 422);
+            return;
+        }
         Reservation::update($id, ['approved_status' => 'approved']);
         AuditLog::record(Auth::id(), 'approve', 'reservations', $id);
         Notification::createFor(
             (int) $reservation['user_id'],
-            "Your reservation #{$id} for lot {$reservation['lot_id']} has been approved.",
+            "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been approved.",
             'reservation'
         );
         Response::json(['message' => 'Reservation approved']);
@@ -213,12 +217,20 @@ class ReservationController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        if ($reservation['approved_status'] !== 'pending') {
+            Response::json(['error' => 'Only pending reservations can be rejected'], 422);
+            return;
+        }
+        if ($reservation['payment_status'] === 'paid') {
+            Response::json(['error' => 'Cannot reject a reservation that has been paid'], 422);
+            return;
+        }
         Reservation::update($id, ['approved_status' => 'rejected']);
-        Lot::update((int) $reservation['lot_id'], ['status' => 'available']);
+        $this->releaseLot((int) $reservation['lot_id']);
         AuditLog::record(Auth::id(), 'reject', 'reservations', $id);
         Notification::createFor(
             (int) $reservation['user_id'],
-            "Your reservation #{$id} for lot " . ($reservation['lot_id']) . " has been rejected.",
+            "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been rejected.",
             'reservation'
         );
         Response::json(['message' => 'Reservation rejected']);
@@ -237,8 +249,27 @@ class ReservationController
             return;
         }
         Reservation::delete($id);
-        Lot::update((int) $reservation['lot_id'], ['status' => 'available']);
+        $this->releaseLot((int) $reservation['lot_id']);
         AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
         Response::json(['message' => 'Deleted']);
+    }
+
+    /**
+     * Frees a lot only while it is still held for a reservation, so a lot that
+     * has already moved on (occupied by a payment, or claimed by a burial) is
+     * never silently returned to the available pool.
+     */
+    private function releaseLot(int $lotId): void
+    {
+        $lot = Lot::find($lotId);
+        if ($lot && $lot['status'] === 'reserved') {
+            Lot::update($lotId, ['status' => 'available']);
+        }
+    }
+
+    private function lotLabel(int $lotId): string
+    {
+        $lot = Lot::find($lotId);
+        return $lot ? (string) $lot['lot_code'] : (string) $lotId;
     }
 }
