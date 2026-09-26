@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate fresh
+.PHONY: up down restart logs install migrate fresh build
 
 up:
 	docker compose up -d
@@ -15,6 +15,9 @@ logs:
 install:
 	docker compose exec php composer install
 	docker compose exec node pnpm install
+
+build:
+	docker compose exec node pnpm build
 
 migrate:
 	docker compose exec mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
