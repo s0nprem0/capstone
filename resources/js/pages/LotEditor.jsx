@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
+import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
-const STATUS_COLORS = { available: '#2f9e44', reserved: '#f59f00', occupied: '#c92a2a' }
 const STATUS_LABELS = { available: 'Available', reserved: 'Reserved', occupied: 'Occupied' }
 const LOT_TYPES = ['single', 'double', 'family']
 const MIN_SIZE = 10
