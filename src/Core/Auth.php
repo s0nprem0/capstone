@@ -8,6 +8,9 @@ use App\Models\User;
 
 class Auth
 {
+    private static int $resolvedId = 0;
+    private static ?array $resolved = null;
+
     public static function attempt(string $email, string $password): bool
     {
         $user = User::findByEmail($email);
@@ -25,15 +28,26 @@ class Auth
         return true;
     }
 
+    /**
+     * Resolved once per request. requireRole() and the guard that follows it
+     * both need the caller, and without this each call re-read the same row.
+     * Keying on the session id makes a login in the same request re-resolve,
+     * and a missing id short-circuits before any lookup.
+     */
     public static function user(): ?array
     {
-        $id = Session::get('user_id');
-        if (!$id) {
+        $id = (int) Session::get('user_id');
+        if ($id === 0) {
             return null;
         }
 
-        $user = User::find((int) $id);
-        return $user ? User::publicUser($user) : null;
+        if (self::$resolvedId !== $id) {
+            $user = User::find($id);
+            self::$resolved = $user ? User::publicUser($user) : null;
+            self::$resolvedId = $id;
+        }
+
+        return self::$resolved;
     }
 
     public static function id(): ?int
