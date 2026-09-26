@@ -18,7 +18,7 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per IP per 15 minutes (HTTP 429)
 - **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
 - **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot
-- **Payments** — GCash/card/cash recording, receipt upload + staff validation, lot transition to occupied on payment approval; amounts are reconciled against the reservation's remaining balance (overpayment rejected)
+- **Payments** — GCash/card/cash recording, receipt upload + staff validation; the reservation settles only once the collected balance reaches the total (instalments supported), the lot becomes occupied at that point, and a validated payment that is deleted or rejected re-derives the reservation's state. Amounts are reconciled against the remaining balance (overpayment rejected)
 - **Burial records** — deceased details, lot assignment, burial type, interment status; creation requires a reserved or occupied lot (a free lot cannot host a burial)
 - **Notifications** — per-user messages on reservation/payment events, unread badge and mark-read
 - **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
@@ -30,7 +30,6 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **Section management** — admin CRUD for `cemetery_sections` (name, location, description, SVG view box) with per-section lot/status counts and a guard that blocks deleting non-empty sections
 
 ### Remaining gaps
-- Lot map editor (previously claimed in a commit that is missing from this repo)
 - Responsive layout polish before production deployment
 
 ## Getting started
@@ -41,7 +40,7 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 
 ### 1. Start the stack
 ```bash
-make up            # docker compose up -d --build
+make up            # docker compose up -d
 ```
 
 ### 2. Install dependencies
@@ -65,7 +64,7 @@ docker compose exec -T mysql mysql -u cemetery_user -psecret < database/schema.s
 
 For production mode, build the frontend first:
 ```bash
-docker compose exec node pnpm build
+make build         # docker compose exec node pnpm build
 ```
 
 ## Running with XAMPP (no Docker)
@@ -156,7 +155,7 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── .htaccess                  # Apache/XAMPP: redirect into public/
 ├── .env.example               # Docker/standalone env template
 ├── .env.xampp.example         # XAMPP env template
-└── Makefile                   # up, down, install, migrate, fresh, ...
+└── Makefile                   # up, down, install, build, migrate, fresh, ...
 ```
 
 ## API overview
@@ -209,6 +208,7 @@ make logs        # tail container logs
 make php         # shell into PHP container
 make node        # shell into Node container
 make mysql       # interactive MySQL shell
+make build       # build the frontend bundle
 make fresh       # rebuild everything from scratch
 ```
 

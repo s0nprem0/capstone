@@ -1,6 +1,6 @@
 # AGENTS.md — Web-Based Cemetery Reservation and Records Management System
 
-Project guide for the **Cemetery Reservation and Records Management System** for St. John Memorial Garden & Parks. This is a capstone study project. The repo is a working **boilerplate** that will be built out module-by-module into the full system described below.
+Project guide for the **Cemetery Reservation and Records Management System** for St. John Memorial Garden & Parks. This is a capstone study project. Most modules are implemented end-to-end (see "Current state" below); the remaining ones are built out module-by-module against the system described here.
 
 ## Project overview
 - Plain PHP (>= 8.1) backend using PDO only — no Laravel/Symfony. Lightweight custom MVC.
@@ -21,23 +21,23 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 - Client-Server + MVC: Models = data layer, Views = React pages, Controllers = request logic.
 - Single front controller `public/index.php`: serves JSON API under `/api`; serves the built Vite bundle (or dev server) for all other routes.
 
-## Project structure (current boilerplate)
+## Project structure
 ```
 ├── public/index.php          # Front controller (API + SPA)
 ├── src/
 │   ├── bootstrap.php         # Loads .env + autoloader
 │   ├── Config/Database.php   # PDO singleton (mysql, utf8mb4)
-│   ├── Core/Router.php       # Router with {param} support, json()/input() helpers
-│   ├── Controllers/          # Request logic (ReservationController, LotController)
-│   └── Models/               # Data layer (Model base, Lot, Reservation)
-├── database/schema.sql       # Authoritative schema
+│   ├── Core/                 # Router, Session, Csrf, Auth, Response, RateLimiter
+│   ├── Controllers/          # Request logic (auth, lots, reservations, payments, burials, reports, backup, ...)
+│   └── Models/               # Data layer (Model base + entities)
+├── database/schema.sql       # Authoritative schema + seed data
 ├── resources/
-│   ├── js/                   # React SPA (App, Layout, pages/)
+│   ├── js/                   # React SPA (contexts, components, pages/)
 │   └── css/app.css           # All styling
 ├── Dockerfile                # PHP 8.3-cli + composer
 ├── docker/node.Dockerfile    # Node 22 + pnpm
 ├── docker-compose.yml        # php / node / mysql services
-├── Makefile                  # up, down, install, migrate, fresh, ...
+├── Makefile                  # up, down, install, build, migrate, fresh, ...
 ├── package.json              # packageManager pinned to pnpm@10.4.1
 ├── .npmrc                    # allows esbuild build script (pnpm 10+)
 └── pnpm-lock.yaml            # committed for frozen installs
@@ -45,7 +45,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 
 ## Getting started
 ```bash
-make up        # docker compose up -d --build
+make up        # docker compose up -d
 make install   # composer install + pnpm install (in containers)
 make migrate   # apply database/schema.sql to MySQL
 ```
@@ -53,10 +53,18 @@ make migrate   # apply database/schema.sql to MySQL
 - PHP server: http://localhost:8000
 - MySQL: localhost:3306 (db `cemetery_db`)
 
-## Current state (gaps to close)
-Existing: base Router/Model/Database; generic CRUD controllers for **lots and reservations**; React skeleton (`Dashboard`, `Reservations`, `NewReservation`, `Cemetery`, `Records`) with stub pages.
+## Current state
+Implemented end-to-end (API + React page + server-side RBAC on every route):
 
-Missing entirely: authentication/RBAC, burial records, notifications, search/filter, reports, payment receipt upload + validation, backup/restore, dashboards. The schema (`database/schema.sql`) is the initial baseline and must be extended per the "Data model" section below before feature work. The SVG digital map (sections + grid lots) is implemented.
+- Auth/RBAC — register, login, logout, session auth with CSRF, roles `admin` / `staff` / `user`, login rate limiting
+- Sections & lots — CRUD, SVG grid import, and a lot map editor
+- SVG cemetery map — traced layout, pan/zoom/fly-to, status colouring, reserve-from-map
+- Reservations — submission, admin/staff approval restricted to pending rows, transactional lot claim
+- Payments — GCash/card/cash recording, receipt upload + validation, settlement derived from the collected balance (instalments supported; a lot is only occupied once the balance reaches zero)
+- Burial records, notifications, debounced search/filters, reports, dashboards, audit trail
+- Backup/restore — admin-only SQL export/import, audit-logged
+
+Still open: Documents, concession/ownership records, record-level notes and expiration tracking, responsive layout polish. Extend `database/schema.sql` per the "Data model" section below before building them; it stays authoritative, so a fresh `make migrate` must reproduce the whole database.
 
 ## Roles & permissions (RBAC) — from the study
 - **Administrator** (`admin`): everything — manage user/staff accounts, roles, permissions, access levels; approve/reject reservations; manage sections and lots; generate reports; backup/restore; view audit logs.
