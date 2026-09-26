@@ -74,7 +74,7 @@ class PaymentController
 
         if (Auth::role() === 'user' && (int) $reservation['user_id'] !== Auth::id()) {
             Response::json(['error' => 'Forbidden'], 403);
-            exit;
+            return;
         }
 
         $remaining = (float) $reservation['total_amount'] - Payment::totals($reservationId)['committed'];
@@ -195,7 +195,7 @@ class PaymentController
 
         if (Auth::role() === 'user' && (int) $payment['user_id'] !== Auth::id()) {
             Response::json(['error' => 'Forbidden'], 403);
-            exit;
+            return;
         }
 
         $file = $_FILES['receipt'] ?? null;
@@ -242,6 +242,11 @@ class PaymentController
 
     public function receipt(int $id): void
     {
+        if (!Auth::check()) {
+            Response::json(['error' => 'Unauthenticated'], 401);
+            return;
+        }
+
         $payment = Payment::withDetails($id);
         if (!$payment || !$payment['receipt_path']) {
             Response::json(['error' => 'Not found'], 404);
@@ -249,10 +254,6 @@ class PaymentController
         }
 
         $isStaff = in_array(Auth::role(), ['admin', 'staff'], true);
-        if (!Auth::check()) {
-            Response::json(['error' => 'Unauthenticated'], 401);
-            return;
-        }
         if (!$isStaff && (int) $payment['user_id'] !== Auth::id()) {
             Response::json(['error' => 'Forbidden'], 403);
             return;
