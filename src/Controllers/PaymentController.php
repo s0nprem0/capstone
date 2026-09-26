@@ -16,6 +16,9 @@ use App\Models\Reservation;
 
 class PaymentController
 {
+    private const RECEIPT_DIR = __DIR__ . '/../../storage/receipts';
+    private const RECEIPT_MAX = 5 * 1024 * 1024;
+
     private Router $router;
 
     public function __construct(Router $router)
@@ -180,9 +183,6 @@ class PaymentController
 
         return ['payment_status' => $status, 'remaining' => $total - $paid];
     }
-
-    private const RECEIPT_DIR = __DIR__ . '/../../storage/receipts';
-    private const RECEIPT_MAX = 5 * 1024 * 1024;
 
     public function uploadReceipt(int $id): void
     {
