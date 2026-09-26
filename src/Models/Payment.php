@@ -22,6 +22,34 @@ class Payment extends Model
         return $stmt->fetchAll();
     }
 
+    /**
+     * Collection totals for a reservation in a single round trip.
+     *
+     * - paid:     actually collected; alone decides when a reservation settles
+     * - committed: paid + still-pending; caps how much more can be recorded
+     * - payments: number of records, telling "all rejected" from "none exist"
+     *
+     * @return array{paid: float, committed: float, payments: int}
+     */
+    public static function totals(int $reservationId): array
+    {
+        $stmt = self::db()->prepare(
+            "SELECT COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN amount END), 0) AS paid,
+                    COALESCE(SUM(CASE WHEN payment_status <> 'failed' THEN amount END), 0) AS committed,
+                    COUNT(*) AS payments
+             FROM payments
+             WHERE reservation_id = :id"
+        );
+        $stmt->execute(['id' => $reservationId]);
+        $row = $stmt->fetch();
+
+        return [
+            'paid' => (float) ($row['paid'] ?? 0),
+            'committed' => (float) ($row['committed'] ?? 0),
+            'payments' => (int) ($row['payments'] ?? 0),
+        ];
+    }
+
     public static function withDetails(int $id): ?array
     {
         $stmt = self::db()->prepare(

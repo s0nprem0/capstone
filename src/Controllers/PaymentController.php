@@ -77,11 +77,7 @@ class PaymentController
             exit;
         }
 
-        $committed = array_sum(array_map(
-            fn($p) => $p['payment_status'] === 'failed' ? 0.0 : (float) $p['amount'],
-            Payment::forReservation($reservationId)
-        ));
-        $remaining = (float) $reservation['total_amount'] - $committed;
+        $remaining = (float) $reservation['total_amount'] - Payment::totals($reservationId)['committed'];
         if ($amount > $remaining) {
             $message = $remaining <= 0
                 ? 'This reservation has already been fully paid'
@@ -131,24 +127,58 @@ class PaymentController
         ]);
 
         $reservationId = (int) $payment['reservation_id'];
-        if ($status === 'paid') {
-            Reservation::update($reservationId, [
-                'payment_status' => 'paid',
-            ]);
-            Lot::occupy((int) $payment['lot_id']);
-        } else {
-            Reservation::update($reservationId, [
-                'payment_status' => 'failed',
-            ]);
+        $settlement = $this->settleReservation($reservationId);
+
+        $message = "Your payment #{$id} for reservation #{$reservationId} has been {$status}.";
+        if ($settlement['payment_status'] === 'paid') {
+            $message .= ' This reservation is now fully paid.';
+        } elseif ($status === 'paid') {
+            $message .= ' Remaining balance: ₱' . number_format($settlement['remaining'], 2) . '.';
         }
 
-        Notification::createFor(
-            (int) $payment['user_id'],
-            "Your payment #{$id} for reservation #{$reservationId} has been {$status}.",
-            'payment'
-        );
+        Notification::createFor((int) $payment['user_id'], $message, 'payment');
         AuditLog::record(Auth::id(), 'validate', 'payments', $id);
         Response::json(Payment::withDetails($id));
+    }
+
+    /**
+     * Recomputes the reservation's payment state from the collected balance and
+     * moves the lot to match. The reservation settles only once the full total
+     * has actually been collected, so a partial payment leaves it pending. If a
+     * payment is later rejected, an occupancy this reservation caused is handed
+     * back — but never when a burial record already claims the lot.
+     *
+     * @return array{payment_status: string, remaining: float}
+     */
+    private function settleReservation(int $reservationId): array
+    {
+        $reservation = Reservation::find($reservationId);
+        $lotId = (int) $reservation['lot_id'];
+        $total = (float) $reservation['total_amount'];
+        $totals = Payment::totals($reservationId);
+        $paid = $totals['paid'];
+
+        if ($paid >= $total) {
+            $status = 'paid';
+        } elseif ($totals['payments'] > 0 && $totals['committed'] <= 0) {
+            // Records exist but none can settle it — every one was rejected.
+            $status = 'failed';
+        } else {
+            $status = 'pending';
+        }
+
+        Reservation::update($reservationId, ['payment_status' => $status]);
+
+        $lot = Lot::find($lotId);
+        if ($lot && $status === 'paid' && $lot['status'] === 'reserved') {
+            Lot::occupy($lotId);
+        } elseif ($lot && $status !== 'paid' && $lot['status'] === 'occupied'
+            && (int) Lot::usage($lotId)['burials'] === 0
+        ) {
+            Lot::update($lotId, ['status' => 'reserved']);
+        }
+
+        return ['payment_status' => $status, 'remaining' => $total - $paid];
     }
 
     private const RECEIPT_DIR = __DIR__ . '/../../storage/receipts';
@@ -249,7 +279,11 @@ class PaymentController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        $reservationId = (int) $payment['reservation_id'];
         Payment::delete($id);
+        // Deleting a validated payment changes what was collected, so the
+        // reservation and its lot are re-derived rather than left stale.
+        $this->settleReservation($reservationId);
         AuditLog::record(Auth::id(), 'delete', 'payments', $id);
         Response::json(['message' => 'Deleted']);
     }
