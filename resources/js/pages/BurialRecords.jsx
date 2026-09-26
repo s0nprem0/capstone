@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import useDebounced from '../lib/useDebounced'
 import ConfirmButton from '../components/ConfirmButton'
 
 export default function BurialRecords() {
   const [records, setRecords] = useState([])
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [q, setQ] = useState('')
   const [interment, setInterment] = useState('')
   const [type, setType] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -18,11 +18,7 @@ export default function BurialRecords() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [busyId, setBusyId] = useState(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => setQ(search), 300)
-    return () => clearTimeout(t)
-  }, [search])
+  const q = useDebounced(search)
 
   const load = async () => {
     const params = new URLSearchParams()

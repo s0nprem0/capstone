@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 
@@ -11,7 +12,6 @@ export default function Users() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
-  const [q, setQ] = useState('')
   const [role, setRole] = useState('')
   const [status, setStatus] = useState('')
   const [busyId, setBusyId] = useState(null)
@@ -24,11 +24,7 @@ export default function Users() {
   const [savingEdit, setSavingEdit] = useState(false)
 
   const isAdmin = me?.role === 'admin'
-
-  useEffect(() => {
-    const t = setTimeout(() => setQ(search), 300)
-    return () => clearTimeout(t)
-  }, [search])
+  const q = useDebounced(search)
 
   const load = async () => {
     const params = new URLSearchParams()

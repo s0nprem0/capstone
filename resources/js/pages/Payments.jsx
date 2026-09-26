@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 
@@ -14,15 +15,10 @@ export default function Payments() {
   const [validating, setValidating] = useState(null)
   const [uploadingId, setUploadingId] = useState(null)
   const [search, setSearch] = useState('')
-  const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
   const fileInputRef = useRef(null)
   const uploadTargetRef = useRef(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => setQ(search), 300)
-    return () => clearTimeout(t)
-  }, [search])
+  const q = useDebounced(search)
 
   const load = async () => {
     const params = new URLSearchParams()

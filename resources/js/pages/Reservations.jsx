@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 
@@ -9,15 +10,10 @@ export default function Reservations() {
   const [reservations, setReservations] = useState([])
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [q, setQ] = useState('')
   const [payment, setPayment] = useState('')
   const [approval, setApproval] = useState('')
   const [busy, setBusy] = useState(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => setQ(search), 300)
-    return () => clearTimeout(t)
-  }, [search])
+  const q = useDebounced(search)
 
   const load = async () => {
     const params = new URLSearchParams()
