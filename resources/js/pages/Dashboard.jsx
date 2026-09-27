@@ -1,21 +1,60 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
+import OccupancyMap from '../components/OccupancyMap'
+import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
+
+const STATUSES = ['available', 'reserved', 'occupied']
+
+const STATUS_LABELS = {
+  available: 'Available',
+  reserved: 'Reserved',
+  occupied: 'Occupied',
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState(null)
+  const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const load = async () => {
-      const { ok, data } = await api('/api/stats/dashboard')
+    api('/api/stats/dashboard').then(({ ok, data }) => {
       if (ok) setStats(data)
       else setError(data?.error || 'Failed to load stats')
-    }
-    load()
+    })
   }, [])
+
+  useEffect(() => {
+    api('/api/map').then(({ ok, data }) => {
+      if (ok) setMapData(data)
+      else setError((current) => current || data?.error || 'Failed to load map data')
+    })
+  }, [])
+
+  const queue = stats
+    ? [
+        {
+          to: `/${user.role}/reservations`,
+          label: 'Reservations awaiting approval',
+          count: stats.reservations.pending,
+        },
+        {
+          to: `/${user.role}/payments`,
+          label: 'Payments to validate',
+          count: stats.payments.pending,
+        },
+        {
+          to: `/${user.role}/burial-records`,
+          label: 'Interments scheduled',
+          count: stats.burials.pending,
+        },
+      ].filter((item) => item.count > 0)
+    : []
+
+  const loading = !stats && !mapData && !error
 
   return (
     <div>
@@ -24,78 +63,79 @@ export default function Dashboard() {
 
       {error && <p className="alert alert--error">{error}</p>}
 
-      {stats ? (
-        <>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <h3>Total Lots</h3>
-              <p className="stat-number">{stats.lots.total}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Available</h3>
-              <p className="stat-number">{stats.lots.available}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Reserved</h3>
-              <p className="stat-number">{stats.lots.reserved}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Occupied</h3>
-              <p className="stat-number">{stats.lots.occupied}</p>
-            </div>
-          </div>
+      {loading && <Loading message="Loading dashboard..." />}
 
-          <div className="stats-grid section-block">
-            <div className="stat-card">
-              <h3>Reservations</h3>
-              <p className="stat-number">{stats.reservations.total}</p>
+      {(stats || mapData) && (
+        <div className="dash-grid">
+          <section className="dash-panel">
+            <div className="dash-panel-head">
+              <h3>Occupancy</h3>
+              <Link to="/">Open the full map</Link>
             </div>
-            <div className="stat-card">
-              <h3>Pending Approval</h3>
-              <p className="stat-number">{stats.reservations.pending}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Total Revenue</h3>
-              <p className="stat-number">₱{Number(stats.payments.total_revenue).toLocaleString()}</p>
-            </div>
-            <div className="stat-card">
-              <h3>Burial Records</h3>
-              <p className="stat-number">{stats.burials.total}</p>
-            </div>
-          </div>
 
-          {stats.recent_reservations.length > 0 && (
-            <div className="section-block table-container">
-              <h3 className="section-title">Recent Reservations</h3>
-              <table className="table">
-                <caption className="visually-hidden">Recent reservations</caption>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Lot</th>
-                    <th>Client</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.recent_reservations.map((r) => (
-                    <tr key={r.reservation_id}>
-                      <td>{r.reservation_id}</td>
-                      <td>{r.lot_code}</td>
-                      <td>{r.fullname}</td>
-                      <td>{r.reservation_date}</td>
-                      <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
-                    </tr>
+            {mapData ? (
+              <OccupancyMap sections={mapData.sections} />
+            ) : (
+              <p className="text-muted">Map unavailable.</p>
+            )}
+
+            {stats && (
+              <>
+                <div className="occupancy-meter" aria-hidden="true">
+                  {STATUSES.filter((s) => stats.lots[s] > 0).map((s) => (
+                    <span key={s} style={{ flexGrow: stats.lots[s], background: STATUS_COLORS[s] }} />
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      ) : !error ? (
-        <Loading message="Loading stats..." />
-      ) : null}
+                </div>
+                <div className="dash-legend">
+                  {STATUSES.map((s) => (
+                    <span key={s}>
+                      <i className="dot" style={{ background: STATUS_COLORS[s] }} /> {STATUS_LABELS[s]} ({stats.lots[s]})
+                    </span>
+                  ))}
+                  <span className="text-muted">{stats.lots.total} plots</span>
+                </div>
+              </>
+            )}
+          </section>
+
+          <div className="dash-stack">
+            <section className="dash-panel">
+              <h3>Key figures</h3>
+              {stats ? (
+                <dl className="figure-list">
+                  <div><dt>Plots</dt><dd>{stats.lots.total}</dd></div>
+                  <div><dt>Reservations</dt><dd>{stats.reservations.total}</dd></div>
+                  <div><dt>Revenue collected</dt><dd>₱{Number(stats.payments.total_revenue).toLocaleString()}</dd></div>
+                  <div><dt>Burial records</dt><dd>{stats.burials.total}</dd></div>
+                  <div><dt>Users</dt><dd>{stats.users}</dd></div>
+                </dl>
+              ) : (
+                <p className="text-muted">Unavailable.</p>
+              )}
+            </section>
+
+            <section className="dash-panel">
+              <h3>Pending work</h3>
+              {!stats ? (
+                <p className="text-muted">Unavailable.</p>
+              ) : queue.length === 0 ? (
+                <p className="text-muted">Nothing waiting.</p>
+              ) : (
+                <ul className="queue">
+                  {queue.map((item) => (
+                    <li key={item.to}>
+                      <Link to={item.to}>
+                        <span>{item.label}</span>
+                        <span className="queue-count">{item.count}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

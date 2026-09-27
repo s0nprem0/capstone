@@ -201,7 +201,7 @@ export default function Cemetery() {
               {selectedLot ? (
                 <>
                   <h3>{selectedLot.lot_code}</h3>
-                  <dl className="map-detail-list">
+                  <dl className="figure-list">
                     <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
                     <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
                     <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
