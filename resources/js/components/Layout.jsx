@@ -1,49 +1,113 @@
-import { Outlet, NavLink, Link } from 'react-router-dom'
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api'
 
+const NOTIFICATIONS = { to: '/notifications', label: 'Notifications', badge: true }
+
 function roleNav(role) {
   if (role === 'user') {
     return [
-      { to: '/visitor/reserve', label: 'Reserve a Lot', end: true },
-      { to: '/visitor/reservations', label: 'My Reservations', end: true },
-      { to: '/visitor/payments', label: 'My Payments', end: true },
-      { to: '/visitor/profile', label: 'Profile', end: true },
-      { to: '/', label: 'Cemetery Map', end: true },
+      {
+        heading: 'Cemetery',
+        items: [
+          { to: '/', label: 'Cemetery Map' },
+          { to: '/visitor/reserve', label: 'Reserve a Lot' },
+        ],
+      },
+      {
+        heading: 'My Records',
+        items: [
+          { to: '/visitor/reservations', label: 'My Reservations' },
+          { to: '/visitor/payments', label: 'My Payments' },
+        ],
+      },
+      {
+        heading: 'Account',
+        items: [{ to: '/visitor/profile', label: 'Profile' }, NOTIFICATIONS],
+      },
     ]
   }
   if (role === 'staff') {
     return [
-      { to: '/staff', label: 'Dashboard', end: true },
-      { to: '/staff/reservations', label: 'Reservations', end: true },
-      { to: '/staff/payments', label: 'Payments', end: true },
-      { to: '/staff/burial-records', label: 'Burial Records', end: true },
-      { to: '/staff/users', label: 'Users', end: true },
-      { to: '/staff/reports', label: 'Reports', end: true },
-      { to: '/', label: 'Cemetery Map', end: true },
+      {
+        heading: 'Overview',
+        items: [
+          { to: '/staff', label: 'Dashboard' },
+          { to: '/', label: 'Cemetery Map' },
+          NOTIFICATIONS,
+        ],
+      },
+      {
+        heading: 'Records',
+        items: [
+          { to: '/staff/reservations', label: 'Reservations' },
+          { to: '/staff/payments', label: 'Payments' },
+          { to: '/staff/burial-records', label: 'Burial Records' },
+        ],
+      },
+      {
+        heading: 'Administration',
+        items: [
+          { to: '/staff/users', label: 'Users' },
+          { to: '/staff/reports', label: 'Reports' },
+        ],
+      },
     ]
   }
   if (role === 'admin') {
     return [
-      { to: '/admin', label: 'Dashboard', end: true },
-      { to: '/admin/sections', label: 'Sections', end: true },
-      { to: '/admin/lots', label: 'Lots', end: true },
-      { to: '/admin/reservations', label: 'Reservations', end: true },
-      { to: '/admin/payments', label: 'Payments', end: true },
-      { to: '/admin/burial-records', label: 'Burial Records', end: true },
-      { to: '/admin/users', label: 'Users', end: true },
-      { to: '/admin/reports', label: 'Reports', end: true },
-      { to: '/admin/settings', label: 'Settings', end: true },
-      { to: '/', label: 'Cemetery Map', end: true },
+      {
+        heading: 'Overview',
+        items: [
+          { to: '/admin', label: 'Dashboard' },
+          { to: '/', label: 'Cemetery Map' },
+          NOTIFICATIONS,
+        ],
+      },
+      {
+        heading: 'Records',
+        items: [
+          { to: '/admin/reservations', label: 'Reservations' },
+          { to: '/admin/payments', label: 'Payments' },
+          { to: '/admin/burial-records', label: 'Burial Records' },
+        ],
+      },
+      {
+        heading: 'Inventory',
+        items: [
+          { to: '/admin/sections', label: 'Sections' },
+          { to: '/admin/lots', label: 'Lots' },
+        ],
+      },
+      {
+        heading: 'Administration',
+        items: [
+          { to: '/admin/users', label: 'Users' },
+          { to: '/admin/reports', label: 'Reports' },
+          { to: '/admin/settings', label: 'Settings' },
+        ],
+      },
     ]
   }
-  return [{ to: '/', label: 'Cemetery Map', end: true }]
+  return [{ heading: 'Cemetery', items: [{ to: '/', label: 'Cemetery Map' }] }]
+}
+
+// Sub-pages such as /admin/sections/editor have no nav entry of their own,
+// so fall back to the deepest nav item they sit under.
+function labelFor(items, pathname) {
+  const under = items.filter(
+    (item) => pathname === item.to || (item.to !== '/' && pathname.startsWith(`${item.to}/`))
+  )
+  if (!under.length) return null
+  return under.reduce((deepest, item) => (item.to.length > deepest.to.length ? item : deepest)).label
 }
 
 export default function Layout() {
   const { user, logout } = useAuth()
-  const items = roleNav(user?.role)
+  const { pathname } = useLocation()
+  const groups = roleNav(user?.role)
+  const items = groups.flatMap((group) => group.items)
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -66,25 +130,24 @@ export default function Layout() {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
         <h1 className="sidebar-title">St. John Memorial Garden &amp; Parks</h1>
         <nav onClick={closeSidebar}>
-          {items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
+          {groups.map((group) => (
+            <div className="nav-group" key={group.heading}>
+              <p className="nav-heading">{group.heading}</p>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end
+                  className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
+                >
+                  {item.label}
+                  {item.badge && unreadCount > 0 && (
+                    <span className="notif-badge">{unreadCount}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
           ))}
-          {user && (
-            <NavLink
-              to="/notifications"
-              className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
-            >
-              Notifications
-              {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
-            </NavLink>
-          )}
         </nav>
         <div className="sidebar-footer">
           {user ? (
@@ -111,7 +174,9 @@ export default function Layout() {
           >
             ☰
           </button>
-          <span className="topbar-title">St. John Memorial Garden &amp; Parks</span>
+          <span className="topbar-title">
+            {labelFor(items, pathname) || 'St. John Memorial Garden & Parks'}
+          </span>
         </div>
         <Outlet />
       </main>

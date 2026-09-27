@@ -59,6 +59,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
 }
 
 .sidebar-title {
@@ -70,7 +71,40 @@ body {
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 1rem;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* 0.65 white on --color-primary measures 4.70:1, so the small uppercase
+   label clears AA while staying dimmer than the links beside it (0.70,
+   5.16:1). */
+.nav-heading {
+  margin: 0 0 0.35rem 0.75rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Desktop shell: a grouped sidebar is taller than a short laptop viewport
+   (~800px of links against ~670px of usable height at 1366x768), so it
+   scrolls internally, and it stays put while long record tables scroll past.
+   Scoped above 1024px so it never fights the off-canvas drawer, where 100vh
+   includes the area mobile browsers hide behind the URL bar. */
+@media (min-width: 1025px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
 }
 
 .nav-link {
@@ -906,8 +940,14 @@ rect.lot--selected {
   padding: 0.4rem 0.7rem;
 }
 
+/* The drawer hides the sidebar at tablet widths, so the topbar names the
+   section you are in instead of repeating the (much longer) app name. */
 .topbar-title {
   font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-backdrop {
