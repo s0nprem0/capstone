@@ -52,11 +52,15 @@ foreach ($sections as $s) {
     $outside = 0;
     $boxes = [];
 
+    // A section with no outline has no polygon to test against; the editor
+    // falls back to its view box. Report it rather than failing every plot.
+    $hasOutline = count($poly) >= 3;
+
     foreach ($ls as $l) {
         $total++;
         $cx = $l['svg_x'] + $l['svg_w'] / 2;
         $cy = $l['svg_y'] + $l['svg_h'] / 2;
-        if (!pointInPolygon($poly, $cx, $cy)) {
+        if ($hasOutline && !pointInPolygon($poly, $cx, $cy)) {
             $outside++;
         }
         $boxes[] = [$l['svg_x'], $l['svg_y'], $l['svg_x'] + $l['svg_w'], $l['svg_y'] + $l['svg_h'], $l['lot_code']];
@@ -74,6 +78,10 @@ foreach ($sections as $s) {
         }
     }
     $bad += $outside + $overlap;
+
+    if (!$hasOutline && $ls) {
+        printf("  note: %s has no outline yet, so its %d plots are unchecked\n", $s['section_name'], count($ls));
+    }
 
     $vb = preg_split('/\s+/', trim((string) $s['svg_viewbox']));
     $cellW = $ls ? (int) round(array_sum(array_column($ls, 'svg_w')) / count($ls)) : 0;

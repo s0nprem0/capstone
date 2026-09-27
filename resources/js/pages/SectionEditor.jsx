@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 const MIN_VERTICES = 3
-const PICK = 12 // edge hit distance, in map units
+const PICK_PX = 12 // click tolerance in screen pixels, so it survives zooming
 const DRAG_THRESHOLD = 3
 
 const parsePoints = (s) => {
@@ -37,6 +37,27 @@ const outlineFromViewbox = (viewBox) => {
   ]
 }
 
+// Screen pixels per map unit at the current viewBox, so tolerances can be
+// expressed in pixels and stay constant while zooming.
+const viewScale = (el, vb) => {
+  const rect = el.getBoundingClientRect()
+  if (!rect.width || !vb[2] || !vb[3]) return 1
+  return Math.min(rect.width / vb[2], rect.height / vb[3]) || 1
+}
+
+// Nearest outline edge within tolerance. Shared by the hover preview and the
+// click, so what the ghost shows is exactly what a click will insert.
+const nearestEdge = (pt, pts, pick) => {
+  let best = null
+  const n = pts.length
+  for (let i = 0; i < n; i++) {
+    const hit = segmentHit(pt, pts[i], pts[(i + 1) % n])
+    if (hit.d <= pick && (!best || hit.d < best.d)) best = { ...hit, after: i }
+  }
+  if (!best || best.t < 0.02 || best.t > 0.98) return null
+  return best
+}
+
 // closest point on segment a-b to p → { d, x, y, t }
 const segmentHit = (p, a, b) => {
   const abx = b[0] - a[0]
@@ -59,6 +80,7 @@ export default function SectionEditor() {
   const [savedAt, setSavedAt] = useState(null)
   const [error, setError] = useState('')
   const [placeholder, setPlaceholder] = useState(false)
+  const [snap, setSnap] = useState(null)
 
   const svgRef = useRef(null)
   const vbRef = useRef([...MAP_VIEWBOX])
@@ -224,17 +246,36 @@ export default function SectionEditor() {
   }
 
   // --- interactions ---
+  const onSvgPointerMove = (e) => {
+    if (dragRef.current) {
+      onPointerMove(e)
+      return
+    }
+    if (locked || pts.length < MIN_VERTICES) {
+      setSnap(null)
+      return
+    }
+    const el = svgRef.current
+    if (!el) return
+    const hit = nearestEdge(toSvg(e), pts, PICK_PX / viewScale(el, vbRef.current))
+    setSnap(hit ? { x: Math.round(hit.x), y: Math.round(hit.y) } : null)
+  }
+
+  const onSvgPointerLeave = () => setSnap(null)
+
   const onSvgPointerDown = (e) => {
     if (locked) {
       // locked: allow panning only
       dragRef.current = { type: 'pan', x: e.clientX, y: e.clientY, vb: [...vbRef.current] }
       movedRef.current = false
+      armedRef.current = false
       svgRef.current.setPointerCapture(e.pointerId)
       return
     }
     dragRef.current = { type: 'pan', x: e.clientX, y: e.clientY, vb: [...vbRef.current] }
     movedRef.current = false
     armedRef.current = false
+    setSnap(null)
     svgRef.current.setPointerCapture(e.pointerId)
   }
 
@@ -263,7 +304,9 @@ export default function SectionEditor() {
     // pan
     const dx = e.clientX - drag.x
     const dy = e.clientY - drag.y
-    if (Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD) movedRef.current = true
+    if (!armedRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+    armedRef.current = true
+    movedRef.current = true
     const [x, y, w, h] = drag.vb
     setVbBoth([x - (dx / (svgRef.current?.getBoundingClientRect().width || 1)) * w, y - (dy / (svgRef.current?.getBoundingClientRect().height || 1)) * h, w, h])
   }
@@ -273,19 +316,15 @@ export default function SectionEditor() {
     dragRef.current = null
     if (!drag || drag.type !== 'pan') return
     if (movedRef.current || locked || pts.length < MIN_VERTICES) return
-    // A clean click on empty map: add a vertex on the nearest edge.
-    const pt = toSvg(e)
-    let best = null
-    const n = pts.length
-    for (let i = 0; i < n; i++) {
-      const hit = segmentHit(pt, pts[i], pts[(i + 1) % n])
-      if (hit.d <= PICK && (!best || hit.d < best.d)) best = { ...hit, after: i }
-    }
-    if (!best || best.t < 0.02 || best.t > 0.98) return
-    const insertAt = best.after + 1
+    // A clean click on the map: add a vertex on the nearest edge.
+    const el = svgRef.current
+    if (!el) return
+    const hit = nearestEdge(toSvg(e), pts, PICK_PX / viewScale(el, vbRef.current))
+    if (!hit) return
+    const insertAt = hit.after + 1
     setPts((prev) => [
       ...prev.slice(0, insertAt),
-      [Math.round(best.x), Math.round(best.y)],
+      [Math.round(hit.x), Math.round(hit.y)],
       ...prev.slice(insertAt),
     ])
     setSelected(insertAt)
@@ -405,9 +444,10 @@ export default function SectionEditor() {
               className="map-svg editor-svg"
               viewBox={vb.join(' ')}
               preserveAspectRatio="xMidYMid meet"
-              style={{ touchAction: 'none' }}
+              style={{ touchAction: 'none', cursor: snap ? 'crosshair' : 'grab' }}
               onPointerDown={onSvgPointerDown}
-              onPointerMove={onPointerMove}
+              onPointerMove={onSvgPointerMove}
+              onPointerLeave={onSvgPointerLeave}
               onPointerUp={finishGesture}
               onPointerCancel={finishGesture}
             >
@@ -431,6 +471,13 @@ export default function SectionEditor() {
                   strokeDasharray={dirty ? '6 4' : undefined}
                   pointerEvents="none"
                 />
+              )}
+
+              {snap && !locked && (
+                <g pointerEvents="none">
+                  <circle cx={snap.x} cy={snap.y} r={9} fill="#1d4ed8" fillOpacity={0.18} stroke="#1d4ed8" strokeWidth={2} strokeDasharray="3 2" />
+                  <circle cx={snap.x} cy={snap.y} r={2.5} fill="#1d4ed8" />
+                </g>
               )}
 
               {pts.map((p, i) => (
@@ -459,7 +506,7 @@ export default function SectionEditor() {
             <div className="map-drag-hint">
               {locked
                 ? 'Locked — pan to inspect. Unlock to edit.'
-                : 'Drag a vertex to move it · click an edge to add a vertex · select a vertex then Delete to remove one · Ctrl/Cmd+Z to undo'}
+                : 'Drag a vertex to move it · hover an edge and click to add a vertex · select a vertex then Delete to remove one · Ctrl/Cmd+Z to undo'}
             </div>
           </div>
         </div>
