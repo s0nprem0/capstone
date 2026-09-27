@@ -67,29 +67,39 @@ export default function Cemetery() {
       {!mapData && !error && <Loading message="Loading map..." />}
 
       {mapData && (
-        <>
-          <div className="map-toolbar">
-            <div className="map-tabs">
-              <button
-                type="button"
-                className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
-                onClick={showAll}
-              >
-                Overview
-              </button>
-              {sections.map((s) => (
+        <div className="map-panes">
+          <aside className="map-rail">
+            <div className="map-rail-group">
+              <p className="map-rail-heading">Sections</p>
+              <div className="map-tabs">
                 <button
-                  key={s.section_id}
                   type="button"
-                  className={activeSection?.section_id === s.section_id ? 'map-tab map-tab--active' : 'map-tab'}
-                  onClick={() => focusSection(s)}
+                  className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
+                  onClick={showAll}
                 >
-                  {s.section_name}
+                  Overview
                 </button>
-              ))}
+                {sections.map((s) => (
+                  <button
+                    key={s.section_id}
+                    type="button"
+                    className={activeSection?.section_id === s.section_id ? 'map-tab map-tab--active' : 'map-tab'}
+                    onClick={() => focusSection(s)}
+                  >
+                    {s.section_name}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="map-toolbar-row">
+            <div className="map-rail-group">
+              <p className="map-rail-heading">Filter</p>
+              <input
+                className="search-input map-search"
+                placeholder="Search lot code…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
               <div className="map-filters">
                 {['all', 'available', 'reserved', 'occupied'].map((status) => (
                   <button
@@ -102,14 +112,10 @@ export default function Cemetery() {
                   </button>
                 ))}
               </div>
+            </div>
 
-              <input
-                className="search-input map-search"
-                placeholder="Search lot code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-
+            <div className="map-rail-group">
+              <p className="map-rail-heading">Display</p>
               <label className="map-toggle">
                 <input
                   type="checkbox"
@@ -119,14 +125,17 @@ export default function Cemetery() {
                 Layout reference
               </label>
             </div>
-          </div>
 
-          <div className="map-legend">
-            <span><i className="dot" style={{ background: STATUS_COLORS.available }} /> Available ({compositeCounts.available})</span>
-            <span><i className="dot" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({compositeCounts.reserved})</span>
-            <span><i className="dot" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({compositeCounts.occupied})</span>
-            {search && <span className="text-muted">{compositeLots.length} matching</span>}
-          </div>
+            <div className="map-rail-group map-rail-legend">
+              <p className="map-rail-heading">Legend</p>
+              <div className="map-legend">
+                <span><i className="dot" style={{ background: STATUS_COLORS.available }} /> Available ({compositeCounts.available})</span>
+                <span><i className="dot" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({compositeCounts.reserved})</span>
+                <span><i className="dot" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({compositeCounts.occupied})</span>
+                {search && <span className="text-muted">{compositeLots.length} matching</span>}
+              </div>
+            </div>
+          </aside>
 
           <div className="map-layout">
             <CemeterySvgMap
@@ -138,53 +147,61 @@ export default function Cemetery() {
               onFocusSection={focusSection}
             />
 
-            {selectedLot && (
-              <aside className="map-detail">
-                <h3>{selectedLot.lot_code}</h3>
-                <dl className="map-detail-list">
-                  <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
-                  <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
-                  <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
-                  <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
-                  <div>
-                    <dt>Status</dt>
-                    <dd>
-                      <span className={`badge badge--${selectedLot.status}`}>
-                        {STATUS_LABELS[selectedLot.status] || selectedLot.status}
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
-                {selectedLot.status === 'available' &&
-                  (user ? (
-                    <Link
-                      to={`/visitor/reserve?lot=${selectedLot.lot_id}`}
-                      className="btn btn-primary btn-block"
-                    >
-                      Reserve this plot
-                    </Link>
-                  ) : (
-                    <Link
-                      to="/login"
-                      state={{ from: { pathname: '/visitor/reserve', search: `?lot=${selectedLot.lot_id}` } }}
-                      className="btn btn-primary btn-block"
-                    >
-                      Sign in to reserve
-                    </Link>
-                  ))}
-                {selectedLot.status !== 'available' && (
-                  <p className="text-muted map-hint">This plot is currently {STATUS_LABELS[selectedLot.status].toLowerCase()}.</p>
-                )}
-              </aside>
-            )}
+            <aside className="map-detail">
+              {selectedLot ? (
+                <>
+                  <h3>{selectedLot.lot_code}</h3>
+                  <dl className="map-detail-list">
+                    <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
+                    <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
+                    <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
+                    <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>
+                        <span className={`badge badge--${selectedLot.status}`}>
+                          {STATUS_LABELS[selectedLot.status] || selectedLot.status}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+                  {selectedLot.status === 'available' &&
+                    (user ? (
+                      <Link
+                        to={`/visitor/reserve?lot=${selectedLot.lot_id}`}
+                        className="btn btn-primary btn-block"
+                      >
+                        Reserve this plot
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/login"
+                        state={{ from: { pathname: '/visitor/reserve', search: `?lot=${selectedLot.lot_id}` } }}
+                        className="btn btn-primary btn-block"
+                      >
+                        Sign in to reserve
+                      </Link>
+                    ))}
+                  {selectedLot.status !== 'available' && (
+                    <p className="text-muted map-hint">This plot is currently {STATUS_LABELS[selectedLot.status].toLowerCase()}.</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h3>Plot details</h3>
+                  <p className="text-muted map-hint">
+                    Select a plot on the map to see its record.
+                  </p>
+                  {!user && (
+                    <p className="text-muted map-hint">
+                      <Link to="/login">Sign in</Link> to reserve an available plot.
+                    </p>
+                  )}
+                </>
+              )}
+            </aside>
           </div>
-
-          {!user && !selectedLot && (
-            <p className="text-muted map-hint">
-              <Link to="/login">Sign in</Link> to reserve an available plot.
-            </p>
-          )}
-        </>
+        </div>
       )}
     </div>
   )

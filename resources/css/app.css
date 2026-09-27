@@ -80,16 +80,29 @@ body {
   gap: 0.125rem;
 }
 
-/* 0.65 white on --color-primary measures 4.70:1, so the small uppercase
-   label clears AA while staying dimmer than the links beside it (0.70,
-   5.16:1). */
-.nav-heading {
-  margin: 0 0 0.35rem 0.75rem;
+/* Shared uppercase label for grouped controls: the sidebar nav and the map
+   rail. */
+.nav-heading,
+.map-rail-heading {
+  margin: 0;
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+}
+
+/* Indented to line up with the link text beside it. 0.65 white on
+   --color-primary measures 4.70:1, clearing AA while staying dimmer than the
+   links beside it (0.70, 5.16:1). */
+.nav-heading {
+  margin-left: 0.75rem;
+  margin-bottom: 0.35rem;
   color: rgba(255, 255, 255, 0.65);
+}
+
+/* --color-text-muted on --color-surface measures 4.83:1. */
+.map-rail-heading {
+  color: var(--color-text-muted);
 }
 
 /* Desktop shell: a grouped sidebar is taller than a short laptop viewport
@@ -743,13 +756,6 @@ textarea {
   text-align: right;
 }
 
-.map-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 0.75rem;
-}
-
 .map-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -770,13 +776,6 @@ textarea {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
-}
-
-.map-toolbar-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
 }
 
 .map-filters {
@@ -898,7 +897,7 @@ rect.lot--selected {
 @media print {
   .map-zoom-controls,
   .map-drag-hint,
-  .map-toolbar,
+  .map-rail,
   .map-detail {
     display: none !important;
   }
@@ -1223,9 +1222,118 @@ rect.lot--selected {
   overflow-y: auto;
 }
 
-.map-page .map-hint,
-.map-page .map-toolbar {
+.map-page .map-hint {
   flex-shrink: 0;
+}
+
+/* ==== 3-pane map shell (Cemetery) ====
+   Controls left, map centre, record right — no modals. Everything is scoped
+   to .map-panes so the Lot Editor and Section Editor keep their existing
+   two-pane layout. */
+.map-panes {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  /* The collapse point below is judged against this box, not the viewport. */
+  container-type: inline-size;
+}
+
+.map-rail {
+  flex: 0 0 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.map-rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Drops the key to the foot of the rail when the controls leave room. */
+.map-rail-legend {
+  margin-top: auto;
+}
+
+.map-panes .map-layout {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stretched rather than content-sized so both flanks read as panes instead
+   of one panel floating beside a full-height map. */
+.map-panes .map-detail {
+  align-self: stretch;
+}
+
+/* In a column the rail's controls stretch and wrap rather than hug a row. */
+.map-rail .map-search {
+  max-width: none;
+  width: 100%;
+}
+
+.map-rail .map-filters {
+  flex-wrap: wrap;
+}
+
+.map-rail .map-toggle {
+  margin-left: 0;
+}
+
+/* The legend is a key inside the panel, not a card inside a card. */
+.map-rail .map-legend {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Below 960px the two flanks leave under 390px for the map, so the record
+   drops beneath it. Judged against the container because the off-canvas
+   sidebar frees 240px below 1024px: a 1024px tablet gives the map more room
+   than a 1200px laptop does, so viewport width would collapse the wrong
+   machines. */
+@container (max-width: 959px) {
+  .map-panes .map-layout {
+    flex-direction: column;
+  }
+
+  .map-panes .map-detail {
+    position: static;
+    flex: none;
+    width: 100%;
+    /* Leaves the map the majority of a stacked pane; the record scrolls. */
+    max-height: 45%;
+  }
+}
+
+/* .main-content narrows to 1.5rem/1rem of vertical padding at these widths
+   and grows a topbar (~2rem button plus 1.25rem margin) above the page.
+   6.5rem and 5.5rem are padding + topbar rounded up by ~3px, so the map
+   stops a hair short instead of pushing a scrollbar onto the viewport. */
+@media (max-width: 1024px) {
+  .map-page {
+    height: calc(100vh - 6.5rem);
+    height: calc(100dvh - 6.5rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .map-page {
+    height: calc(100vh - 5.5rem);
+    height: calc(100dvh - 5.5rem);
+  }
 }
 
 /* Editor-specific polish */
