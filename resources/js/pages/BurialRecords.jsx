@@ -211,7 +211,7 @@ export default function BurialRecords() {
                   <td>{r.burial_date}</td>
                   <td>{r.burial_type}</td>
                   <td>{r.next_of_kin_name || '—'}</td>
-                  <td><span className={`badge badge--${r.interment_status === 'interred' ? 'paid' : 'pending'}`}>{r.interment_status}</span></td>
+                  <td><span className={`badge badge--${r.interment_status}`}>{r.interment_status}</span></td>
                   <td>
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>

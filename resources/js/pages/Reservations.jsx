@@ -91,8 +91,8 @@ export default function Reservations() {
                 <th>Section</th>
                 {isStaffView && <th>Client</th>}
                 <th>Date</th>
-                <th>Slots</th>
-                <th>Amount</th>
+                <th className="num">Slots</th>
+                <th className="num">Amount</th>
                 <th>Payment</th>
                 <th>Approval</th>
                 {isStaffView && <th>Actions</th>}
@@ -110,8 +110,8 @@ export default function Reservations() {
                   <td>{r.section_name}</td>
                   {isStaffView && <td>{r.user_name}</td>}
                   <td>{r.reservation_date}</td>
-                  <td>{r.number_of_slots}</td>
-                  <td>₱{Number(r.total_amount).toLocaleString()}</td>
+                  <td className="num">{r.number_of_slots}</td>
+                  <td className="num">₱{Number(r.total_amount).toLocaleString()}</td>
                   <td><span className={`badge badge--${r.payment_status}`}>{r.payment_status}</span></td>
                   <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
                   {isStaffView && (

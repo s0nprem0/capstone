@@ -221,7 +221,7 @@ export default function Payments() {
                 <th>Reservation</th>
                 {isStaffView && <th>Client</th>}
                 <th>Lot</th>
-                <th>Amount</th>
+                <th className="num">Amount</th>
                 <th>Method</th>
                 <th>Reference</th>
                 <th>Receipt</th>
@@ -240,7 +240,7 @@ export default function Payments() {
                       {p.lot_code}
                     </Link>
                   </td>
-                  <td>₱{Number(p.amount).toLocaleString()}</td>
+                  <td className="num">₱{Number(p.amount).toLocaleString()}</td>
                   <td>{p.payment_method}</td>
                   <td>{p.reference_no || '—'}</td>
                   <td>

@@ -5,6 +5,14 @@ import { useAuth } from '../context/AuthContext'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 
+// Local date, not toISOString(): that is UTC, which rejects today's date for
+// anyone east of Greenwich during their own morning.
+const todayISO = () => {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 export default function NewReservation() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
@@ -16,6 +24,7 @@ export default function NewReservation() {
     number_of_slots: 1,
   })
   const [error, setError] = useState('')
+  const [touched, setTouched] = useState({})
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [created, setCreated] = useState(null)
@@ -39,6 +48,19 @@ export default function NewReservation() {
   const slotMax = selectedLot ? SLOT_CAPACITY[selectedLot.lot_type] || 1 : null
   const slots = Math.max(1, Number(form.number_of_slots) || 1)
   const totalAmount = selectedLot ? Number(selectedLot.price) * slots : 0
+
+  // A ?lot= deep link can outlive the lot it points at. Gated on the map having
+  // loaded, otherwise every deep link reports as stale for the first frame.
+  const staleLot = sections.length > 0 && form.lot_id !== '' && !selectedLot
+
+  const errors = {}
+  if (!form.lot_id) errors.lot_id = 'Select a lot.'
+  else if (staleLot) errors.lot_id = 'That lot is no longer available.'
+  if (!form.reservation_date) errors.reservation_date = 'Pick a reservation date.'
+  else if (form.reservation_date < todayISO()) errors.reservation_date = 'The date cannot be in the past.'
+
+  const show = (name) => touched[name] && errors[name]
+  const blur = (name) => setTouched((t) => ({ ...t, [name]: true }))
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -67,6 +89,8 @@ export default function NewReservation() {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setTouched({ lot_id: true, reservation_date: true })
+    if (errors.lot_id || errors.reservation_date) return
     setSubmitting(true)
 
     const { ok, data } = await api('/api/reservations', {
@@ -83,6 +107,7 @@ export default function NewReservation() {
     if (ok) {
       setSuccess('Reservation submitted. Awaiting approval.')
       setForm({ lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 })
+      setTouched({})
       setPay({ amount: String(data.total_amount), method: 'gcash', reference_no: '', receipt: null })
       setCreated(data)
     } else {
@@ -150,50 +175,82 @@ export default function NewReservation() {
         <p className="text-muted">No available lots at the moment. Please check back later.</p>
       )}
 
-      <form onSubmit={handleSubmit} className="form-card">
+      <form onSubmit={handleSubmit} className="form-card" noValidate>
         <div className="form-grid">
-          <label>
-            Cemetery Lot
-            <select name="lot_id" value={form.lot_id} onChange={handleLotChange} required>
-              <option value="">Select an available lot</option>
-              {grouped.map((g) => (
-                <optgroup key={g.section.section_id} label={g.section.section_name}>
-                  {g.lots.map((lot) => (
-                    <option key={lot.lot_id} value={lot.lot_id}>
-                      {lot.lot_code} — ₱{Number(lot.price).toLocaleString()}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <label>
-            Reservation Date
-            <input type="date" name="reservation_date" value={form.reservation_date} onChange={handleChange} required />
-          </label>
-          <label>
-            Purpose
-            <input name="purpose" value={form.purpose} onChange={handleChange} />
-          </label>
-          <label>
-            Number of Slots{slotMax && <span className="label-hint">(max {slotMax})</span>}
-            <input
-              type="number"
-              min="1"
-              max={slotMax || undefined}
-              name="number_of_slots"
-              value={form.number_of_slots}
-              onChange={handleChange}
-              required
-            />
-          </label>
+          <div className="field">
+            <label>
+              Cemetery Lot
+              <select
+                name="lot_id"
+                value={form.lot_id}
+                onChange={handleLotChange}
+                onBlur={() => blur('lot_id')}
+                aria-invalid={!!show('lot_id')}
+                required
+              >
+                <option value="">Select an available lot</option>
+                {grouped.map((g) => (
+                  <optgroup key={g.section.section_id} label={g.section.section_name}>
+                    {g.lots.map((lot) => (
+                      <option key={lot.lot_id} value={lot.lot_id}>
+                        {lot.lot_code} — ₱{Number(lot.price).toLocaleString()}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+            {/* Staleness shows on its own — it is a data condition, not a
+                field the visitor has just left. */}
+            {(staleLot || show('lot_id')) && (
+              <span className="field-error" role="alert">{errors.lot_id}</span>
+            )}
+          </div>
+          <div className="field">
+            <label>
+              Reservation Date
+              <input
+                type="date"
+                name="reservation_date"
+                value={form.reservation_date}
+                onChange={handleChange}
+                onBlur={() => blur('reservation_date')}
+                aria-invalid={!!show('reservation_date')}
+                min={todayISO()}
+                required
+              />
+            </label>
+            {show('reservation_date') && (
+              <span className="field-error" role="alert">{errors.reservation_date}</span>
+            )}
+          </div>
+          <div className="field">
+            <label>
+              Purpose
+              <input name="purpose" value={form.purpose} onChange={handleChange} maxLength={100} />
+            </label>
+          </div>
+          <div className="field">
+            <label>
+              Number of Slots{slotMax && <span className="label-hint">(max {slotMax})</span>}
+              <input
+                type="number"
+                min="1"
+                max={slotMax || undefined}
+                name="number_of_slots"
+                value={form.number_of_slots}
+                onChange={handleChange}
+                required
+              />
+            </label>
+          </div>
         </div>
         <div className="form-actions">
           <p className="total-display">
             Total: <strong>₱{totalAmount.toLocaleString()}</strong>
           </p>
           <Link to="/visitor/reservations" className="btn btn-secondary">Cancel</Link>
-          <button type="submit" className="btn btn-primary" disabled={submitting || !selectedLot}>
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
             {submitting ? 'Submitting...' : 'Submit Reservation'}
           </button>
         </div>

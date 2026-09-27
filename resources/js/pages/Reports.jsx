@@ -75,7 +75,7 @@ export default function Reports() {
           <div className="table-container">
             <table className="table">
               <thead>
-                <tr><th>ID</th><th>Lot</th><th>Client</th><th>Date</th><th>Amount</th><th>Approval</th><th>Payment</th></tr>
+                <tr><th>ID</th><th>Lot</th><th>Client</th><th>Date</th><th className="num">Amount</th><th>Approval</th><th>Payment</th></tr>
               </thead>
               <tbody>
                 {report.items.map((r) => (
@@ -84,7 +84,7 @@ export default function Reports() {
                     <td>{r.lot_code}</td>
                     <td>{r.user_name}</td>
                     <td>{r.reservation_date}</td>
-                    <td>{formatCurrency(r.total_amount)}</td>
+                    <td className="num">{formatCurrency(r.total_amount)}</td>
                     <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
                     <td><span className={`badge badge--${r.payment_status}`}>{r.payment_status}</span></td>
                   </tr>
@@ -108,7 +108,7 @@ export default function Reports() {
           <div className="table-container">
             <table className="table">
               <thead>
-                <tr><th>ID</th><th>Lot</th><th>Client</th><th>Amount</th><th>Method</th><th>Status</th></tr>
+                <tr><th>ID</th><th>Lot</th><th>Client</th><th className="num">Amount</th><th>Method</th><th>Status</th></tr>
               </thead>
               <tbody>
                 {report.items.map((p) => (
@@ -116,7 +116,7 @@ export default function Reports() {
                     <td>{p.payment_id}</td>
                     <td>{p.lot_code}</td>
                     <td>{p.user_name}</td>
-                    <td>{formatCurrency(p.amount)}</td>
+                    <td className="num">{formatCurrency(p.amount)}</td>
                     <td>{p.payment_method}</td>
                     <td><span className={`badge badge--${p.payment_status}`}>{p.payment_status}</span></td>
                   </tr>
@@ -151,7 +151,7 @@ export default function Reports() {
                     <td>{b.section_name}</td>
                     <td>{b.burial_date}</td>
                     <td>{b.burial_type}</td>
-                    <td><span className={`badge badge--${b.interment_status === 'interred' ? 'paid' : 'pending'}`}>{b.interment_status}</span></td>
+                    <td><span className={`badge badge--${b.interment_status}`}>{b.interment_status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -174,7 +174,7 @@ export default function Reports() {
           <div className="table-container">
             <table className="table">
               <thead>
-                <tr><th>Lot Code</th><th>Section</th><th>Type</th><th>Block</th><th>Price</th><th>Status</th></tr>
+                <tr><th>Lot Code</th><th>Section</th><th>Type</th><th>Block</th><th className="num">Price</th><th>Status</th></tr>
               </thead>
               <tbody>
                 {report.items.map((l) => (
@@ -183,7 +183,7 @@ export default function Reports() {
                     <td>{l.section_name}</td>
                     <td>{l.lot_type}</td>
                     <td>{l.block || '—'}</td>
-                    <td>{formatCurrency(l.price)}</td>
+                    <td className="num">{formatCurrency(l.price)}</td>
                     <td><span className={`badge badge--${l.status}`}>{l.status}</span></td>
                   </tr>
                 ))}

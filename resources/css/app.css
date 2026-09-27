@@ -265,6 +265,26 @@ label {
   gap: 0.25rem;
 }
 
+/* Field wrapper: label and its message stack beside the control. The message
+   sits outside the label so the accessible name stays the field's own label
+   instead of swallowing the error text. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #9b1c1c;
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: #9b1c1c;
+}
+
 .label-hint {
   font-size: 0.7rem;
   font-weight: 400;
@@ -428,13 +448,16 @@ textarea {
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  /* Reference numbers, dates and amounts line up column to column. */
+  font-variant-numeric: tabular-nums;
 }
 
 .table th,
 .table td {
   text-align: left;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -444,6 +467,11 @@ textarea {
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
+}
+
+/* Money and counts read from the right edge, as in any ledger. */
+.table .num {
+  text-align: right;
 }
 
 .badge {
@@ -518,6 +546,18 @@ textarea {
 .badge--occupied {
   background: #e8eefc;
   color: #1e40af;
+}
+
+/* Interment reuses the done/upcoming colours but keeps its own classes, so
+   changing how payments are styled cannot silently restyle burial reporting. */
+.badge--interred {
+  background: #e6f4ea;
+  color: #1e5c33;
+}
+
+.badge--scheduled {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .alert {
