@@ -11,7 +11,7 @@ export async function getCsrf() {
   return csrfToken
 }
 
-export async function api(path, options = {}) {
+async function request(path, options = {}) {
   const { method = 'GET', body } = options
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData
 
@@ -22,12 +22,24 @@ export async function api(path, options = {}) {
     }
   }
 
-  const res = await fetch(path, {
+  return fetch(path, {
     method,
     headers: options.headers,
     body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
     credentials: 'same-origin',
   })
+}
+
+export async function api(path, options = {}) {
+  // The token lives in the PHP session, which is rebuilt on login/logout or
+  // after a server restart. When the cached token no longer matches (419),
+  // drop it and retry once with a freshly issued one. The router rejects the
+  // request before any controller runs, so the retry is side-effect free.
+  let res = await request(path, options)
+  if (res.status === 419) {
+    csrfToken = null
+    res = await request(path, options)
+  }
 
   if (res.status === 401) {
     window.dispatchEvent(new CustomEvent('auth:unauthorized'))
