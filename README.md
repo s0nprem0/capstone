@@ -49,12 +49,16 @@ make install       # composer install + pnpm install (in containers)
 ```
 
 ### 3. Initialize the database
-The schema (including seed data) auto-loads on first MySQL start. To (re)apply it manually:
+The schema (including seed data) auto-loads on first MySQL start. To reset the database to the schema at any time:
 
 ```bash
-docker compose exec -T mysql mysql -u cemetery_user -psecret -e "DROP DATABASE IF EXISTS cemetery_db;"
-docker compose exec -T mysql mysql -u cemetery_user -psecret < database/schema.sql
+make migrate      # drops every table and reloads database/schema.sql
+make demo         # optional: load the demo dataset for a walkthrough
 ```
+
+`make migrate` is destructive by design — that is what lets it put a database
+back the way the schema says it should be. For demo accounts and a suggested
+walkthrough see [DEMO.md](DEMO.md).
 
 ### 4. Run the app
 | Service | URL | Purpose |
@@ -66,6 +70,9 @@ For production mode, build the frontend first:
 ```bash
 make build         # docker compose exec node pnpm build
 ```
+
+The bundle is written to `public/dist`, inside the docroot the PHP server (and
+Apache, under XAMPP) serves from, so :8000 needs nothing else running.
 
 ## Running with XAMPP (no Docker)
 
@@ -152,10 +159,11 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── docker-compose.yml         # php / node / mysql services
 ├── Dockerfile                 # PHP 8.3-cli + composer
 ├── docker/node.Dockerfile     # Node 22 + pnpm
+├── DEMO.md                    # tech demo runbook + demo accounts
 ├── .htaccess                  # Apache/XAMPP: redirect into public/
 ├── .env.example               # Docker/standalone env template
 ├── .env.xampp.example         # XAMPP env template
-└── Makefile                   # up, down, install, build, migrate, fresh, ...
+└── Makefile                   # up, down, install, build, migrate, demo, fresh, ...
 ```
 
 ## API overview
@@ -209,6 +217,8 @@ make php         # shell into PHP container
 make node        # shell into Node container
 make mysql       # interactive MySQL shell
 make build       # build the frontend bundle
+make migrate     # reset the database to the schema
+make demo        # load the demo dataset
 make fresh       # rebuild everything from scratch
 ```
 

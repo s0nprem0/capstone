@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate fresh build
+.PHONY: up down restart logs install migrate demo fresh build
 
 up:
 	docker compose up -d
@@ -21,6 +21,11 @@ build:
 
 migrate:
 	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
+
+# Loads the demo dataset. Run after `make migrate`, which resets the database
+# to the schema alone.
+demo:
+	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/demo.sql
 
 fresh:
 	docker compose down -v
