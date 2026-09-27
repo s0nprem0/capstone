@@ -170,9 +170,8 @@ INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`)
 -- Sections and plots traced from the site layout (viewBox 0 0 1791 1457).
 -- One section per enclosed plot block, so each section's outline is a single
 -- contiguous polygon instead of a rectangle spanning the roads between blocks.
--- Sections and plots traced from the site layout (viewBox 0 0 1791 1457).
--- One section per enclosed plot block, so each section's outline is a single
--- contiguous polygon instead of a rectangle spanning the roads between blocks.
+-- svg_viewbox is the outline's bounding box, which is what the section detail
+-- view crops to and rebases plot coordinates against.
 INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`, `svg_viewbox`, `svg_points`) VALUES
   ('Section A', 'North wing', 'General burial plots along the north boundary', '856 337 642 226', '909 518 874 485 890 410 856 337 1418 340 1498 563 909 563'),
   ('Section B', 'East garden', 'Garden of Peace', '909 588 331 307', '1239 891 913 895 909 588 1234 588'),
@@ -182,12 +181,19 @@ INSERT INTO `cemetery_sections` (`section_name`, `location`, `description`, `svg
   ('Section F', 'West centre', 'Central-west plots', '410 329 288 363', '615 331 634 357 620 413 628 469 656 514 697 542 696 690 410 692 413 329'),
   ('Section G', 'South garden', 'Large southern garden plots', '515 713 357 434', '872 1147 788 1109 629 1010 515 1015 517 716 872 713'),
   ('Section H', 'Cremation row', 'Upper cremation niche row', '912 909 705 99', '1549 995 912 1008 912 918 1617 909'),
-  ('Section I', 'Chapel lawn', 'Plots beside the chapel', '724 516 147 173', '871 534 871 687 724 689 725 548 792 548 852 516');
+  ('Section I', 'Chapel lawn', 'Plots beside the chapel', '724 516 147 173', '871 534 871 687 724 689 725 548 792 548 852 516'),
+  ('Section J', 'South strip', 'Plots along the southern boundary', '908 1132 528 74', '908 1146 1436 1132 1378 1206 908 1171'),
+  ('Section K', 'East wing', 'Plot blocks on the eastern boundary', '1255 587 366 304', '1481 620 1621 856 1621 885 1261 891 1255 588 1481 587'),
+  ('Section L', 'South-east row', 'Plots at the south-east corner', '1060 1231 304 92', '1224 1323 1060 1247 1364 1231 1291 1317');
 
--- 261 plots on a uniform grid inside each section's traced outline.
--- Geometry matches POST /api/lots/regrid, so "Reflow grid" in the Lot Editor
--- reproduces it exactly. Convention: 001 is a double plot, 002 a family plot,
+-- 261 plots on a uniform grid inside each section's traced outline, then 44 more
+-- for J, K and L below. Convention: 001 is a double plot, 002 a family plot,
 -- the rest single. Staff fine-tune positions and sizes in the Lot Editor.
+--
+-- The J, K and L geometry is exactly what POST /api/lots/regrid produces for
+-- them, so "Reflow grid" leaves those three sections untouched. The A-I rows
+-- predate 90a419f, which started sizing the grid from the outline instead of
+-- the bounding box, so regridding one of them shifts its plots by about a unit.
 INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `price`, `status`, `svg_x`, `svg_y`, `svg_w`, `svg_h`) VALUES
   ('A-001', 1, 'A', 'double', 25500.00, 'available', 856, 337, 51, 43),
   ('A-002', 1, 'A', 'family', 40500.00, 'available', 910, 337, 51, 43),
@@ -450,3 +456,50 @@ INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `pri
   ('I-005', 9, 'I', 'single', 12000.00, 'available', 798, 603, 71, 41),
   ('I-006', 9, 'I', 'single', 12000.00, 'available', 724, 646, 71, 41),
   ('I-007', 9, 'I', 'single', 12000.00, 'available', 798, 646, 71, 41);
+
+-- 44 plots for the three southern and eastern blocks added after the A-I seed.
+INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `block`, `lot_type`, `price`, `status`, `svg_x`, `svg_y`, `svg_w`, `svg_h`) VALUES
+  ('J-001', 10, 'J', 'double', 13600.00, 'available', 908, 1132, 64, 35),
+  ('J-002', 10, 'J', 'family', 21600.00, 'available', 974, 1132, 64, 35),
+  ('J-003', 10, 'J', 'single', 8000.00, 'available', 1040, 1132, 64, 35),
+  ('J-004', 10, 'J', 'single', 8000.00, 'available', 1106, 1132, 64, 35),
+  ('J-005', 10, 'J', 'single', 8000.00, 'available', 1172, 1132, 64, 35),
+  ('J-006', 10, 'J', 'single', 8000.00, 'available', 1238, 1132, 64, 35),
+  ('J-007', 10, 'J', 'single', 8000.00, 'available', 1304, 1132, 64, 35),
+  ('J-008', 10, 'J', 'single', 8000.00, 'available', 1370, 1132, 64, 35),
+  ('J-009', 10, 'J', 'single', 8000.00, 'available', 1106, 1169, 64, 35),
+  ('K-001', 11, 'K', 'double', 24000.00, 'available', 1255, 587, 59, 48),
+  ('K-002', 11, 'K', 'family', 38500.00, 'available', 1316, 587, 59, 48),
+  ('K-003', 11, 'K', 'single', 14000.00, 'available', 1377, 587, 59, 48),
+  ('K-004', 11, 'K', 'single', 14000.00, 'available', 1438, 587, 59, 48),
+  ('K-005', 11, 'K', 'single', 14000.00, 'available', 1255, 638, 59, 48),
+  ('K-006', 11, 'K', 'single', 14000.00, 'available', 1316, 638, 59, 48),
+  ('K-007', 11, 'K', 'single', 14000.00, 'available', 1377, 638, 59, 48),
+  ('K-008', 11, 'K', 'single', 14000.00, 'available', 1438, 638, 59, 48),
+  ('K-009', 11, 'K', 'single', 14000.00, 'available', 1255, 688, 59, 48),
+  ('K-010', 11, 'K', 'single', 14000.00, 'available', 1316, 688, 59, 48),
+  ('K-011', 11, 'K', 'single', 14000.00, 'available', 1377, 688, 59, 48),
+  ('K-012', 11, 'K', 'single', 14000.00, 'available', 1438, 688, 59, 48),
+  ('K-013', 11, 'K', 'single', 14000.00, 'available', 1499, 688, 59, 48),
+  ('K-014', 11, 'K', 'single', 14000.00, 'available', 1255, 739, 59, 48),
+  ('K-015', 11, 'K', 'single', 14000.00, 'available', 1316, 739, 59, 48),
+  ('K-016', 11, 'K', 'single', 14000.00, 'available', 1377, 739, 59, 48),
+  ('K-017', 11, 'K', 'single', 14000.00, 'available', 1438, 739, 59, 48),
+  ('K-018', 11, 'K', 'single', 14000.00, 'available', 1499, 739, 59, 48),
+  ('K-019', 11, 'K', 'single', 14000.00, 'available', 1255, 790, 59, 48),
+  ('K-020', 11, 'K', 'single', 14000.00, 'available', 1316, 790, 59, 48),
+  ('K-021', 11, 'K', 'single', 14000.00, 'available', 1377, 790, 59, 48),
+  ('K-022', 11, 'K', 'single', 14000.00, 'available', 1438, 790, 59, 48),
+  ('K-023', 11, 'K', 'single', 14000.00, 'available', 1499, 790, 59, 48),
+  ('K-024', 11, 'K', 'single', 14000.00, 'available', 1560, 790, 59, 48),
+  ('K-025', 11, 'K', 'single', 14000.00, 'available', 1255, 840, 59, 48),
+  ('K-026', 11, 'K', 'single', 14000.00, 'available', 1316, 840, 59, 48),
+  ('K-027', 11, 'K', 'single', 14000.00, 'available', 1377, 840, 59, 48),
+  ('K-028', 11, 'K', 'single', 14000.00, 'available', 1438, 840, 59, 48),
+  ('K-029', 11, 'K', 'single', 14000.00, 'available', 1499, 840, 59, 48),
+  ('K-030', 11, 'K', 'single', 14000.00, 'available', 1560, 840, 59, 48),
+  ('L-001', 12, 'L', 'double', 13600.00, 'available', 1060, 1231, 74, 44),
+  ('L-002', 12, 'L', 'family', 21600.00, 'available', 1136, 1231, 74, 44),
+  ('L-003', 12, 'L', 'single', 8000.00, 'available', 1212, 1231, 74, 44),
+  ('L-004', 12, 'L', 'single', 8000.00, 'available', 1288, 1231, 74, 44),
+  ('L-005', 12, 'L', 'single', 8000.00, 'available', 1136, 1277, 74, 44);

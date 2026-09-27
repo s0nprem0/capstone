@@ -18,7 +18,7 @@ inside the docroot the PHP server serves from, so :8000 is the only address you
 need — the Vite dev server on :5173 is optional and only useful while editing.
 
 If you would rather show the project with no client data at all, run
-`make migrate` and stop there. That gives 261 available plots, one admin, and
+`make migrate` and stop there. That gives 305 available plots, one admin, and
 an empty queue.
 
 ## Accounts
@@ -41,9 +41,9 @@ All demo accounts share one password so nothing has to be memorised on the spot.
 
 ## What is in the dataset
 
-261 plots: **241 available, 12 occupied, 8 reserved**. That split is chosen so
-all three status colours are visible on the map at once, which is the thing the
-redesign is about.
+305 plots across 12 sections: **285 available, 12 occupied, 8 reserved**. That
+split is chosen so all three status colours are visible on the map at once,
+which is the thing the redesign is about.
 
 22 reservations covering every status the schema allows — 3 awaiting approval,
 17 approved, 2 rejected — and every payment state: 12 fully paid, 4 with a
