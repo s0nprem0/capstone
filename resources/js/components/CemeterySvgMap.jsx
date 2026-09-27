@@ -7,7 +7,17 @@ export const STATUS_COLORS = {
   occupied: 'var(--status-occupied)',
 }
 
-const SECTION_COLORS = ['#2c5530', '#1d4ed8', '#7c3aed', '#b45309', '#0e7490']
+const SECTION_COLORS = [
+  '#2c5530',
+  '#1d4ed8',
+  '#7c3aed',
+  '#b45309',
+  '#0e7490',
+  '#be123c',
+  '#4d7c0f',
+  '#9333ea',
+  '#0891b2',
+]
 
 const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
