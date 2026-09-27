@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import CemeterySvgMap, { STATUS_COLORS } from '../components/CemeterySvgMap'
+import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 
 const STATUS_LABELS = {
@@ -136,6 +136,7 @@ export default function Cemetery() {
                     className={activeSection?.section_id === s.section_id ? 'map-tab map-tab--active' : 'map-tab'}
                     onClick={() => focusSection(s)}
                   >
+                    <i className="dot" style={{ background: sectionColor(s.section_id) }} />
                     {s.section_name}
                   </button>
                 ))}
@@ -195,6 +196,7 @@ export default function Cemetery() {
               showLayout={showLayout}
               onSelectLot={selectLot}
               onFocusSection={focusSection}
+              onExitSection={showAll}
             />
 
             <aside className="map-detail">

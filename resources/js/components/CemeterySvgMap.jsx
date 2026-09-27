@@ -19,6 +19,23 @@ const SECTION_COLORS = [
   '#0891b2',
 ]
 
+// Keyed off the id rather than the section's position in the list, so adding or
+// removing a section does not repaint every other one.
+export const sectionColor = (sectionId) =>
+  SECTION_COLORS[(Math.max(1, Number(sectionId) || 1) - 1) % SECTION_COLORS.length]
+
+// The outline is stored in site coordinates, the section detail view rebases
+// plots against the section's own origin, so shift the outline to match.
+const localPoints = (points, dx, dy) => {
+  const values = String(points || '').trim().split(/\s+/).map(Number)
+  if (values.length < 6 || values.some((v) => !Number.isFinite(v))) return null
+  const out = []
+  for (let i = 0; i + 1 < values.length; i += 2) {
+    out.push(`${values[i] - dx} ${values[i + 1] - dy}`)
+  }
+  return out.join(' ')
+}
+
 const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
   return parts.length === 4 ? parts : [...MAP_VIEWBOX]
@@ -75,6 +92,7 @@ export default function CemeterySvgMap({
   showLayout,
   onSelectLot,
   onFocusSection,
+  onExitSection,
 }) {
   const svgRef = useRef(null)
   const rafRef = useRef(null)
@@ -233,8 +251,20 @@ export default function CemeterySvgMap({
       const secId = Number(secEl.getAttribute('data-section-id'))
       const section = sections.find((s) => s.section_id === secId)
       if (section) onFocusSection(section)
+      return
     }
+    // Clicking past the plots steps back out of the section, the same as Escape.
+    if (activeSection) onExitSection?.()
   }
+
+  useEffect(() => {
+    if (!activeSection) return undefined
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onExitSection?.()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeSection, onExitSection])
 
   const zoomCenter = (factor) => {
     const el = svgRef.current
@@ -244,14 +274,13 @@ export default function CemeterySvgMap({
   }
 
   const showLabels = vb[2] < 1500
-  const activeLots = (activeSection?.lots || []).map((lot) => {
-    const [sectionX, sectionY] = parseViewBox(activeSection.viewBox)
-    return {
-      ...lot,
-      svg_x: lot.svg_x - sectionX,
-      svg_y: lot.svg_y - sectionY,
-    }
-  })
+  const [activeX, activeY] = activeSection ? parseViewBox(activeSection.viewBox) : [0, 0]
+  const activeLots = (activeSection?.lots || []).map((lot) => ({
+    ...lot,
+    svg_x: lot.svg_x - activeX,
+    svg_y: lot.svg_y - activeY,
+  }))
+  const activeOutline = activeSection ? localPoints(activeSection.points, activeX, activeY) : null
 
   return (
     <div className="map-svg-wrap">
@@ -271,7 +300,7 @@ export default function CemeterySvgMap({
       >
         <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
-        {showLayout && !activeSection && (
+        {showLayout && (
           <g className="map-trace" opacity={0.45}>
             {TRACE_PATHS.map((d, i) => (
               <path
@@ -289,11 +318,11 @@ export default function CemeterySvgMap({
 
         {!activeSection ? (
           <g className="map-sections">
-            {sections.map((section, i) => {
+            {sections.map((section) => {
               const [x, y, w, h] = parseViewBox(section.viewBox)
               const points = sectionPoints(section)
               const [minX, minY, maxX, maxY] = pointsBounds(points, [x, y, x + w, y + h])
-              const color = SECTION_COLORS[i % SECTION_COLORS.length]
+              const color = sectionColor(section.section_id)
               const total =
                 (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
               return (
@@ -315,6 +344,17 @@ export default function CemeterySvgMap({
           </g>
         ) : (
           <g className="map-lots">
+            {activeOutline && (
+              <polygon
+                points={activeOutline}
+                fill={sectionColor(activeSection.section_id)}
+                fillOpacity={0.1}
+                stroke={sectionColor(activeSection.section_id)}
+                strokeWidth={3}
+                strokeDasharray="12 8"
+                strokeLinejoin="round"
+              />
+            )}
             {activeLots.map((lot) => (
               <MemoLotRect
                 key={lot.lot_id}
@@ -341,7 +381,9 @@ export default function CemeterySvgMap({
         </button>
       </div>
 
-      <div className="map-drag-hint">Drag to pan · scroll to zoom</div>
+      <div className="map-drag-hint">
+        Drag to pan · scroll to zoom{activeSection && ' · Esc for overview'}
+      </div>
     </div>
   )
 }
