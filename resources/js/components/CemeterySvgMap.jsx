@@ -2,9 +2,9 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 export const STATUS_COLORS = {
-  available: '#2f9e44',
-  reserved: '#f59f00',
-  occupied: '#c92a2a',
+  available: 'var(--status-available)',
+  reserved: 'var(--status-reserved)',
+  occupied: 'var(--status-occupied)',
 }
 
 const SECTION_COLORS = ['#2c5530', '#1d4ed8', '#7c3aed', '#b45309', '#0e7490']
@@ -15,7 +15,7 @@ const parseViewBox = (s) => {
 }
 
 function LotRect({ lot, selected, showLabel }) {
-  const fill = STATUS_COLORS[lot.status] || '#868e96'
+  const fill = STATUS_COLORS[lot.status] || 'var(--color-text-muted)'
   return (
     <g data-lot-id={lot.lot_id} className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}`}>
       <rect
@@ -24,9 +24,10 @@ function LotRect({ lot, selected, showLabel }) {
         width={lot.svg_w}
         height={lot.svg_h}
         rx={2}
-        fill={fill}
-        stroke={selected ? '#111' : '#fff'}
-        strokeWidth={selected ? 3 : 1}
+        style={{ fill }}
+        stroke="#fff"
+        strokeWidth={1}
+        strokeDasharray={lot.status === 'reserved' ? '5 4' : undefined}
       />
       {showLabel && (
         <text

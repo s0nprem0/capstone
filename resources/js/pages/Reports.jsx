@@ -184,7 +184,7 @@ export default function Reports() {
                     <td>{l.lot_type}</td>
                     <td>{l.block || '—'}</td>
                     <td>{formatCurrency(l.price)}</td>
-                    <td><span className={`badge badge--${l.status === 'available' ? 'paid' : l.status === 'reserved' ? 'pending' : 'failed'}`}>{l.status}</span></td>
+                    <td><span className={`badge badge--${l.status}`}>{l.status}</span></td>
                   </tr>
                 ))}
               </tbody>

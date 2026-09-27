@@ -567,16 +567,16 @@ export default function LotEditor() {
                       aria-label={`${lot.lot_code} · ${STATUS_LABELS[lot.status] || lot.status} lot`}
                     >
                       <rect
-                        className="lot-shape"
+                        className={isSel ? 'lot-shape lot--selected' : 'lot-shape'}
                         x={lot.svg_x}
                         y={lot.svg_y}
                         width={Math.max(0, lot.svg_w)}
                         height={Math.max(0, lot.svg_h)}
                         rx={2}
-                        fill={STATUS_COLORS[lot.status] || '#868e96'}
+                        style={{ fill: STATUS_COLORS[lot.status] || 'var(--color-text-muted)' }}
                         fillOpacity={isSel ? 1 : 0.85}
-                        stroke={isSel ? '#111' : '#fff'}
-                        strokeWidth={isSel ? 3 : 1}
+                        stroke="#fff"
+                        strokeWidth={1}
                         strokeDasharray={lot.status === 'reserved' && !isSel ? '5 4' : undefined}
                       />
                       {showLabels && (
@@ -692,7 +692,9 @@ export default function LotEditor() {
                         onClick={() => setStatusQuick(k)}
                         style={{
                           borderColor: STATUS_COLORS[k],
-                          ...(isActive ? { background: STATUS_COLORS[k], color: '#fff' } : {}),
+                          ...(isActive
+                            ? { background: STATUS_COLORS[k], color: `var(--status-${k}-ink)` }
+                            : {}),
                         }}
                       >
                         {v}

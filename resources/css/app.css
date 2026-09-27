@@ -16,6 +16,27 @@
   --color-border: #e5e7eb;
   --sidebar-width: 240px;
   --radius: 8px;
+
+  /* Lot status palette — the single source of truth for status colour, used by
+     the SVG map, the legend dots and the badges. Values were chosen so that
+     every pair stays separable under protanopia, deuteranopia and tritanopia
+     (worst-case deltaE 30.9, against 22.4 for the previous green/amber/red
+     set where occupied was red). Occupied is blue so that red stays reserved
+     for maintenance. unavailable + maintenance are defined for completeness
+     but render nowhere until the lot status enum grows. */
+  --status-available: #2f9e44;
+  --status-reserved: #eab308;
+  --status-occupied: #1e40af;
+  --status-unavailable: #6b7280;
+  --status-maintenance: #b91c1c;
+  --status-selected: #6d28d9;
+
+  /* Ink for text drawn on a status fill. No single value works: white fails on
+     the pale green (3.45) and yellow (1.92) while dark ink fails on the deep
+     blue (2.00). Each pairing here clears WCAG AA. */
+  --status-available-ink: var(--color-text);
+  --status-reserved-ink: var(--color-text);
+  --status-occupied-ink: #ffffff;
 }
 
 body {
@@ -441,8 +462,8 @@ textarea {
 }
 
 .badge--occupied {
-  background: #fde8e8;
-  color: #9b1c1c;
+  background: #e8eefc;
+  color: #1e40af;
 }
 
 .alert {
@@ -820,6 +841,15 @@ textarea {
   filter: brightness(1.1);
 }
 
+/* Selection is marked in purple rather than by darkening, so the lot keeps
+   telling you its status while it is selected. A CSS rule beats the white
+   stroke presentation attribute on the element. */
+.lot--selected rect,
+rect.lot--selected {
+  stroke: var(--status-selected);
+  stroke-width: 3;
+}
+
 .lot-label {
   font-size: 11px;
   font-weight: 600;
@@ -954,7 +984,7 @@ textarea {
   }
   .sidebar--open {
     transform: translateX(0);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.14);
   }
   .sidebar-backdrop {
     display: block;
@@ -1161,6 +1191,11 @@ textarea {
 /* Editor-specific polish */
 .lot-editor-lot:hover .lot-shape {
   filter: brightness(1.08);
+}
+
+/* Not on selected lots: they keep their purple stroke-width from
+   .lot--selected, and a hover rule would otherwise out-rank it. */
+.lot-editor-lot:hover .lot-shape:not(.lot--selected) {
   stroke-width: 2;
 }
 

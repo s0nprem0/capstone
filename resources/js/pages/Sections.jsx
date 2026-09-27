@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
-import { STATUS_COLORS } from '../components/CemeterySvgMap'
 
 const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 1791 1457' }
 
@@ -119,11 +118,7 @@ export default function Sections() {
   }
 
   const countBadge = (count, status) => (
-    <span
-      className="badge"
-      style={{ background: `${STATUS_COLORS[status]}22`, color: STATUS_COLORS[status] }}
-      title={`${status} lots`}
-    >
+    <span className={`badge badge--${status}`} title={`${status} lots`}>
       {status}: {count}
     </span>
   )
