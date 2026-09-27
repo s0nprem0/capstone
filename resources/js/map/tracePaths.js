@@ -25,3 +25,13 @@ export const TRACE_PATHS = [
 ]
 
 export const TRACE_CIRCLE = { cx: 762, cy: 422, r: 65 }
+
+// Overview-only section boundaries. Detailed lot geometry remains owned by
+// each section's local view and is not forced into these site coordinates.
+export const SECTION_TRACE_POINTS = {
+  1: '280,270 856,337 910,518 871,535 871,712 515,715 475,1015 347,1019 93,979 106,720 130,326',
+  2: '909,588 1234,588 1239,891 910,895',
+  3: '910,918 1617,909 1549,995 1463,1101 1379,1204 1014,1218 910,1166',
+  4: '20,290 564,279 615,331 409,329 413,692 724,689 724,548 871,534 871,1147 788,1109 631,1011 515,1015 347,1075 43,1030',
+  5: '1524,584 1666,832 1646,886 1574,746 1541,695 1501,674',
+}

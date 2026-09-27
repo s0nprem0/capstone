@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX, SECTION_TRACE_POINTS, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -12,6 +12,16 @@ const SECTION_COLORS = ['#2c5530', '#1d4ed8', '#7c3aed', '#b45309', '#0e7490']
 const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
   return parts.length === 4 ? parts : [...MAP_VIEWBOX]
+}
+
+const sectionPoints = (section) => section.svg_points || SECTION_TRACE_POINTS[section.section_id] || null
+
+const pointsBounds = (points, fallback) => {
+  const values = String(points || '').split(/[ ,]+/).map(Number).filter(Number.isFinite)
+  if (values.length < 6 || values.length % 2 !== 0) return fallback
+  const xs = values.filter((_, index) => index % 2 === 0)
+  const ys = values.filter((_, index) => index % 2 === 1)
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 
 function LotRect({ lot, selected, showLabel }) {
@@ -65,6 +75,13 @@ export default function CemeterySvgMap({
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
   const focusKey = activeSection ? activeSection.section_id : null
+  const detailViewBox = activeSection
+    ? (() => {
+        const [, , width, height] = parseViewBox(activeSection.viewBox)
+        return [0, 0, width, height]
+      })()
+    : null
+  const fitViewBox = detailViewBox || [...MAP_VIEWBOX]
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -93,7 +110,7 @@ export default function CemeterySvgMap({
   }, [])
 
   useEffect(() => {
-    flyTo(activeSection ? parseViewBox(activeSection.viewBox) : [...MAP_VIEWBOX])
+    flyTo(fitViewBox)
   }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
@@ -217,13 +234,23 @@ export default function CemeterySvgMap({
   }
 
   const showLabels = vb[2] < 1500
-  const activeLots = activeSection?.lots || []
+  const activeLots = (activeSection?.lots || []).map((lot) => {
+    const [sectionX, sectionY] = parseViewBox(activeSection.viewBox)
+    return {
+      ...lot,
+      svg_x: lot.svg_x - sectionX,
+      svg_y: lot.svg_y - sectionY,
+    }
+  })
 
   return (
     <div className="map-svg-wrap">
       <svg
         ref={svgRef}
+        key={activeSection ? `detail-${activeSection.section_id}` : 'overview'}
         className="map-svg"
+        data-map-level={activeSection ? 'section-detail' : 'overview'}
+        aria-label={activeSection ? `${activeSection.section_name} detailed lot map` : 'Cemetery overview map'}
         viewBox={vb.join(' ')}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPointerDown}
@@ -234,7 +261,7 @@ export default function CemeterySvgMap({
       >
         <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
-        {showLayout && (
+        {showLayout && !activeSection && (
           <g className="map-trace" opacity={0.45}>
             {TRACE_PATHS.map((d, i) => (
               <path
@@ -254,16 +281,21 @@ export default function CemeterySvgMap({
           <g className="map-sections">
             {sections.map((section, i) => {
               const [x, y, w, h] = parseViewBox(section.viewBox)
+              const points = sectionPoints(section)
+              const [minX, minY, maxX, maxY] = pointsBounds(points, [x, y, x + w, y + h])
               const color = SECTION_COLORS[i % SECTION_COLORS.length]
               const total =
                 (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
               return (
                 <g key={section.section_id} data-section-id={section.section_id} className="map-section">
-                  <rect x={x} y={y} width={w} height={h} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
-                  <g transform={`translate(${x + w / 2}, ${y + h / 2})`}>
-                    <rect x={-85} y={-34} width={170} height={68} rx={8} fill="#fff" opacity={0.92} stroke={color} strokeWidth={2} />
-                    <text textAnchor="middle" x={0} y={-8} className="map-section-title">{section.section_name}</text>
-                    <text textAnchor="middle" x={0} y={16} className="map-section-meta">
+                  {points ? (
+                    <polygon points={points} fill={color} opacity={0.14} stroke={color} strokeWidth={3} strokeLinejoin="round" strokeDasharray="12 8" />
+                  ) : (
+                    <rect x={x} y={y} width={w} height={h} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
+                  )}
+                  <g transform={`translate(${(minX + maxX) / 2}, ${(minY + maxY) / 2})`}>
+                    <text textAnchor="middle" x={0} y={-8} className="map-section-title" paintOrder="stroke" stroke="#fff" strokeWidth={8} strokeLinejoin="round">{section.section_name}</text>
+                    <text textAnchor="middle" x={0} y={16} className="map-section-meta" paintOrder="stroke" stroke="#fff" strokeWidth={6} strokeLinejoin="round">
                       {total} lots · {section.counts?.available || 0} available
                     </text>
                   </g>
@@ -291,7 +323,7 @@ export default function CemeterySvgMap({
         <button
           type="button"
           className="btn btn-secondary btn-sm"
-          onClick={() => flyTo(activeSection ? parseViewBox(activeSection.viewBox) : [...MAP_VIEWBOX])}
+          onClick={() => flyTo(fitViewBox)}
           title="Fit view"
           aria-label="Fit view"
         >
