@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import ConfirmButton from '../components/ConfirmButton'
 
 export default function BurialRecords() {
+  const [searchParams] = useSearchParams()
   const [records, setRecords] = useState([])
   const [error, setError] = useState('')
-  const [search, setSearch] = useState('')
+  // Deep links from the map arrive as ?q=<lot code>; the existing search
+  // already matches lot codes, so there is no second filter to maintain.
+  const [search, setSearch] = useState(searchParams.get('q') || '')
   const [interment, setInterment] = useState('')
   const [type, setType] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -198,7 +202,11 @@ export default function BurialRecords() {
                 <tr key={r.burial_id}>
                   <td>{r.burial_id}</td>
                   <td>{r.deceased_fullname}</td>
-                  <td>{r.lot_code}</td>
+                  <td>
+                    <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">
+                      {r.lot_code}
+                    </Link>
+                  </td>
                   <td>{r.section_name}</td>
                   <td>{r.burial_date}</td>
                   <td>{r.burial_type}</td>

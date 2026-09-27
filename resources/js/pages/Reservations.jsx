@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
@@ -7,9 +7,12 @@ import ConfirmButton from '../components/ConfirmButton'
 
 export default function Reservations() {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
   const [reservations, setReservations] = useState([])
   const [error, setError] = useState('')
-  const [search, setSearch] = useState('')
+  // Deep links from the map arrive as ?q=<lot code>. The existing search
+  // already matches lot codes, so there is no second filter to maintain.
+  const [search, setSearch] = useState(searchParams.get('q') || '')
   const [payment, setPayment] = useState('')
   const [approval, setApproval] = useState('')
   const [busy, setBusy] = useState(null)
@@ -99,7 +102,11 @@ export default function Reservations() {
               {reservations.map((r) => (
                 <tr key={r.reservation_id}>
                   <td>{r.reservation_id}</td>
-                  <td>{r.lot_code}</td>
+                  <td>
+                    <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">
+                      {r.lot_code}
+                    </Link>
+                  </td>
                   <td>{r.section_name}</td>
                   {isStaffView && <td>{r.user_name}</td>}
                   <td>{r.reservation_date}</td>

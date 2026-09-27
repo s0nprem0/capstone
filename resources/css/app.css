@@ -46,6 +46,13 @@ body {
   line-height: 1.6;
 }
 
+/* Anchors had no rule at all, so inline links ("Register", "Sign in") and the
+   lot codes in the record tables fell back to the browser's unthemed blue.
+   8.57:1 on white. Class-based link styles (.btn, .nav-link) still win. */
+a {
+  color: var(--color-primary);
+}
+
 .app-layout {
   display: flex;
   min-height: 100vh;
@@ -80,10 +87,10 @@ body {
   gap: 0.125rem;
 }
 
-/* Shared uppercase label for grouped controls: the sidebar nav and the map
-   rail. */
+/* Shared uppercase label for grouped controls: the sidebar nav, the map rail
+   and the map's record pane. */
 .nav-heading,
-.map-rail-heading {
+.panel-heading {
   margin: 0;
   font-size: 0.66rem;
   font-weight: 700;
@@ -101,7 +108,7 @@ body {
 }
 
 /* --color-text-muted on --color-surface measures 4.83:1. */
-.map-rail-heading {
+.panel-heading {
   color: var(--color-text-muted);
 }
 
@@ -1297,6 +1304,22 @@ rect.lot--selected {
   margin: 0;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+/* The map half of the linkage: the records this plot appears in. */
+.detail-records {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 /* Below 960px the two flanks leave under 390px for the map, so the record

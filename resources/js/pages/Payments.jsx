@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
@@ -6,6 +7,7 @@ import ConfirmButton from '../components/ConfirmButton'
 
 export default function Payments() {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
   const [payments, setPayments] = useState([])
   const [myReservations, setMyReservations] = useState([])
   const [error, setError] = useState('')
@@ -14,7 +16,9 @@ export default function Payments() {
   const [submitting, setSubmitting] = useState(false)
   const [validating, setValidating] = useState(null)
   const [uploadingId, setUploadingId] = useState(null)
-  const [search, setSearch] = useState('')
+  // Deep links from the map arrive as ?q=<lot code>; the existing search
+  // already matches lot codes, so there is no second filter to maintain.
+  const [search, setSearch] = useState(searchParams.get('q') || '')
   const [status, setStatus] = useState('')
   const fileInputRef = useRef(null)
   const uploadTargetRef = useRef(null)
@@ -231,7 +235,11 @@ export default function Payments() {
                   <td>{p.payment_id}</td>
                   <td>#{p.reservation_id}</td>
                   {isStaffView && <td>{p.user_name}</td>}
-                  <td>{p.lot_code}</td>
+                  <td>
+                    <Link to={`/?lot=${p.lot_id}`} title="Show on the cemetery map">
+                      {p.lot_code}
+                    </Link>
+                  </td>
                   <td>₱{Number(p.amount).toLocaleString()}</td>
                   <td>{p.payment_method}</td>
                   <td>{p.reference_no || '—'}</td>
