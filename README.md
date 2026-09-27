@@ -8,7 +8,7 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 
 - **Backend:** PHP >= 8.1, PDO prepared statements only, lightweight custom MVC (`App\`)
 - **Database:** MySQL 8.0, `utf8mb4` — schema authoritative in `database/schema.sql`
-- **Frontend:** React 18 SPA, Vite, pnpm (pinned `pnpm@10.4.1`), `react-router-dom` v6
+- **Frontend:** React 18 SPA, Vite, pnpm (pinned `pnpm@10.4.1`), `react-router-dom` v7
 - **Mapping:** pure SVG digital map — traced layout paths + grid lot boxes rendered client-side (no map tiles)
 - **Containerization:** Docker Compose (PHP, Node, MySQL) + Makefile
 

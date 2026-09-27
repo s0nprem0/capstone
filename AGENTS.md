@@ -4,7 +4,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 
 ## Project overview
 - Plain PHP (>= 8.1) backend using PDO only — no Laravel/Symfony. Lightweight custom MVC.
-- React 18 SPA + Vite (pnpm) frontend, `react-router-dom` v6.
+- React 18 SPA + Vite (pnpm) frontend, `react-router-dom` v7.
 - MySQL 8.0, `utf8mb4`. Schema is authoritative in `database/schema.sql`.
 - Containerized dev environment (PHP, Node, MySQL) via `docker-compose.yml` + Makefile.
 - Leaflet.js + OpenStreetMap replaced by a pure SVG digital map (traced layout + grid lot boxes, no map tiles).
@@ -12,7 +12,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 ## Tech stack (mandatory)
 - Backend: PHP >= 8.1, PDO prepared statements only (no value concatenation into SQL), `declare(strict_types=1)`, PSR-4 `App\`.
 - Database: MySQL 8.0, `utf8mb4`.
-- Frontend: React 18 SPA + Vite, pnpm, `react-router-dom` v6. Styling in `resources/css/app.css`. No TypeScript.
+- Frontend: React 18 SPA + Vite, pnpm, `react-router-dom` v7. Styling in `resources/css/app.css`. No TypeScript.
 - Mapping: pure SVG digital map (traced layout paths + grid lot `<rect>`s, rendered client-side; no Leaflet, no tiles).
 - Client-side storage: localStorage (drafts / non-sensitive), sessionStorage (active auth flags), JSON (API interchange). No sensitive data in localStorage.
 - Containerization: `docker-compose.yml` (php:8000, node:5173, mysql:3306) + Makefile workflow.
