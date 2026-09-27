@@ -164,7 +164,11 @@ export default function Cemetery() {
                       Reserve this plot
                     </Link>
                   ) : (
-                    <Link to="/login" className="btn btn-primary btn-block">
+                    <Link
+                      to="/login"
+                      state={{ from: { pathname: '/visitor/reserve', search: `?lot=${selectedLot.lot_id}` } }}
+                      className="btn btn-primary btn-block"
+                    >
                       Sign in to reserve
                     </Link>
                   ))}

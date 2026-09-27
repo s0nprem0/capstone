@@ -21,7 +21,9 @@ export default function Login() {
     setSubmitting(false)
 
     if (res.ok) {
-      navigate(location.state?.from?.pathname || homePath(res.data?.user?.role), { replace: true })
+      const from = location.state?.from
+      const target = from ? `${from.pathname}${from.search || ''}` : homePath(res.data?.user?.role)
+      navigate(target, { replace: true })
     } else {
       setError(res.data?.error || 'Login failed')
     }
