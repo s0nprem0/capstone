@@ -11,7 +11,14 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    outDir: 'dist',
+    // Built into the docroot the PHP server is pointed at. Vite's default
+    // project-root dist/ sits outside it, and the server answers any
+    // extension-bearing request itself without reaching the front controller,
+    // so a bundle over there 404s and the page renders blank. A symlink
+    // bridging the two cannot be made in the image either: the compose bind
+    // mount replaces /app, hiding anything the image put there.
+    outDir: 'public/dist',
+    emptyOutDir: true,
     manifest: true,
   },
   server: {

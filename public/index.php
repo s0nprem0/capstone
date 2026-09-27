@@ -121,7 +121,7 @@ if (str_starts_with($uri, '/api/')) {
 } else {
     Headers::apply();
     $vite = '';
-    $manifestFile = __DIR__ . '/../dist/.vite/manifest.json';
+    $manifestFile = __DIR__ . '/dist/.vite/manifest.json';
 
     if (file_exists($manifestFile)) {
         $manifest = json_decode(file_get_contents($manifestFile), true);
