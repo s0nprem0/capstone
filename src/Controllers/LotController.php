@@ -311,8 +311,8 @@ class LotController
      * Reposition a section's lots into a uniform grid inside its current
      * outline (the traced svg_points polygon, or the svg_viewbox rectangle
      * when the section has no outline). Keeps lot_code/type/price/status;
-     * only the SVG coordinates are rewritten. Placeholder placement — staff
-     * refine via the Lot Editor or CSV import (POST /api/lots/import-grid).
+     * only the SVG coordinates are rewritten. Staff refine from here via the
+     * Lot Editor or CSV import (POST /api/lots/import-grid).
      */
     public function regrid(): void
     {
@@ -362,38 +362,67 @@ class LotController
             return;
         }
 
-        $cols = max(1, (int) ceil(sqrt($n * ($bw / max(1, $bh)))));
-        $rows = max(1, (int) ceil($n / $cols));
-        $cellW = $bw / $cols;
-        $cellH = $bh / $rows;
-        $pad = 2;
-        $cells = $cols * $rows;
+        $cells = $this->gridCells($poly, $bx, $by, $bw, $bh, $n);
 
         $updated = 0;
-        $cellIndex = 0;
-        foreach ($lots as $lot) {
-            // Find the next grid cell whose center sits inside the outline.
-            while ($cellIndex < $cells) {
-                $col = $cellIndex % $cols;
-                $row = intdiv($cellIndex, $cols);
-                $cellIndex++;
-                if (!$poly || $this->pointInPolygon($poly, $bx + $col * $cellW + $cellW / 2, $by + $row * $cellH + $cellH / 2)) {
-                    break;
-                }
+        foreach ($lots as $i => $lot) {
+            if (!isset($cells[$i])) {
+                break; // outline cannot hold the remaining plots
             }
-            if ($cellIndex > $cells) break; // no cells left; leave the rest untouched
-            $col = ($cellIndex - 1) % $cols;
-            $row = intdiv($cellIndex - 1, $cols);
+            [$x, $y, $cellW, $cellH] = $cells[$i];
             Lot::update((int) $lot['lot_id'], [
-                'svg_x' => (int) round($bx + $col * $cellW),
-                'svg_y' => (int) round($by + $row * $cellH),
-                'svg_w' => max(8, (int) floor($cellW) - $pad),
-                'svg_h' => max(8, (int) floor($cellH) - $pad),
+                'svg_x' => (int) $x,
+                'svg_y' => (int) $y,
+                'svg_w' => (int) $cellW,
+                'svg_h' => (int) $cellH,
             ]);
             $updated++;
         }
 
         AuditLog::record(Auth::id(), 'regrid-lots', 'cemetery_sections', $sectionId);
         Response::json(['section_id' => $sectionId, 'updated' => $updated]);
+    }
+
+    /**
+     * Grid cells that sit inside the outline, stepping the resolution up until
+     * enough of them fit. Sizing the grid from the bounding box alone leaves
+     * most of its cells outside an irregular outline, so a section would come
+     * back with plots missing or spilled onto the roads.
+     *
+     * @param list<array{0: float, 1: float}> $poly
+     * @return list<array{0: float, 1: float, 2: float, 3: float}>
+     */
+    private function gridCells(array $poly, float $bx, float $by, float $bw, float $bh, int $n): array
+    {
+        $best = [];
+        for ($attempt = 0, $target = $n; $attempt < 12; $attempt++, $target = (int) ceil($target * 1.15)) {
+            $cols = max(1, (int) round(sqrt($target * ($bw / max(1.0, $bh)))));
+            $rows = max(1, (int) ceil($target / $cols));
+            $cellW = $bw / $cols;
+            $cellH = $bh / $rows;
+            $cells = [];
+            for ($r = 0; $r < $rows; $r++) {
+                for ($c = 0; $c < $cols; $c++) {
+                    // Round before testing, so a plot is only placed where the
+                    // stored integers put it. Testing the unrounded centre can
+                    // accept a cell that ends up a fraction outside once saved.
+                    $x = (int) round($bx + $c * $cellW);
+                    $y = (int) round($by + $r * $cellH);
+                    $w = max(8, (int) floor($cellW) - 2);
+                    $h = max(8, (int) floor($cellH) - 2);
+                    if (!$poly || $this->pointInPolygon($poly, $x + $w / 2, $y + $h / 2)) {
+                        $cells[] = [$x, $y, (float) $w, (float) $h];
+                    }
+                }
+            }
+            if (count($cells) > count($best)) {
+                $best = $cells;
+            }
+            if (count($cells) >= $n) {
+                return $cells;
+            }
+        }
+
+        return $best;
     }
 }
