@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { MAP_VIEWBOX, SECTION_TRACE_POINTS, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -14,7 +14,7 @@ const parseViewBox = (s) => {
   return parts.length === 4 ? parts : [...MAP_VIEWBOX]
 }
 
-const sectionPoints = (section) => section.svg_points || SECTION_TRACE_POINTS[section.section_id] || null
+const sectionPoints = (section) => section.points || null
 
 const pointsBounds = (points, fallback) => {
   const values = String(points || '').split(/[ ,]+/).map(Number).filter(Number.isFinite)

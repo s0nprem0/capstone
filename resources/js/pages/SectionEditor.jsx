@@ -58,6 +58,7 @@ export default function SectionEditor() {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState(null)
   const [error, setError] = useState('')
+  const [placeholder, setPlaceholder] = useState(false)
 
   const svgRef = useRef(null)
   const vbRef = useRef([...MAP_VIEWBOX])
@@ -91,8 +92,10 @@ export default function SectionEditor() {
       }
       setSection(sec)
       const parsed = parsePoints(sec.points)
-      const initial = parsed.length >= MIN_VERTICES ? parsed : outlineFromViewbox(sec.viewBox)
+      const stored = parsed.length >= MIN_VERTICES
+      const initial = stored ? parsed : outlineFromViewbox(sec.viewBox)
       setPts(initial)
+      setPlaceholder(!stored)
       lastSavedRef.current = toPointsString(initial)
     })
     return () => {
@@ -184,6 +187,7 @@ export default function SectionEditor() {
     if (ok) {
       lastSavedRef.current = data.svg_points || toPointsString(pts)
       setDirty(false)
+      setPlaceholder(false)
       setSelected(null)
       flashSaved()
     } else {
@@ -381,6 +385,13 @@ export default function SectionEditor() {
       {locked && section && (
         <p className="alert alert--info">
           🔒 This section is locked — its outline and lot positions are frozen. Unlock it to edit.
+        </p>
+      )}
+      {placeholder && !locked && (
+        <p className="alert alert--warn">
+          ⚠ No outline saved for this section yet — the dashed rectangle below is just its view box, not the
+          real boundary. Drag the corners, or click an edge to add vertices, until it follows the traced
+          ground, then save. Until you save, the map falls back to drawing this rectangle.
         </p>
       )}
 
