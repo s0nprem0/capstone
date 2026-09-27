@@ -18,6 +18,8 @@ export default function NewReservation() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [created, setCreated] = useState(null)
+  const [pay, setPay] = useState({ amount: '', method: 'gcash', reference_no: '', receipt: null })
 
   useEffect(() => {
     api('/api/map').then(({ ok, data }) => {
@@ -81,9 +83,61 @@ export default function NewReservation() {
     if (ok) {
       setSuccess('Reservation submitted. Awaiting approval.')
       setForm({ lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 })
+      setPay({ amount: String(data.total_amount), method: 'gcash', reference_no: '', receipt: null })
+      setCreated(data)
     } else {
       setError(data?.error || 'Failed to create reservation')
     }
+  }
+
+  const handlePayChange = (e) => {
+    const { name, value } = e.target
+    setPay((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const submitPayment = async (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    setSubmitting(true)
+
+    const amount = Number(pay.amount)
+    if (!amount || amount <= 0) {
+      setError('Enter a payment amount')
+      setSubmitting(false)
+      return
+    }
+
+    const { ok, data } = await api('/api/payments', {
+      method: 'POST',
+      body: {
+        reservation_id: created.reservation_id,
+        amount,
+        payment_method: pay.method,
+        reference_no: pay.reference_no || undefined,
+      },
+    })
+    if (!ok) {
+      setError(data?.error || 'Failed to record payment')
+      setSubmitting(false)
+      return
+    }
+
+    if (pay.receipt) {
+      const fd = new FormData()
+      fd.append('receipt', pay.receipt)
+      const up = await api(`/api/payments/${data.payment_id}/upload-receipt`, { method: 'POST', body: fd })
+      if (!up.ok) {
+        setError(up.data?.error || 'Payment recorded, but the receipt upload failed. Upload it later from My Payments.')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    setSubmitting(false)
+    setSuccess('Payment recorded and receipt uploaded. Track the status from My Reservations.')
+    setPay({ amount: '', method: 'gcash', reference_no: '', receipt: null })
+    setCreated(null)
   }
 
   return (
@@ -144,6 +198,53 @@ export default function NewReservation() {
           </button>
         </div>
       </form>
+
+      {created && (
+        <div className="form-card section-block">
+          <h3>Pay &amp; upload receipt</h3>
+          <p className="text-muted">
+            Reservation #{created.reservation_id} was created. Record the payment and attach the manual
+            receipt to complete the booking — or do it later from My Payments.
+          </p>
+          <form onSubmit={submitPayment}>
+            <div className="form-grid">
+              <label>
+                Amount (₱)
+                <input type="number" name="amount" value={pay.amount} onChange={handlePayChange} min="1" step="0.01" required />
+              </label>
+              <label>
+                Method
+                <select name="method" value={pay.method} onChange={handlePayChange}>
+                  <option value="gcash">GCash</option>
+                  <option value="card">Card</option>
+                  <option value="cash">Cash</option>
+                </select>
+              </label>
+              <label>
+                Reference No.
+                <input type="text" name="reference_no" value={pay.reference_no} onChange={handlePayChange} placeholder="Optional" />
+              </label>
+              <label>
+                Receipt (JPG/PNG/PDF)
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null
+                    setPay((prev) => ({ ...prev, receipt: file }))
+                  }}
+                />
+              </label>
+            </div>
+            <div className="form-actions">
+              <Link to="/visitor/reservations" className="btn btn-secondary">Pay Later</Link>
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Submit Payment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
