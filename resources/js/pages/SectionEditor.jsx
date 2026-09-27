@@ -45,16 +45,17 @@ const viewScale = (el, vb) => {
   return Math.min(rect.width / vb[2], rect.height / vb[3]) || 1
 }
 
-// Nearest outline edge within tolerance. Shared by the hover preview and the
-// click, so what the ghost shows is exactly what a click will insert.
-const nearestEdge = (pt, pts, pick) => {
+// Nearest outline edge. `pick` is the tolerance in map units; pass Infinity to
+// always snap to the closest edge, so an insert can never silently no-op.
+const nearestEdge = (pt, pts, pick = Infinity) => {
   let best = null
   const n = pts.length
   for (let i = 0; i < n; i++) {
     const hit = segmentHit(pt, pts[i], pts[(i + 1) % n])
     if (hit.d <= pick && (!best || hit.d < best.d)) best = { ...hit, after: i }
   }
-  if (!best || best.t < 0.02 || best.t > 0.98) return null
+  if (!best) return null
+  if (pick !== Infinity && (best.t < 0.02 || best.t > 0.98)) return null
   return best
 }
 
@@ -81,6 +82,7 @@ export default function SectionEditor() {
   const [error, setError] = useState('')
   const [placeholder, setPlaceholder] = useState(false)
   const [snap, setSnap] = useState(null)
+  const [adding, setAdding] = useState(false)
 
   const svgRef = useRef(null)
   const vbRef = useRef([...MAP_VIEWBOX])
@@ -311,16 +313,16 @@ export default function SectionEditor() {
     setVbBoth([x - (dx / (svgRef.current?.getBoundingClientRect().width || 1)) * w, y - (dy / (svgRef.current?.getBoundingClientRect().height || 1)) * h, w, h])
   }
 
-  const finishGesture = (e) => {
-    const drag = dragRef.current
+  const finishGesture = () => {
     dragRef.current = null
-    if (!drag || drag.type !== 'pan') return
-    if (movedRef.current || locked || pts.length < MIN_VERTICES) return
-    // A clean click on the map: add a vertex on the nearest edge.
-    const el = svgRef.current
-    if (!el) return
-    const hit = nearestEdge(toSvg(e), pts, PICK_PX / viewScale(el, vbRef.current))
-    if (!hit) return
+  }
+
+  // Insert a vertex on whichever edge is closest to pt. Always succeeds, so a
+  // click can never appear to do nothing; the new vertex is selected and can
+  // be dragged into place afterwards.
+  const insertVertex = (pt) => {
+    const hit = nearestEdge(pt, pts)
+    if (!hit) return false
     const insertAt = hit.after + 1
     setPts((prev) => [
       ...prev.slice(0, insertAt),
@@ -329,6 +331,23 @@ export default function SectionEditor() {
     ])
     setSelected(insertAt)
     setDirty(true)
+    setSnap(null)
+    return true
+  }
+
+  // Uses click rather than pointerup: click only fires for a real click, so it
+  // needs no gesture bookkeeping and cannot be cancelled by pointer capture.
+  const onSvgClick = (e) => {
+    if (locked || pts.length < MIN_VERTICES) return
+    if (movedRef.current) return // that was a pan, not a click
+    if (e.target?.dataset?.vertex !== undefined) return // clicked a vertex, not the outline
+    if (!adding) {
+      // Convenience: still insert when clicking right on an edge.
+      const el = svgRef.current
+      if (!el) return
+      if (!nearestEdge(toSvg(e), pts, PICK_PX / viewScale(el, vbRef.current))) return
+    }
+    if (insertVertex(toSvg(e))) setAdding(false)
   }
 
   const removeVertex = () => {
@@ -352,6 +371,7 @@ export default function SectionEditor() {
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape') {
         setSelected(null)
+        setAdding(false)
         return
       }
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -396,6 +416,15 @@ export default function SectionEditor() {
               <Link to={`/admin/lots?section=${section.section_id}`} className="btn btn-secondary btn-sm">
                 Edit lots
               </Link>
+              <button
+                type="button"
+                className={`btn btn-sm ${adding ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setAdding((v) => !v)}
+                disabled={locked}
+                title="Insert a vertex on the outline, then drag it into place"
+              >
+                {adding ? '✕ Cancel add' : '＋ Add vertex'}
+              </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={reset} disabled={!dirty || saving}>
                 Reset
               </button>
@@ -426,6 +455,12 @@ export default function SectionEditor() {
           🔒 This section is locked — its outline and lot positions are frozen. Unlock it to edit.
         </p>
       )}
+      {adding && !locked && (
+        <p className="alert alert--info">
+          ✛ Click anywhere on the outline to drop a vertex there — it snaps to the nearest edge, and you can
+          drag it into position. Press <kbd>Esc</kbd> or click Cancel to stop.
+        </p>
+      )}
       {placeholder && !locked && (
         <p className="alert alert--warn">
           ⚠ No outline saved for this section yet — the dashed rectangle below is just its view box, not the
@@ -444,12 +479,13 @@ export default function SectionEditor() {
               className="map-svg editor-svg"
               viewBox={vb.join(' ')}
               preserveAspectRatio="xMidYMid meet"
-              style={{ touchAction: 'none', cursor: snap ? 'crosshair' : 'grab' }}
+              style={{ touchAction: 'none', cursor: adding || snap ? 'crosshair' : 'grab' }}
               onPointerDown={onSvgPointerDown}
               onPointerMove={onSvgPointerMove}
               onPointerLeave={onSvgPointerLeave}
               onPointerUp={finishGesture}
               onPointerCancel={finishGesture}
+              onClick={onSvgClick}
             >
               <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
@@ -483,6 +519,7 @@ export default function SectionEditor() {
               {pts.map((p, i) => (
                 <circle
                   key={i}
+                  data-vertex={i}
                   cx={p[0]}
                   cy={p[1]}
                   r={selected === i ? 7 : 5}
@@ -506,7 +543,7 @@ export default function SectionEditor() {
             <div className="map-drag-hint">
               {locked
                 ? 'Locked — pan to inspect. Unlock to edit.'
-                : 'Drag a vertex to move it · hover an edge and click to add a vertex · select a vertex then Delete to remove one · Ctrl/Cmd+Z to undo'}
+                : 'Drag a vertex to move it · "Add vertex" then click the outline to insert one · select a vertex then Delete to remove one · Ctrl/Cmd+Z to undo'}
             </div>
           </div>
         </div>
