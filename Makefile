@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate demo fresh build
+.PHONY: up down restart logs install migrate demo fresh build verify-map
 
 up:
 	docker compose up -d
@@ -30,6 +30,12 @@ demo:
 fresh:
 	docker compose down -v
 	docker compose up -d --build
+
+# Checks the map geometry the seed and the lot editor both depend on: every
+# plot's centre inside its section outline, no two plots overlapping, and
+# nothing outside the overall viewBox. Exits non-zero when one is not.
+verify-map:
+	docker compose exec -T php php verify-map.php
 
 php:
 	docker compose exec php bash
