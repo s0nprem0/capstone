@@ -7,6 +7,24 @@ CREATE DATABASE IF NOT EXISTS `cemetery_db`
 
 USE `cemetery_db`;
 
+-- ===== Reset =====
+-- Without this the file only ever works on a virgin volume: on an existing
+-- database every CREATE TABLE below fails with "table already exists" and the
+-- old rows survive, so `make migrate` cannot be used to sync a database back
+-- to the schema it is supposed to reproduce. Dropped child-first so the
+-- foreign keys do not have to be chased one at a time.
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `login_attempts`;
+DROP TABLE IF EXISTS `audit_logs`;
+DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `burial_records`;
+DROP TABLE IF EXISTS `payments`;
+DROP TABLE IF EXISTS `reservations`;
+DROP TABLE IF EXISTS `cemetery_lots`;
+DROP TABLE IF EXISTS `cemetery_sections`;
+DROP TABLE IF EXISTS `users`;
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- 1. USERS
 CREATE TABLE `users` (
   `user_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

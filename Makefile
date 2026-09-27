@@ -20,7 +20,7 @@ build:
 	docker compose exec node pnpm build
 
 migrate:
-	docker compose exec mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
+	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
 
 fresh:
 	docker compose down -v
