@@ -205,6 +205,11 @@ export default function NewReservation() {
             {(staleLot || show('lot_id')) && (
               <span className="field-error" role="alert">{errors.lot_id}</span>
             )}
+            {/* The dropdown lists bare codes, and the map is what makes a code
+                mean anything. Point at it before the visitor has to guess. */}
+            <span className="label-hint">
+              <Link to="/">Browse the cemetery map</Link> to pick a plot by section.
+            </span>
           </div>
           <div className="field">
             <label>
@@ -245,6 +250,19 @@ export default function NewReservation() {
             </label>
           </div>
         </div>
+
+        {/* Without this the only feedback for picking a plot was Total: ₱0
+            turning into a number. Spells out what was actually chosen. */}
+        {selectedLot && (
+          <dl className="figure-list reserve-summary">
+            <div><dt>Plot</dt><dd>{selectedLot.lot_code}</dd></div>
+            <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
+            <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
+            <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
+            <div><dt>Capacity</dt><dd>{slotMax} {slotMax === 1 ? 'slot' : 'slots'}</dd></div>
+          </dl>
+        )}
+
         <div className="form-actions">
           <p className="total-display">
             Total: <strong>₱{totalAmount.toLocaleString()}</strong>

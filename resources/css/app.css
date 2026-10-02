@@ -791,6 +791,32 @@ textarea {
   text-align: right;
 }
 
+/* The same list, but inline: on the reserve form the chosen plot is a summary
+   of five short facts, not a record, and stacking them would push the submit
+   button off the bottom of the card. */
+.reserve-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+}
+
+.reserve-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0;
+  border-bottom: 0;
+  font-size: 0.875rem;
+}
+
+.reserve-summary dd {
+  text-align: left;
+}
+
 .map-tabs {
   display: flex;
   flex-wrap: wrap;
