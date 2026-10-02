@@ -896,6 +896,14 @@ textarea {
   fill: var(--color-text-muted);
 }
 
+/* The overview draws the whole cemetery into roughly a third of its width, so
+   a 20px label lands at about 6px and reads as dirt on top of 305 plots. SVG
+   has no non-scaling-size, so the overview steps up to a size that survives
+   the zoom instead. */
+.map-overview-title {
+  font-size: 34px;
+}
+
 .lot-rect {
   cursor: pointer;
 }

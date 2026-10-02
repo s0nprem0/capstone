@@ -64,6 +64,9 @@ function LotRect({ lot, selected, showLabel }) {
         style={{ fill }}
         stroke="#fff"
         strokeWidth={1}
+        // Keeps the hairline between neighbouring plots from thinning to
+        // nothing when the whole cemetery is scaled into the overview.
+        vectorEffect="non-scaling-stroke"
         strokeDasharray={lot.status === 'reserved' ? '5 4' : undefined}
       />
       {showLabel && (
@@ -173,11 +176,11 @@ export default function CemeterySvgMap({
 
   const onPointerDown = (e) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    e.currentTarget.setPointerCapture?.(e.pointerId)
 
     if (pointersRef.current.size === 2) {
       // Two fingers down → start a pinch gesture.
       const [a, b] = [...pointersRef.current.values()]
+      e.currentTarget.setPointerCapture?.(e.pointerId)
       pinchRef.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y),
         vb: [...vbRef.current],
@@ -187,6 +190,11 @@ export default function CemeterySvgMap({
       dragRef.current = null
       movedRef.current = true
     } else if (pointersRef.current.size === 1) {
+      // Deliberately no capture yet. Capturing here retargets the
+      // compatibility click to the <svg>, so e.target stops being the plot and
+      // closest('[data-lot-id]') finds nothing -- a plain click would select
+      // nothing at all. The capture is taken in onPointerMove instead, once
+      // the pointer has actually travelled far enough to count as a drag.
       dragRef.current = { x: e.clientX, y: e.clientY }
       movedRef.current = false
     }
@@ -222,13 +230,25 @@ export default function CemeterySvgMap({
     if (!dragRef.current) return
     const dx = e.clientX - dragRef.current.x
     const dy = e.clientY - dragRef.current.y
-    if (Math.abs(dx) + Math.abs(dy) > 3) movedRef.current = true
+    if (Math.abs(dx) + Math.abs(dy) > 3) {
+      if (!movedRef.current) {
+        movedRef.current = true
+        // Past the threshold this is a pan, not a click, so the capture is
+        // safe to take now: the click it would have broken is no longer coming.
+        e.currentTarget.setPointerCapture?.(e.pointerId)
+      }
+    }
     const [x, y, w, h] = vbRef.current
     setVbBoth([x - (dx / rect.width) * w, y - (dy / rect.height) * h, w, h])
     dragRef.current = { x: e.clientX, y: e.clientY }
   }
 
   const onPointerUp = (e) => {
+    // Only a drag ever took a capture, so this is normally a no-op; guarded
+    // because releasePointerCapture throws on a pointer that never had one.
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
     pointersRef.current.delete(e.pointerId)
     if (pointersRef.current.size < 2) pinchRef.current = null
     if (pointersRef.current.size === 0) dragRef.current = null
@@ -242,7 +262,10 @@ export default function CemeterySvgMap({
     const lotEl = e.target.closest?.('[data-lot-id]')
     if (lotEl) {
       const lotId = Number(lotEl.getAttribute('data-lot-id'))
-      const lot = activeSection?.lots?.find((l) => l.lot_id === lotId)
+      // The overview draws every plot now, so a click there resolves against
+      // all sections; the detail view only has the open section's to choose from.
+      const pool = activeSection ? activeSection.lots || [] : sections.flatMap((s) => s.lots || [])
+      const lot = pool.find((l) => l.lot_id === lotId)
       if (lot) onSelectLot(lot)
       return
     }
@@ -282,6 +305,11 @@ export default function CemeterySvgMap({
   }))
   const activeOutline = activeSection ? localPoints(activeSection.points, activeX, activeY) : null
 
+  // In the overview the plots are already in site coordinates, so they need no
+  // rebasing -- only the detail view shifts them against the section origin.
+  // Without these the legend counted 305 plots the overview never drew.
+  const overviewLots = activeSection ? [] : sections.flatMap((s) => s.lots || [])
+
   return (
     <div className="map-svg-wrap">
       <svg
@@ -289,7 +317,7 @@ export default function CemeterySvgMap({
         key={activeSection ? `detail-${activeSection.section_id}` : 'overview'}
         className="map-svg"
         data-map-level={activeSection ? 'section-detail' : 'overview'}
-        aria-label={activeSection ? `${activeSection.section_name} detailed lot map` : 'Cemetery overview map'}
+        aria-label={activeSection ? `${activeSection.section_name} detailed lot map` : 'Cemetery overview map, every plot coloured by status'}
         viewBox={vb.join(' ')}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPointerDown}
@@ -317,31 +345,80 @@ export default function CemeterySvgMap({
         )}
 
         {!activeSection ? (
-          <g className="map-sections">
-            {sections.map((section) => {
-              const [x, y, w, h] = parseViewBox(section.viewBox)
-              const points = sectionPoints(section)
-              const [minX, minY, maxX, maxY] = pointsBounds(points, [x, y, x + w, y + h])
-              const color = sectionColor(section.section_id)
-              const total =
-                (section.counts?.available || 0) + (section.counts?.reserved || 0) + (section.counts?.occupied || 0)
-              return (
-                <g key={section.section_id} data-section-id={section.section_id} className="map-section">
-                  {points ? (
-                    <polygon points={points} fill={color} opacity={0.14} stroke={color} strokeWidth={3} strokeLinejoin="round" strokeDasharray="12 8" />
-                  ) : (
-                    <rect x={x} y={y} width={w} height={h} fill={color} opacity={0.12} stroke={color} strokeWidth={2} strokeDasharray="8 6" />
-                  )}
-                  <g transform={`translate(${(minX + maxX) / 2}, ${(minY + maxY) / 2})`}>
-                    <text textAnchor="middle" x={0} y={-8} className="map-section-title" paintOrder="stroke" stroke="#fff" strokeWidth={8} strokeLinejoin="round">{section.section_name}</text>
-                    <text textAnchor="middle" x={0} y={16} className="map-section-meta" paintOrder="stroke" stroke="#fff" strokeWidth={6} strokeLinejoin="round">
-                      {total} lots · {section.counts?.available || 0} available
-                    </text>
-                  </g>
-                </g>
-              )
-            })}
-          </g>
+          <>
+            {/* Three passes, and the order matters: outlines underneath, plots
+                over them, labels on top. The section wash used to carry the
+                colour and had nowhere to hide; the plots do now, so it drops to
+                a stroke. The labels have to come last or 305 rectangles bury
+                them. */}
+            <g className="map-sections">
+              {sections.map((section) => {
+                const [x, y, w, h] = parseViewBox(section.viewBox)
+                const points = sectionPoints(section)
+                const color = sectionColor(section.section_id)
+                return points ? (
+                  <polygon
+                    key={section.section_id}
+                    data-section-id={section.section_id}
+                    points={points}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                    strokeDasharray="12 8"
+                  />
+                ) : (
+                  <rect
+                    key={section.section_id}
+                    data-section-id={section.section_id}
+                    x={x}
+                    y={y}
+                    width={w}
+                    height={h}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={2}
+                    strokeDasharray="8 6"
+                  />
+                )
+              })}
+            </g>
+
+            <g className="map-lots">
+              {overviewLots.map((lot) => (
+                <MemoLotRect
+                  key={lot.lot_id}
+                  lot={lot}
+                  selected={lot.lot_id === selectedLotId}
+                  showLabel={showLabels}
+                />
+              ))}
+            </g>
+
+            <g className="map-sections">
+              {sections.map((section) => {
+                const [x, y, w, h] = parseViewBox(section.viewBox)
+                const points = sectionPoints(section)
+                const [minX, minY, maxX, maxY] = pointsBounds(points, [x, y, x + w, y + h])
+                return (
+                  <text
+                    key={section.section_id}
+                    x={(minX + maxX) / 2}
+                    y={(minY + maxY) / 2}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    className="map-section-title map-overview-title"
+                    paintOrder="stroke"
+                    stroke="#ffffff"
+                    strokeWidth={10}
+                    strokeLinejoin="round"
+                  >
+                    {section.section_name}
+                  </text>
+                )
+              })}
+            </g>
+          </>
         ) : (
           <g className="map-lots">
             {activeOutline && (
