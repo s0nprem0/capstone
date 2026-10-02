@@ -1067,6 +1067,28 @@ rect.lot--selected {
     flex-wrap: wrap;
     justify-content: flex-start;
   }
+  /* The rail is 260px wide on desktop; in a row that fits, in a column it
+     would become a 260px-tall band. Below 1024px the off-canvas sidebar
+     leaves the pane ~360px, so the rail alone was eating 73% of it and the
+     map was squeezed into an 82px sliver. Stack the panes instead. */
+  .map-panes {
+    flex-direction: column;
+  }
+
+  /* The basis is a width here, so it has to be handed back as a height and
+     the rail scrolls internally rather than growing without bound. */
+  .map-rail {
+    flex: 0 0 auto;
+    max-height: 40vh;
+  }
+
+  /* The 960px container query caps the record at 45% of the pane to leave the
+     map the majority. Stacked, the pane is the whole page, so it goes back
+     to sizing itself. */
+  .map-panes .map-detail {
+    max-height: none;
+  }
+
   .map-layout {
     flex-direction: column;
   }
@@ -1368,9 +1390,12 @@ rect.lot--selected {
 }
 
 @media (max-width: 768px) {
+  /* Stacked, the rail, the map and the record are three bands whose combined
+     height exceeds a phone viewport, so a fixed height can only clip one of
+     them. Below this width the page becomes an ordinary scrolling document
+     and each pane takes the room it needs. */
   .map-page {
-    height: calc(100vh - 5.5rem);
-    height: calc(100dvh - 5.5rem);
+    height: auto;
   }
 }
 
