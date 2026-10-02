@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [error, setError] = useState('')
 
@@ -14,6 +17,7 @@ export default function Notifications() {
     } else {
       setError(data?.error || 'Failed to load notifications')
     }
+    setLoaded(true)
   }
 
   useEffect(() => { load() }, [])
@@ -54,8 +58,10 @@ export default function Notifications() {
 
       {error && <p className="alert alert--error">{error}</p>}
 
-      {notifications.length === 0 ? (
-        <p className="text-muted">No notifications yet.</p>
+      {!loaded && !error && <Loading message="Loading notifications..." />}
+
+      {loaded && !error && notifications.length === 0 ? (
+        <EmptyState noun="notifications" />
       ) : (
         <div className="notifications-list">
           {notifications.map((n) => (

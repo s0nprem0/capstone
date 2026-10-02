@@ -4,11 +4,14 @@ import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 export default function Payments() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [payments, setPayments] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [myReservations, setMyReservations] = useState([])
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -34,6 +37,7 @@ export default function Payments() {
     const { ok, data } = await api(path)
     if (ok) setPayments(data)
     else setError(data?.error || 'Failed to load payments')
+    setLoaded(true)
   }
 
   useEffect(() => {
@@ -209,9 +213,16 @@ export default function Payments() {
         </select>
       </div>
 
+      {!loaded && !error && <Loading message="Loading payments..." />}
+
+      {loaded && !error && (
       <div className="table-container">
         {payments.length === 0 ? (
-          <p className="text-muted">No payments yet.</p>
+          <EmptyState
+            noun="payments"
+            filtered={Boolean(q || status)}
+            onClear={() => { setSearch(''); setStatus('') }}
+          />
         ) : (
           <table className="table">
             <caption className="visually-hidden">Payments</caption>
@@ -297,6 +308,7 @@ export default function Payments() {
           </table>
         )}
       </div>
+      )}
     </div>
   )
 }

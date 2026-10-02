@@ -3,10 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import ConfirmButton from '../components/ConfirmButton'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 export default function BurialRecords() {
   const [searchParams] = useSearchParams()
   const [records, setRecords] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   // Deep links from the map arrive as ?q=<lot code>; the existing search
   // already matches lot codes, so there is no second filter to maintain.
@@ -34,6 +37,7 @@ export default function BurialRecords() {
     const { ok, data } = await api(path)
     if (ok) setRecords(data)
     else setError(data?.error || 'Failed to load burial records')
+    setLoaded(true)
   }
 
   useEffect(() => { load() }, [q, interment, type])
@@ -178,9 +182,16 @@ export default function BurialRecords() {
         </div>
       )}
 
+      {!loaded && !error && <Loading message="Loading burial records..." />}
+
+      {loaded && !error && (
       <div className="table-container section-block">
         {records.length === 0 ? (
-          <p className="text-muted">No burial records found.</p>
+          <EmptyState
+            noun="burial records"
+            filtered={Boolean(q || interment || type)}
+            onClear={() => { setSearch(''); setInterment(''); setType('') }}
+          />
         ) : (
           <table className="table">
             <caption className="visually-hidden">Burial records</caption>
@@ -230,6 +241,7 @@ export default function BurialRecords() {
           </table>
         )}
       </div>
+      )}
     </div>
   )
 }

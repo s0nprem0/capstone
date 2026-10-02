@@ -4,11 +4,14 @@ import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 export default function Reservations() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [reservations, setReservations] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   // Deep links from the map arrive as ?q=<lot code>. The existing search
   // already matches lot codes, so there is no second filter to maintain.
@@ -29,6 +32,7 @@ export default function Reservations() {
     const { ok, data } = await api(path)
     if (ok) setReservations(data)
     else setError(data?.error || 'Failed to load reservations')
+    setLoaded(true)
   }
 
   useEffect(() => {
@@ -78,9 +82,16 @@ export default function Reservations() {
         </select>
       </div>
 
+      {!loaded && !error && <Loading message="Loading reservations..." />}
+
+      {loaded && !error && (
       <div className="table-container section-block">
         {reservations.length === 0 ? (
-          <p className="text-muted">No reservations found.</p>
+          <EmptyState
+            noun="reservations"
+            filtered={Boolean(q || payment || approval)}
+            onClear={() => { setSearch(''); setPayment(''); setApproval('') }}
+          />
         ) : (
           <table className="table">
             <caption className="visually-hidden">Reservations</caption>
@@ -144,6 +155,7 @@ export default function Reservations() {
           </table>
         )}
       </div>
+      )}
     </div>
   )
 }

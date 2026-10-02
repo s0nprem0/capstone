@@ -1056,6 +1056,23 @@ rect.lot--selected {
   padding: 1.5rem 0 !important;
 }
 
+/* The shared empty state. Sits in place of a list rather than inside it, so
+   it centres on the page and can carry a next step. */
+.empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.empty-block > p {
+  margin: 0;
+}
+
 /* ==== Accessible keyboard focus ==== */
 :focus-visible {
   outline: 2px solid var(--color-primary);

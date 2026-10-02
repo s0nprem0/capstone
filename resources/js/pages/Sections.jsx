@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 1791 1457' }
 
 export default function Sections() {
   const [sections, setSections] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -23,6 +26,7 @@ export default function Sections() {
     const { ok, data } = await api('/api/sections')
     if (ok) setSections(data)
     else setError(data?.error || 'Failed to load sections')
+    setLoaded(true)
   }
 
   useEffect(() => {
@@ -188,6 +192,11 @@ export default function Sections() {
         </form>
       )}
 
+      {!loaded && !error && <Loading message="Loading sections..." />}
+
+      {loaded && !error && sections.length === 0 && <EmptyState noun="sections" />}
+
+      {loaded && !error && sections.length > 0 && (
       <div className="table-container section-block">
         <table className="table">
           <caption className="visually-hidden">Cemetery sections</caption>
@@ -203,12 +212,7 @@ export default function Sections() {
             </tr>
           </thead>
           <tbody>
-            {sections.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="empty-state">No sections found.</td>
-              </tr>
-            ) : (
-              sections.map((s) => (
+            {sections.map((s) => (
                 <tr key={s.section_id}>
                   <td>{s.section_id}</td>
                   <td>{s.is_locked ? `${s.section_name} 🔒` : s.section_name}</td>
@@ -260,11 +264,11 @@ export default function Sections() {
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
+              ))}
+            </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }

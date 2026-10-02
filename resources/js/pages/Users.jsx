@@ -3,12 +3,15 @@ import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
+import Loading from '../components/Loading'
+import EmptyState from '../components/EmptyState'
 
 const EMPTY_FORM = { fullname: '', email: '', phone: '', password: '', role: 'user', status: 'active' }
 
 export default function Users() {
   const { user: me } = useAuth()
   const [users, setUsers] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
@@ -36,6 +39,7 @@ export default function Users() {
     const { ok, data } = await api(path)
     if (ok) setUsers(data)
     else setError(data?.error || 'Failed to load users')
+    setLoaded(true)
   }
 
   useEffect(() => {
@@ -258,26 +262,30 @@ export default function Users() {
         </select>
       </div>
 
-      <div className="table-container section-block">
-        <table className="table">
-          <caption className="visually-hidden">User accounts</caption>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.length === 0 ? (
+      {!loaded && !error ? (
+        <Loading message="Loading accounts..." />
+      ) : loaded && !error && users.length === 0 ? (
+        <EmptyState
+          noun="accounts"
+          filtered={Boolean(q || role || status)}
+          onClear={() => { setSearch(''); setRole(''); setStatus('') }}
+        />
+      ) : (
+        <div className="table-container section-block">
+          <table className="table">
+            <caption className="visually-hidden">User accounts</caption>
+            <thead>
               <tr>
-                <td colSpan={6} className="empty-state">No users found.</td>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ) : (
-              users.map((u) => (
+            </thead>
+            <tbody>
+              {users.map((u) => (
               <tr key={u.user_id}>
                 <td>{u.fullname}</td>
                 <td>{u.email}</td>
@@ -319,11 +327,11 @@ export default function Users() {
                   </div>
                 </td>
               </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
