@@ -1133,10 +1133,43 @@ textarea:disabled {
 /* ==== Table overflow on narrow screens ==== */
 .table-container {
   overflow-x: auto;
+  /* A scroll affordance with no JS: the two white gradients are attached to
+     the content (local) so they slide away as you scroll, and the two shadows
+     are attached to the viewport (scroll) so they stay pinned to the edges.
+     A shadow therefore shows on a side only while there is more table that
+     way -- which is the thing a 10-column table on a phone never had. */
+  background-image:
+    linear-gradient(to right, var(--color-surface), rgba(255, 255, 255, 0)),
+    linear-gradient(to left, var(--color-surface), rgba(255, 255, 255, 0)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0)),
+    linear-gradient(to left, rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
+/* 560px let the cells compress instead of the table overflowing, so at 390px
+   "Section A" wrapped to two lines, lot codes split across lines and row
+   heights went ragged. 820px is the width the widest table (ten columns of
+   reservations) needs to sit on one line each. */
 .table {
-  min-width: 560px;
+  min-width: 820px;
+}
+
+/* Single-line rows, now that the table has the width to hold them. */
+.table th,
+.table td {
+  white-space: nowrap;
+}
+
+/* Names and next-of-kin contact are the only cells whose content is genuinely
+   prose, and they get to wrap rather than stretch the table. */
+.table th.wrap,
+.table td.wrap {
+  white-space: normal;
+  min-width: 10rem;
+  max-width: 18rem;
 }
 
 /* ==== Responsive layout ==== */

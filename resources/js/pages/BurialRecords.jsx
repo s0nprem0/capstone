@@ -198,12 +198,12 @@ export default function BurialRecords() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Deceased</th>
+                <th className="wrap">Deceased</th>
                 <th>Lot</th>
                 <th>Section</th>
                 <th>Burial Date</th>
                 <th>Type</th>
-                <th>Next of Kin</th>
+                <th className="wrap">Next of Kin</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -212,7 +212,7 @@ export default function BurialRecords() {
               {records.map((r) => (
                 <tr key={r.burial_id}>
                   <td>{r.burial_id}</td>
-                  <td>{r.deceased_fullname}</td>
+                  <td className="wrap">{r.deceased_fullname}</td>
                   <td>
                     <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">
                       {r.lot_code}
@@ -221,7 +221,7 @@ export default function BurialRecords() {
                   <td>{r.section_name}</td>
                   <td>{r.burial_date}</td>
                   <td>{r.burial_type}</td>
-                  <td>{r.next_of_kin_name || '—'}</td>
+                  <td className="wrap">{r.next_of_kin_name || '—'}</td>
                   <td><span className={`badge badge--${r.interment_status}`}>{r.interment_status}</span></td>
                   <td>
                     <div className="table-actions">
