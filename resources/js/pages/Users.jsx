@@ -245,13 +245,13 @@ export default function Users() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
+        <select aria-label="Filter by role" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">All roles</option>
           <option value="admin">Admin</option>
           <option value="staff">Staff</option>
           <option value="user">Visitor/Client</option>
         </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>

@@ -349,9 +349,14 @@ textarea {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Every table-row action -- Edit, Delete, Deactivate, Approve -- is this
+   size, and at 0.25rem of vertical padding it rendered 22px tall, under
+   even the WCAG 2.5.8 minimum of 24. The extra leading room keeps the
+   dense table look on a pointer. */
 .btn-sm {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+  min-height: 28px;
 }
 
 .search-input {
@@ -1114,6 +1119,35 @@ rect.lot--selected {
   }
   .map-toggle {
     margin-left: 0;
+  }
+}
+
+/* Touch targets. The row actions, chips, tabs and zoom buttons are all sized
+   for a mouse cursor and measured 22-34px tall, which puts Delete and
+   Deactivate under the WCAG 2.5.8 minimum of 24. On a coarse pointer there
+   is no hover and no cursor to aim with, so they get the full 44 instead.
+   Keyed off the input device rather than the viewport, so a touchscreen
+   laptop is not penalised for being large. */
+@media (pointer: coarse) {
+  .btn,
+  .btn-sm,
+  .btn-ghost,
+  .chip,
+  .editor-chip,
+  .map-tab {
+    min-height: 44px;
+  }
+
+  .map-zoom-controls .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Buttons this close together are hard to hit without a miss. */
+  .table-actions,
+  .map-filters,
+  .editor-chips-list {
+    gap: 0.75rem;
   }
 }
 

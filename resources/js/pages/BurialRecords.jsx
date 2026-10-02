@@ -105,12 +105,12 @@ export default function BurialRecords() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={interment} onChange={(e) => setInterment(e.target.value)}>
+        <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
           <option value="">All interment statuses</option>
           <option value="scheduled">Scheduled</option>
           <option value="interred">Interred</option>
         </select>
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+        <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">All burial types</option>
           <option value="single">Single</option>
           <option value="double">Double</option>

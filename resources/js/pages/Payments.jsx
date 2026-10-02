@@ -201,7 +201,7 @@ export default function Payments() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select aria-label="Filter by payment status" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="pending">Pending</option>
           <option value="paid">Paid</option>

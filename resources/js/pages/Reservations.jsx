@@ -64,13 +64,13 @@ export default function Reservations() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select value={payment} onChange={(e) => setPayment(e.target.value)}>
+        <select aria-label="Filter by payment status" value={payment} onChange={(e) => setPayment(e.target.value)}>
           <option value="">All payments</option>
           <option value="pending">Pending</option>
           <option value="paid">Paid</option>
           <option value="failed">Failed</option>
         </select>
-        <select value={approval} onChange={(e) => setApproval(e.target.value)}>
+        <select aria-label="Filter by approval status" value={approval} onChange={(e) => setApproval(e.target.value)}>
           <option value="">All approvals</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
