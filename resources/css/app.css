@@ -1062,6 +1062,57 @@ rect.lot--selected {
   outline-offset: 2px;
 }
 
+/* ==== Disabled controls ====
+   Every button, input and select below carries a disabled prop in at least
+   one place, and until now a disabled control was pixel-identical to an
+   enabled one, so nothing on the page said why a press would do nothing. */
+.btn:disabled,
+.btn[aria-disabled='true'],
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover,
+.btn[aria-disabled='true']:hover {
+  background: var(--color-primary);
+}
+
+.btn-secondary:disabled:hover,
+.btn-ghost:disabled:hover {
+  background: var(--color-border);
+}
+
+/* Kept above the disabled opacity so the form still reads as filled in. */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--color-bg);
+}
+
+/* ==== Reduced motion ====
+   Six animations ran unconditionally: the loading spinner (indefinitely),
+   the off-canvas drawer transform, and the nav-link, report-card,
+   lot-rect and editor-chip transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The spinner still has to say "working" once the spin is taken away. */
+  .spinner {
+    border-top-color: var(--color-primary);
+    opacity: 1;
+  }
+}
+
 /* ==== Table overflow on narrow screens ==== */
 .table-container {
   overflow-x: auto;
