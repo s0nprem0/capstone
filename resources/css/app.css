@@ -12,7 +12,7 @@
   --color-primary: #2c5530;
   --color-primary-hover: #3a7040;
   --color-text: #1a1a1a;
-  --color-text-muted: #6b7280;
+  --color-text-muted: #666e7b;
   --color-border: #e5e7eb;
   --sidebar-width: 240px;
   --radius: 8px;
@@ -107,7 +107,10 @@ a {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* --color-text-muted on --color-surface measures 4.83:1. */
+/* 4.72:1 on --color-bg, which is what body paints, and 5.15:1 on
+   --color-surface. Against --color-surface alone the old #6b7280 read
+   4.83:1, but .text-muted sits on the page background, where it was
+   4.43:1 and failed AA by a hair. */
 .panel-heading {
   color: var(--color-text-muted);
 }
@@ -360,10 +363,13 @@ textarea {
   background: var(--color-surface);
 }
 
-.search-input:focus {
-  outline: none;
+/* Was `outline: none` here, which at (0,2,0) out-ranked the global
+   :focus-visible ring at (0,1,0) and left the search box the only control
+   in the app with no ring -- it was the single focusable stop on seven
+   pages that reported no outline. The border change is worth keeping; the
+   outline suppression was not. */
+.search-input:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(44, 85, 48, 0.15);
 }
 
 .filter-bar {
@@ -411,7 +417,9 @@ textarea {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.6);
+  /* Same alpha as .nav-link (5.16:1 on --color-primary). 0.6 landed at
+     4.26:1 and failed AA. */
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .table {
