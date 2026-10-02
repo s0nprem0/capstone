@@ -17,6 +17,33 @@
   --sidebar-width: 240px;
   --radius: 8px;
 
+  /* Spacing scale. The stylesheet had 22 distinct rem lengths across padding,
+     margin and gap, and the nine below accounted for 132 of 171 uses. The
+     near-misses that are gone (0.35, 0.4, 0.6rem) were one-off nudges that had
+     drifted off the rhythm; they now sit on a step. Hairline adjustments stay
+     literal. */
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 4rem;
+
+  /* Type scale. Was 19 distinct sizes, including 0.65/0.66, 0.78/0.8/0.8125/
+     0.825 and 0.85/0.875 pairs that were each tuned independently. Seven steps,
+     snapped to the nearest neighbour. The px sizes below are deliberately not
+     tokens: they are SVG user units inside a scaled viewBox and must track the
+     geometry, not the page. */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.5rem;
+
   /* Lot status palette — the single source of truth for status colour, used by
      the SVG map, the legend dots and the badges. Values were chosen so that
      every pair stays separable under protanopia, deuteranopia and tritanopia
@@ -62,29 +89,29 @@ a {
   width: var(--sidebar-width);
   background: var(--color-primary);
   color: #fff;
-  padding: 1.5rem;
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
   overflow-y: auto;
 }
 
 .sidebar-title {
-  font-size: 1.1rem;
+  font-size: var(--text-xl);
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
 }
 
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .nav-group {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--space-3xs);
 }
 
 /* Shared uppercase label for grouped controls: the sidebar nav, the map rail
@@ -92,7 +119,7 @@ a {
 .nav-heading,
 .panel-heading {
   margin: 0;
-  font-size: 0.66rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -102,8 +129,8 @@ a {
    --color-primary measures 4.70:1, clearing AA while staying dimmer than the
    links beside it (0.70, 5.16:1). */
 .nav-heading {
-  margin-left: 0.75rem;
-  margin-bottom: 0.35rem;
+  margin-left: var(--space-sm);
+  margin-bottom: var(--space-2xs);
   color: rgba(255, 255, 255, 0.65);
 }
 
@@ -133,7 +160,7 @@ a {
 .nav-link {
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius);
   transition: background 0.2s;
 }
@@ -151,31 +178,31 @@ a {
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: var(--space-xl);
 }
 
 .section-block {
-  margin-top: 1.5rem;
+  margin-top: var(--space-lg);
 }
 
 h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-lg);
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .btn {
   display: inline-block;
-  padding: 0.5rem 1rem;
+  padding: var(--space-xs) var(--space-md);
   border: none;
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -208,33 +235,33 @@ h2 {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1.5rem;
+  padding: var(--space-lg);
 }
 
 fieldset {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 legend {
   font-weight: 600;
-  padding: 0 0.5rem;
+  padding: 0 var(--space-xs);
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 label {
   display: flex;
   flex-direction: column;
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   font-weight: 500;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 /* Field wrapper: label and its message stack beside the control. The message
@@ -243,11 +270,11 @@ label {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 .field-error {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 400;
   color: #9b1c1c;
 }
@@ -258,7 +285,7 @@ select[aria-invalid='true'] {
 }
 
 .label-hint {
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 400;
   color: var(--color-text-muted);
 }
@@ -266,10 +293,10 @@ select[aria-invalid='true'] {
 input,
 select,
 textarea {
-  padding: 0.5rem;
+  padding: var(--space-xs);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
 }
 
 textarea {
@@ -281,24 +308,24 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
 }
 
 .total-display {
   margin-right: auto;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 
 .total-display strong {
-  font-size: 1.1rem;
+  font-size: var(--text-xl);
 }
 
 .table-container {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1.5rem;
+  padding: var(--space-lg);
 }
 
 .text-muted {
@@ -310,7 +337,7 @@ textarea {
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
-  padding: 4rem 1rem;
+  padding: var(--space-2xl) var(--space-md);
   background: var(--color-bg);
 }
 
@@ -318,12 +345,12 @@ textarea {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 2rem;
+  padding: var(--space-xl);
   width: 100%;
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .auth-card h2 {
@@ -332,7 +359,7 @@ textarea {
 
 .auth-links {
   text-align: center;
-  font-size: 0.875rem;
+  font-size: var(--text-md);
 }
 
 .btn-block {
@@ -354,17 +381,17 @@ textarea {
    even the WCAG 2.5.8 minimum of 24. The extra leading room keeps the
    dense table look on a pointer. */
 .btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: var(--text-xs);
   min-height: 28px;
 }
 
 .search-input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   background: var(--color-surface);
 }
 
@@ -380,8 +407,8 @@ textarea {
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
 }
 
 .filter-bar .search-input {
@@ -390,27 +417,27 @@ textarea {
 
 .filter-bar select {
   flex: 0 1 auto;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
 .file-input {
   display: block;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+  font-size: var(--text-md);
 }
 
 .sidebar-footer {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding-top: 1rem;
+  padding-top: var(--space-md);
 }
 
 .sidebar-user {
@@ -419,7 +446,7 @@ textarea {
 }
 
 .sidebar-role {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   /* Same alpha as .nav-link (5.16:1 on --color-primary). 0.6 landed at
@@ -430,7 +457,7 @@ textarea {
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: var(--text-sm);
   line-height: 1.4;
   /* Reference numbers, dates and amounts line up column to column. */
   font-variant-numeric: tabular-nums;
@@ -439,7 +466,7 @@ textarea {
 .table th,
 .table td {
   text-align: left;
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -447,7 +474,7 @@ textarea {
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.05em;
 }
 
@@ -458,9 +485,9 @@ textarea {
 
 .badge {
   display: inline-block;
-  padding: 0.15rem 0.5rem;
+  padding: var(--space-3xs) var(--space-xs);
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -543,10 +570,10 @@ textarea {
 }
 
 .alert {
-  padding: 0.75rem 1rem;
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius);
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+  font-size: var(--text-md);
 }
 
 .alert--error {
@@ -576,36 +603,36 @@ textarea {
 .confirm-inline {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--space-xs);
   white-space: nowrap;
 }
 
 .confirm-message {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
 .table-actions {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--space-xs);
   white-space: nowrap;
 }
 
 .form-card--compact {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .map-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-md);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 0.6rem 1rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.85rem;
+  padding: var(--space-xs) var(--space-md);
+  margin-bottom: var(--space-sm);
+  font-size: var(--text-md);
 }
 
 .dot {
@@ -613,7 +640,7 @@ textarea {
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  margin-right: 0.35rem;
+  margin-right: var(--space-2xs);
 }
 
 .visually-hidden {
@@ -629,24 +656,24 @@ textarea {
 }
 
 .map-hint {
-  margin-top: 0.75rem;
+  margin-top: var(--space-sm);
 }
 
 .notifications-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 .notification-item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-md);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: var(--space-md);
 }
 
 .notification-item--unread {
@@ -657,7 +684,7 @@ textarea {
 .notification-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 .notification-message {
@@ -674,23 +701,23 @@ textarea {
   border-radius: 999px;
   background: #dc2626;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  margin-left: 0.35rem;
+  margin-left: var(--space-2xs);
   vertical-align: middle;
 }
 
 .reports-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .report-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1.5rem;
+  padding: var(--space-lg);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s;
@@ -701,12 +728,12 @@ textarea {
 }
 
 .report-card h3 {
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2xs);
 }
 
 .report-card p {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -714,9 +741,9 @@ textarea {
 .report-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  padding: 1rem 0;
-  font-size: 0.9rem;
+  gap: var(--space-lg);
+  padding: var(--space-md) 0;
+  font-size: var(--text-md);
   font-weight: 500;
 }
 
@@ -750,7 +777,7 @@ textarea {
 
 .map-layout {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-md);
   align-items: flex-start;
 }
 
@@ -759,26 +786,26 @@ textarea {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1.25rem;
+  padding: var(--space-lg);
   position: sticky;
   top: 1rem;
 }
 
 .map-detail h3 {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-sm);
 }
 
 .figure-list {
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-md);
 }
 
 .figure-list > div {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) 0;
   border-bottom: 1px solid var(--color-border);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
 }
 
 .figure-list dt {
@@ -797,9 +824,9 @@ textarea {
 .reserve-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.75rem 1.25rem;
-  margin: 0 0 1.25rem;
-  padding: 0.85rem 1rem;
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   background: var(--color-bg);
   border-radius: var(--radius);
 }
@@ -807,10 +834,10 @@ textarea {
 .reserve-summary > div {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: var(--space-3xs);
   padding: 0;
   border-bottom: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-md);
 }
 
 .reserve-summary dd {
@@ -820,15 +847,15 @@ textarea {
 .map-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: var(--space-xs);
 }
 
 .map-tab {
-  padding: 0.4rem 0.9rem;
+  padding: var(--space-xs) var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
-  font-size: 0.825rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -841,15 +868,15 @@ textarea {
 
 .map-filters {
   display: flex;
-  gap: 0.35rem;
+  gap: var(--space-2xs);
 }
 
 .chip {
-  padding: 0.3rem 0.75rem;
+  padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   cursor: pointer;
 }
 
@@ -866,9 +893,9 @@ textarea {
 .map-toggle {
   flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--space-xs);
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   margin-left: auto;
 }
 
@@ -878,7 +905,7 @@ textarea {
   right: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--space-2xs);
   z-index: 5;
 }
 
@@ -892,17 +919,17 @@ textarea {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  font-size: 1rem;
+  font-size: var(--text-lg);
 }
 
 .map-drag-hint {
   position: absolute;
   bottom: 0.5rem;
   left: 0.75rem;
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   color: var(--color-text-muted);
   background: rgba(255, 255, 255, 0.8);
-  padding: 0.15rem 0.5rem;
+  padding: var(--space-3xs) var(--space-xs);
   border-radius: 999px;
   pointer-events: none;
 }
@@ -998,14 +1025,14 @@ rect.lot--selected {
 .topbar {
   display: none;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .topbar-menu {
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
   line-height: 1;
-  padding: 0.4rem 0.7rem;
+  padding: var(--space-xs) var(--space-sm);
 }
 
 /* The drawer hides the sidebar at tablet widths, so the topbar names the
@@ -1030,9 +1057,9 @@ rect.lot--selected {
 .loading {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   color: var(--color-text-muted);
-  padding: 1rem 0;
+  padding: var(--space-md) 0;
 }
 
 .spinner {
@@ -1053,7 +1080,7 @@ rect.lot--selected {
 .empty-state {
   text-align: center;
   color: var(--color-text-muted);
-  padding: 1.5rem 0 !important;
+  padding: var(--space-lg) 0 !important;
 }
 
 /* The shared empty state. Sits in place of a list rather than inside it, so
@@ -1062,9 +1089,9 @@ rect.lot--selected {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-sm);
   margin: 0;
-  padding: 2.5rem 1rem;
+  padding: 2.5rem var(--space-md);
   text-align: center;
   color: var(--color-text-muted);
 }
@@ -1199,17 +1226,17 @@ textarea:disabled {
     display: block;
   }
   .main-content {
-    padding: 1.5rem 1.25rem;
+    padding: var(--space-lg) var(--space-lg);
   }
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem;
+    padding: var(--space-md);
   }
   .page-header {
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: var(--space-sm);
   }
   .form-actions {
     flex-wrap: wrap;
@@ -1282,19 +1309,19 @@ textarea:disabled {
   .table-actions,
   .map-filters,
   .editor-chips-list {
-    gap: 0.75rem;
+    gap: var(--space-sm);
   }
 }
 
 /* ==== Lot Editor (admin) ==== */
 .editor-chip {
-  padding: 0.25rem 0.8rem;
+  padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-text-muted);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
@@ -1315,28 +1342,28 @@ textarea:disabled {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
 }
 
 .editor-chips-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--space-2xs);
 }
 
 .editor-title {
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
 }
 
 .editor-dirty {
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
+  margin-left: var(--space-xs);
+  padding: var(--space-3xs) var(--space-xs);
   border-radius: 999px;
   background: #fff3bf;
   color: #99582a;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
@@ -1353,15 +1380,15 @@ textarea:disabled {
 .editor-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .editor-form-grid label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.8rem;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -1373,27 +1400,27 @@ textarea:disabled {
 .editor-block-label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.6rem;
-  font-size: 0.8rem;
+  gap: var(--space-2xs);
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .editor-block-label select,
 .editor-block-label textarea {
   width: 100%;
-  padding: 0.5rem;
+  padding: var(--space-xs);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-md);
   font-family: inherit;
 }
 
 .editor-status-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.35rem;
+  gap: var(--space-2xs);
+  margin-top: var(--space-2xs);
 }
 
 .editor-coords {
@@ -1402,7 +1429,7 @@ textarea:disabled {
 }
 
 .lot-editor-legend {
-  margin-top: 0.75rem;
+  margin-top: var(--space-sm);
   margin-bottom: 0;
 }
 
@@ -1419,7 +1446,7 @@ textarea:disabled {
 }
 
 .map-page > h2 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
 }
 
 .map-page .map-layout {
@@ -1453,7 +1480,7 @@ textarea:disabled {
    two-pane layout. */
 .map-panes {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-md);
   flex: 1;
   min-height: 0;
   /* The collapse point below is judged against this box, not the viewport. */
@@ -1465,18 +1492,18 @@ textarea:disabled {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: var(--space-md);
   overflow-y: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: var(--space-md);
 }
 
 .map-rail-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 /* Drops the key to the foot of the rail when the controls leave room. */
@@ -1517,23 +1544,23 @@ textarea:disabled {
   padding: 0;
   margin: 0;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-xs);
 }
 
 /* The map half of the linkage: the records this plot appears in. */
 .detail-records {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
+  gap: var(--space-xs);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--color-border);
 }
 
 .detail-links {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--space-2xs);
 }
 
 /* Below 960px the two flanks leave under 390px for the map, so the record
@@ -1597,8 +1624,8 @@ textarea:disabled {
   background: rgba(255, 255, 255, 0.92);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius);
-  padding: 0.75rem 1.25rem;
-  font-size: 0.85rem;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   text-align: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -1624,7 +1651,7 @@ textarea:disabled {
   position: sticky;
   bottom: 0;
   margin-top: auto;
-  padding-top: 0.75rem;
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
 }
@@ -1636,37 +1663,37 @@ textarea:disabled {
 .dash-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
-  gap: 1rem;
+  gap: var(--space-md);
   align-items: start;
-  margin-top: 1rem;
+  margin-top: var(--space-md);
 }
 
 .dash-panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
+  padding: var(--space-md) var(--space-lg);
   min-width: 0;
 }
 
 .dash-stack {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
   min-width: 0;
 }
 
 .dash-panel h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-lg);
 }
 
 .dash-panel-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
 .dash-panel-head h3 {
@@ -1687,7 +1714,7 @@ textarea:disabled {
 .occupancy-meter {
   display: flex;
   height: 8px;
-  margin-top: 0.75rem;
+  margin-top: var(--space-sm);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1702,9 +1729,9 @@ textarea:disabled {
 .dash-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  margin-top: 0.6rem;
-  font-size: 0.8125rem;
+  gap: var(--space-xs) var(--space-lg);
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -1726,8 +1753,8 @@ textarea:disabled {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
   text-decoration: none;
 }
 
