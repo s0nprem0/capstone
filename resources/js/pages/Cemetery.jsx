@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
+import { BURIAL_TYPES, INTERMENT_STATUS, LOT_TYPES, label, lifespan, longDate } from '../lib/terms'
 
 const STATUS_LABELS = {
   available: 'Available',
@@ -57,6 +58,29 @@ export default function Cemetery() {
     () => (lotParam ? allLots.find((l) => String(l.lot_id) === lotParam) || null : null),
     [allLots, lotParam]
   )
+
+  // The interment record filed against the selected plot. /api/burial-records is
+  // staff and admin only, and the map itself is public -- so this is fetched
+  // only for those roles. A public map must not disclose who lies in a plot.
+  const [interment, setInterment] = useState(null)
+  const [intermentLoading, setIntermentLoading] = useState(false)
+  const canSeeInterments = user?.role === 'staff' || user?.role === 'admin'
+
+  useEffect(() => {
+    if (!canSeeInterments || !selectedLot) {
+      setInterment(null)
+      return undefined
+    }
+    let current = true
+    setIntermentLoading(true)
+    api(`/api/burial-records?lot_id=${selectedLot.lot_id}`)
+      .then(({ ok, data }) => {
+        if (!current) return
+        setInterment(ok && Array.isArray(data) && data.length ? data[0] : null)
+      })
+      .finally(() => current && setIntermentLoading(false))
+    return () => { current = false }
+  }, [canSeeInterments, selectedLot])
 
   const compositeLots = useMemo(() => (sections || []).flatMap((s) => s.lots || []), [sections])
   const compositeCounts = useMemo(() => {
@@ -202,21 +226,21 @@ export default function Cemetery() {
             <aside className="map-detail">
               {selectedLot ? (
                 <>
-                  <h3>{selectedLot.lot_code}</h3>
-                  <dl className="figure-list">
-                    <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
-                    <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
-                    <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
-                    <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
-                    <div>
-                      <dt>Status</dt>
-                      <dd>
-                        <span className={`badge badge--${selectedLot.status}`}>
-                          {STATUS_LABELS[selectedLot.status] || selectedLot.status}
-                        </span>
-                      </dd>
+                  {/* The plot's own entry: titled, ruled, filed. */}
+                  <div className="plot-doc">
+                    <div className="plot-doc-head">
+                      <h3>{selectedLot.lot_code}</h3>
+                      <span className={`mark mark--${selectedLot.status}`}>
+                        {STATUS_LABELS[selectedLot.status] || selectedLot.status}
+                      </span>
                     </div>
-                  </dl>
+                    <dl className="figure-list">
+                      <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
+                      <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
+                      <div><dt>Type</dt><dd>{label(LOT_TYPES, selectedLot.lot_type)}</dd></div>
+                      <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
+                    </dl>
+                  </div>
                   {selectedLot.status === 'available' &&
                     (user ? (
                       <Link
@@ -248,6 +272,44 @@ export default function Cemetery() {
                           </Link>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* The interment record, printed inside the plot's own entry.
+                      Staff and admin only -- see the fetch above. */}
+                  {canSeeInterments && (
+                    <div className="plot-doc plot-doc--filed">
+                      <p className="plot-doc-label">Interment record</p>
+                      {intermentLoading && <p className="text-muted">Checking the register…</p>}
+                      {!intermentLoading && interment && (
+                        <>
+                          <p className="plot-doc-name">{interment.deceased_fullname}</p>
+                          {(interment.date_of_birth || interment.date_of_death) && (
+                            <p className="plot-doc-years">{lifespan(interment.date_of_birth, interment.date_of_death)}</p>
+                          )}
+                          <dl className="figure-list">
+                            <div><dt>Interred</dt><dd>{longDate(interment.burial_date)}</dd></div>
+                            <div><dt>Type</dt><dd>{label(BURIAL_TYPES, interment.burial_type)}</dd></div>
+                            <div>
+                              <dt>State</dt>
+                              <dd>
+                                <span className={`mark mark--${interment.interment_status}`}>
+                                  {label(INTERMENT_STATUS, interment.interment_status)}
+                                </span>
+                              </dd>
+                            </div>
+                            {interment.next_of_kin_name && (
+                              <div>
+                                <dt>Next of kin</dt>
+                                <dd>{interment.next_of_kin_name}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </>
+                      )}
+                      {!intermentLoading && !interment && (
+                        <p className="text-muted">No interment is filed against this plot.</p>
+                      )}
                     </div>
                   )}
                 </>
