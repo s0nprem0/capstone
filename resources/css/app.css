@@ -1772,6 +1772,15 @@ textarea:disabled {
   margin-left: 0;
 }
 
+/* Caveat under the toggle: long enough to stop the overlay being read as a
+   plot plan, short enough not to crowd the rail. */
+.map-toggle-note {
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 34ch;
+}
+
 /* The legend is a key inside the panel, not a card inside a card. */
 .map-rail .map-legend {
   background: none;

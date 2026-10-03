@@ -307,7 +307,8 @@ export default function CemeterySvgMap({
 
   // In the overview the plots are already in site coordinates, so they need no
   // rebasing -- only the detail view shifts them against the section origin.
-  // Without these the legend counted 305 plots the overview never drew.
+  // Without this the legend would still total every plot while the overview
+  // drew none of them.
   const overviewLots = activeSection ? [] : sections.flatMap((s) => s.lots || [])
 
   return (

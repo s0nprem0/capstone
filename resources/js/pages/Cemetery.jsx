@@ -17,7 +17,7 @@ export default function Cemetery() {
   const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
   const [viewSectionId, setViewSectionId] = useState(null)
-  const [showLayout, setShowLayout] = useState(true)
+  const [showLayout, setShowLayout] = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -197,8 +197,13 @@ export default function Cemetery() {
                   checked={showLayout}
                   onChange={(e) => setShowLayout(e.target.checked)}
                 />
-                Layout reference
+                Site illustration
               </label>
+              <p className="text-muted map-toggle-note">
+                An approximate traced sketch of the grounds, for orientation only.
+                Plot rectangles come from the survey and are authoritative, so
+                they do not line up with this overlay.
+              </p>
             </div>
 
             <div className="map-rail-group map-rail-legend">
