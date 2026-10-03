@@ -6,6 +6,18 @@
   padding: 0;
 }
 
+/* Form controls and buttons do not inherit font from the body — the UA
+   stylesheet gives them their own default, which here meant every .btn,
+   input and select was silently rendering in Arial rather than the system
+   stack. Inheritance is the fix; setting the family on each control is not. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
 /* Source Serif 4, latin subset, variable weight. Vendored rather than linked
    so the app keeps making zero external requests. OFL 1.1, see fonts/OFL.txt.
    Used for the things a bound register sets in a book face: names, dates,
