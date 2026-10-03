@@ -5,6 +5,7 @@ import useDebounced from '../lib/useDebounced'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate } from '../lib/terms'
 
 export default function BurialRecords() {
   const [searchParams] = useSearchParams()
@@ -94,34 +95,7 @@ export default function BurialRecords() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Burial Records</h2>
-        <button className="btn btn-primary" onClick={openCreate}>New Record</button>
-      </div>
-
       {error && <p className="alert alert--error">{error}</p>}
-
-      <div className="filter-bar">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search by name, lot, section, date, status, next of kin..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
-          <option value="">All interment statuses</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="interred">Interred</option>
-        </select>
-        <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="">All burial types</option>
-          <option value="single">Single</option>
-          <option value="double">Double</option>
-          <option value="family">Family</option>
-          <option value="cremation">Cremation</option>
-        </select>
-      </div>
 
       {showForm && (
         <div className="form-card section-block">
@@ -132,7 +106,7 @@ export default function BurialRecords() {
                 <input type="text" name="deceased_fullname" value={form.deceased_fullname} onChange={handleChange} required />
               </label>
               <label>
-                Lot ID
+                Plot ID
                 <input type="number" name="lot_id" value={form.lot_id} onChange={handleChange} required />
               </label>
               <label>
@@ -142,10 +116,9 @@ export default function BurialRecords() {
               <label>
                 Burial Type
                 <select name="burial_type" value={form.burial_type} onChange={handleChange}>
-                  <option value="single">Single</option>
-                  <option value="double">Double</option>
-                  <option value="family">Family</option>
-                  <option value="cremation">Cremation</option>
+                  {Object.entries(BURIAL_TYPES).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
                 </select>
               </label>
               <label>
@@ -167,8 +140,9 @@ export default function BurialRecords() {
               <label>
                 Interment Status
                 <select name="interment_status" value={form.interment_status} onChange={handleChange}>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="interred">Interred</option>
+                  {Object.entries(INTERMENT_STATUS).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -182,65 +156,120 @@ export default function BurialRecords() {
         </div>
       )}
 
-      {!loaded && !error && <Loading message="Loading burial records..." />}
+      {!loaded && !error && <Loading message="Loading the register..." />}
 
       {loaded && !error && (
-      <div className="table-container section-block">
-        {records.length === 0 ? (
-          <EmptyState
-            noun="burial records"
-            filtered={Boolean(q || interment || type)}
-            onClear={() => { setSearch(''); setInterment(''); setType('') }}
-          />
-        ) : (
-          <table className="table">
-            <caption className="visually-hidden">Burial records</caption>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th className="wrap">Deceased</th>
-                <th>Lot</th>
-                <th>Section</th>
-                <th>Burial Date</th>
-                <th>Type</th>
-                <th className="wrap">Next of Kin</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((r) => (
-                <tr key={r.burial_id}>
-                  <td>{r.burial_id}</td>
-                  <td className="wrap">{r.deceased_fullname}</td>
-                  <td>
-                    <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">
-                      {r.lot_code}
-                    </Link>
-                  </td>
-                  <td>{r.section_name}</td>
-                  <td>{r.burial_date}</td>
-                  <td>{r.burial_type}</td>
-                  <td className="wrap">{r.next_of_kin_name || '—'}</td>
-                  <td><span className={`badge badge--${r.interment_status}`}>{r.interment_status}</span></td>
-                  <td>
-                    <div className="table-actions">
-                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
-                      <ConfirmButton
-                        label="Delete"
-                        danger
-                        onConfirm={() => handleDelete(r.burial_id)}
-                        busy={busyId === r.burial_id}
-                        message="Delete this burial record? This cannot be undone."
-                      />
-                    </div>
-                  </td>
-                </tr>
+        <section className="section-block" aria-labelledby="register-heading">
+          <div className="register-head">
+            <h2 id="register-heading">Register of Interments</h2>
+            <p>
+              St. John Memorial Garden &amp; Parks
+              {records.length > 0 && ` · ${records.length} ${records.length === 1 ? 'entry' : 'entries'}`}
+            </p>
+            <button className="btn btn-primary" onClick={openCreate}>New Entry</button>
+          </div>
+
+          <div className="filter-bar register-filters">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search a name, plot, section or next of kin..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
+              <option value="">All interment statuses</option>
+              <option value="interred">Interred</option>
+              <option value="scheduled">Scheduled</option>
+            </select>
+            <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="">All burial types</option>
+              {Object.entries(BURIAL_TYPES).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+            </select>
+          </div>
+
+          {records.length === 0 ? (
+            <div className="register register-scroll">
+              <EmptyState
+                noun="entries"
+                filtered={Boolean(q || interment || type)}
+                onClear={() => { setSearch(''); setInterment(''); setType('') }}
+              />
+            </div>
+          ) : (
+            <div className="register register-scroll">
+              <table className="register-table">
+                <caption className="visually-hidden">
+                  Register of interments, most recent first
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="register-no">No.</th>
+                    <th scope="col">Deceased</th>
+                    <th scope="col">Plot</th>
+                    <th scope="col">Section</th>
+                    <th scope="col">Interment</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Next of kin</th>
+                    <th scope="col">State</th>
+                    <th scope="col"><span className="visually-hidden">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map((r) => {
+                    const years = lifespan(r.date_of_birth, r.date_of_death)
+                    return (
+                      <tr key={r.burial_id}>
+                        <td className="register-no">{String(r.burial_id).padStart(3, '0')}</td>
+                        <th scope="row" className="register-name">
+                          {r.deceased_fullname}
+                          {years && <span className="register-lifespan">{years}</span>}
+                        </th>
+                        <td className="register-cell">
+                          <Link
+                            to={`/?lot=${r.lot_id}`}
+                            className="register-plot"
+                            title="Show this plot on the cemetery map"
+                          >
+                            {r.lot_code}
+                          </Link>
+                        </td>
+                        <td className="register-cell">{r.section_name}</td>
+                        <td className="register-cell">{longDate(r.burial_date)}</td>
+                        <td className="register-cell">{label(BURIAL_TYPES, r.burial_type)}</td>
+                        <td className="register-cell">
+                          {r.next_of_kin_name || '—'}
+                          {r.next_of_kin_phone && (
+                            <span className="register-kin">{r.next_of_kin_phone}</span>
+                          )}
+                        </td>
+                        <td className="register-cell">
+                          <span className={`mark mark--${r.interment_status}`}>
+                            {label(INTERMENT_STATUS, r.interment_status)}
+                          </span>
+                        </td>
+                        <td className="register-actions">
+                          <div className="table-actions">
+                            <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
+                            <ConfirmButton
+                              label="Delete"
+                              danger
+                              onConfirm={() => handleDelete(r.burial_id)}
+                              busy={busyId === r.burial_id}
+                              message={`Delete the entry for ${r.deceased_fullname}? This cannot be undone.`}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       )}
     </div>
   )

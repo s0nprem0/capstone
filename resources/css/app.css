@@ -6,16 +6,41 @@
   padding: 0;
 }
 
+/* Source Serif 4, latin subset, variable weight. Vendored rather than linked
+   so the app keeps making zero external requests. OFL 1.1, see fonts/OFL.txt.
+   Used for the things a bound register sets in a book face: names, dates,
+   plot codes and figures. UI chrome stays in the system sans. */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/source-serif-4-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --color-bg: #f5f5f5;
-  --color-surface: #ffffff;
+  /* Paper, ink and rules. A cemetery register is a bound book: warm ground,
+     iron-gall ink, hairline rules. Neutrals are tinted toward the green accent
+     rather than left as pure grey, which reads dead against a coloured map. */
+  --color-bg: #f4f1e8;
+  --color-surface: #fbf9f4;
   --color-primary: #2c5530;
   --color-primary-hover: #3a7040;
-  --color-text: #1a1a1a;
-  --color-text-muted: #666e7b;
-  --color-border: #e5e7eb;
+  --color-text: #23261f;
+  --color-text-muted: #666b60;
+  --color-border: #d9d3c4;
   --sidebar-width: 240px;
-  --radius: 8px;
+  /* Ledger, not consumer app. A register has square corners; the 8px here read
+     as rounded cards throughout. */
+  --radius: 3px;
+
+  /* Source Serif 4 for the register's contents; the system sans stays on chrome.
+     Named once so nothing reaches for a serif by accident. */
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans: system-ui, -apple-system, sans-serif;
 
   /* Spacing scale. The stylesheet had 22 distinct rem lengths across padding,
      margin and gap, and the nine below accounted for 132 of 171 uses. The
@@ -483,6 +508,187 @@ textarea {
   text-align: right;
 }
 
+/* ==== The burial register ====
+   The most important document this system keeps is a register of the dead, and
+   it was rendering as a card-wrapped table row: the name in 11px uppercase grey
+   next to a bare 'single', with the lifespan the schema already stores left
+   out of the table entirely. This is that page as a register instead.
+
+   A bound register numbers its entries in the margin, rules every row, keeps
+   the sheet on the page while the entries scroll under it, and sets the names
+   in a book face. The actions move out of the row and into a gutter so the
+   ruled columns are never interrupted. */
+
+.register {
+  background: var(--color-surface);
+}
+
+.register-scroll {
+  overflow-x: auto;
+  /* Carries the paper edge over the scroll area; see the .table-container
+     scroll affordance, same technique. */
+  background-image:
+    linear-gradient(to right, var(--color-surface), rgba(251, 249, 244, 0)),
+    linear-gradient(to left, var(--color-surface), rgba(251, 249, 244, 0));
+  background-position: left center, right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%;
+  background-attachment: local, local;
+}
+
+.register-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+
+.register-table th,
+.register-table td {
+  text-align: left;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Only the inner rules are drawn; the sheet's outer edge is the head's border
+   above and the last row's rule below, so the page does not end up boxed in a
+   card. The last column has no trailing rule for the same reason. */
+.register-table tr > *:last-child {
+  border-right: 0;
+}
+
+.register-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.register-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-text-muted);
+}
+
+/* The entry number, in the margin the way a bound register numbers itself. */
+.register-no {
+  width: 1%;
+  padding: var(--space-sm) var(--space-xs);
+  font-family: var(--font-serif);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border-right-color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.register-name {
+  padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-sm);
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: 1.25;
+  font-weight: 600;
+  min-width: 14rem;
+}
+
+.register-lifespan {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Next of kin is a note against the entry, not a column of its own: two names
+   in one cell read as one, which is how the office keeps them. */
+.register-kin {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.register-cell {
+  padding: var(--space-sm);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+/* Plot code in the register's own face: it is a reference, like a plate
+   number, and it is the thing a visitor quotes at the office. */
+.register-plot {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.register-actions {
+  width: 1%;
+  padding: var(--space-2xs);
+  vertical-align: top;
+  background: var(--color-bg);
+}
+
+/* The register's filters sit on the sheet's head margin, not above it as a
+   separate toolbar, so they read as part of the book. */
+.register-filters {
+  margin-bottom: 0;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-bg);
+}
+
+/* The sheet's head: whose register this is, which no page said before. */
+.register-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-md) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-surface);
+}
+
+.register-head h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.register-head p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+@media print {
+  .register-scroll,
+  .table-container {
+    overflow: visible;
+    background-image: none;
+  }
+
+  .register-table thead th {
+    position: static;
+  }
+}
+
 .badge {
   display: inline-block;
   padding: var(--space-3xs) var(--space-xs);
@@ -491,6 +697,24 @@ textarea {
   font-weight: 600;
   text-transform: uppercase;
 }
+
+/* The register's own mark for an entry's state. Square like the ledger rather
+   than a pill, and a hairline rather than a fill: a bound register annotates in
+   ink, it does not sticker. */
+.mark {
+  display: inline-block;
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  font-family: var(--font-serif);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.mark--scheduled { color: #92400e; }
+.mark--interred  { color: #1e5c33; }
 
 .badge--admin {
   background: #2c5530;
