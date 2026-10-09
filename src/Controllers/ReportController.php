@@ -45,32 +45,6 @@ class ReportController
         ]);
     }
 
-    public function payments(): void
-    {
-        Auth::requireRole(['admin', 'staff']);
-        $db = Database::connection();
-
-        $total = $db->query("SELECT COUNT(*) FROM payments")->fetchColumn();
-        $pending = $db->query("SELECT COUNT(*) FROM payments WHERE payment_status = 'pending'")->fetchColumn();
-        $revenue = $db->query("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_status = 'paid'")->fetchColumn();
-
-        $items = $db->query(
-            "SELECT p.*, l.lot_code, u.fullname AS user_name
-             FROM payments p
-             JOIN reservations r ON r.reservation_id = p.reservation_id
-             JOIN cemetery_lots l ON l.lot_id = r.lot_id
-             JOIN users u ON u.user_id = r.user_id
-             ORDER BY p.payment_id DESC"
-        )->fetchAll();
-
-        Response::json([
-            'total' => (int) $total,
-            'pending' => (int) $pending,
-            'total_revenue' => (float) $revenue,
-            'items' => $items,
-        ]);
-    }
-
     public function burialRecords(): void
     {
         Auth::requireRole(['admin', 'staff']);

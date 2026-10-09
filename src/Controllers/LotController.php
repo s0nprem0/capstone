@@ -295,9 +295,9 @@ class LotController
             return;
         }
         $usage = Lot::usage($id);
-        if (($usage['reservations'] + $usage['payments'] + $usage['burials']) > 0) {
+        if (($usage['reservations'] + $usage['burials']) > 0) {
             Response::json([
-                'error' => 'This lot is linked to reservations, payments, or burial records and cannot be deleted.',
+                'error' => 'This lot is linked to reservations or burial records and cannot be deleted.',
                 'usage' => $usage,
             ], 409);
             return;

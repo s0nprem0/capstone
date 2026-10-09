@@ -11,7 +11,6 @@ use App\Core\Router;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Notification;
-use App\Models\Payment;
 use App\Models\Reservation;
 
 class ReservationController
@@ -105,7 +104,6 @@ class ReservationController
                 'purpose' => $input['purpose'] ?? null,
                 'number_of_slots' => $slots,
                 'total_amount' => (float) ($lot['price'] * $slots),
-                'payment_status' => 'pending',
                 'approved_status' => 'pending',
             ]);
 
@@ -168,13 +166,6 @@ class ReservationController
             }
             $data['total_amount'] = $amount;
         }
-        if (isset($input['payment_status'])) {
-            if (!in_array($input['payment_status'], ['pending', 'paid', 'failed'], true)) {
-                Response::json(['error' => 'Invalid payment_status'], 422);
-                return;
-            }
-            $data['payment_status'] = $input['payment_status'];
-        }
 
         if ($data !== []) {
             Reservation::update($id, $data);
@@ -197,6 +188,12 @@ class ReservationController
             return;
         }
         Reservation::update($id, ['approved_status' => 'approved']);
+        // Approval is what claims the plot, so it is the point the lot stops
+        // being held and becomes owned by the client.
+        $lot = Lot::find((int) $reservation['lot_id']);
+        if ($lot && $lot['status'] === 'reserved') {
+            Lot::occupy((int) $lot['lot_id']);
+        }
         AuditLog::record(Auth::id(), 'approve', 'reservations', $id);
         Notification::createFor(
             (int) $reservation['user_id'],
@@ -218,10 +215,6 @@ class ReservationController
             Response::json(['error' => 'Only pending reservations can be rejected'], 422);
             return;
         }
-        if ($reservation['payment_status'] === 'paid') {
-            Response::json(['error' => 'Cannot reject a reservation that has been paid'], 422);
-            return;
-        }
         Reservation::update($id, ['approved_status' => 'rejected']);
         $this->releaseLot((int) $reservation['lot_id']);
         AuditLog::record(Auth::id(), 'reject', 'reservations', $id);
@@ -241,10 +234,6 @@ class ReservationController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
-        if ($reservation['payment_status'] === 'paid' || Payment::forReservation($id) !== []) {
-            Response::json(['error' => 'Cannot delete a reservation with payment records; reject the reservation instead'], 422);
-            return;
-        }
         Reservation::delete($id);
         $this->releaseLot((int) $reservation['lot_id']);
         AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
@@ -252,14 +241,24 @@ class ReservationController
     }
 
     /**
-     * Frees a lot only while it is still held for a reservation, so a lot that
-     * has already moved on (occupied by a payment, or claimed by a burial) is
-     * never silently returned to the available pool.
+     * Returns a lot to the available pool once nothing holds it. A lot that was
+     * only held ('reserved'), or that this reservation approved into 'occupied'
+     * but no burial record has claimed, goes back; a lot with a burial against it
+     * is left alone.
      */
     private function releaseLot(int $lotId): void
     {
         $lot = Lot::find($lotId);
-        if ($lot && $lot['status'] === 'reserved') {
+        if (!$lot) {
+            return;
+        }
+
+        if ($lot['status'] === 'reserved') {
+            Lot::update($lotId, ['status' => 'available']);
+            return;
+        }
+
+        if ($lot['status'] === 'occupied' && (int) Lot::usage($lotId)['burials'] === 0) {
             Lot::update($lotId, ['status' => 'available']);
         }
     }

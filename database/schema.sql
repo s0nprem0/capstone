@@ -18,8 +18,10 @@ DROP TABLE IF EXISTS `login_attempts`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `burial_records`;
-DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `reservations`;
+-- Left over from the removed payments module: a database migrated before the
+-- removal still carries the table, and the backup export walks SHOW TABLES.
+DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `cemetery_lots`;
 DROP TABLE IF EXISTS `cemetery_sections`;
 DROP TABLE IF EXISTS `users`;
@@ -83,7 +85,6 @@ CREATE TABLE `reservations` (
   `purpose` VARCHAR(100) NULL,
   `number_of_slots` INT UNSIGNED NOT NULL DEFAULT 1,
   `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `payment_status` ENUM('pending', 'paid', 'failed') NOT NULL DEFAULT 'pending',
   `approved_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
@@ -93,23 +94,7 @@ CREATE TABLE `reservations` (
   KEY `idx_reservations_date` (`reservation_date`)
 ) ENGINE=InnoDB;
 
--- 5. PAYMENTS
-CREATE TABLE `payments` (
-  `payment_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `reservation_id` INT UNSIGNED NOT NULL,
-  `amount` DECIMAL(10,2) NOT NULL,
-  `payment_method` ENUM('gcash', 'card', 'cash') NOT NULL,
-  `reference_no` VARCHAR(100) NULL,
-  `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `payment_status` ENUM('pending', 'paid', 'failed') NOT NULL DEFAULT 'pending',
-  `receipt_path` VARCHAR(255) NULL,
-  `validated_by` INT UNSIGNED NULL,
-  `validated_at` DATETIME NULL,
-  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE CASCADE,
-  FOREIGN KEY (`validated_by`) REFERENCES `users`(`user_id`) ON DELETE SET NULL
-) ENGINE=InnoDB;
-
--- 6. BURIAL_RECORDS
+-- 5. BURIAL_RECORDS
 CREATE TABLE `burial_records` (
   `burial_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `deceased_fullname` VARCHAR(255) NOT NULL,
@@ -127,19 +112,19 @@ CREATE TABLE `burial_records` (
   KEY `idx_burials_date` (`burial_date`)
 ) ENGINE=InnoDB;
 
--- 7. NOTIFICATIONS
+-- 6. NOTIFICATIONS
 CREATE TABLE `notifications` (
   `notification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT UNSIGNED NOT NULL,
   `message` VARCHAR(255) NOT NULL,
-  `type` ENUM('reservation', 'payment', 'system') NOT NULL DEFAULT 'system',
+  `type` ENUM('reservation', 'system') NOT NULL DEFAULT 'system',
   `is_read` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
   KEY `idx_notifications_user` (`user_id`)
 ) ENGINE=InnoDB;
 
--- 8. AUDIT_LOGS
+-- 7. AUDIT_LOGS
 CREATE TABLE `audit_logs` (
   `log_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT UNSIGNED NULL,
@@ -152,7 +137,7 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_action` (`action`)
 ) ENGINE=InnoDB;
 
--- 9. LOGIN_ATTEMPTS (brute-force rate limiting)
+-- 8. LOGIN_ATTEMPTS (brute-force rate limiting)
 CREATE TABLE `login_attempts` (
   `attempt_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `ip_address` VARCHAR(45) NOT NULL,

@@ -29,12 +29,6 @@ export const LOT_STATUS = {
   maintenance: 'Maintenance',
 }
 
-export const PAYMENT_STATUS = {
-  pending: 'Pending',
-  paid: 'Paid',
-  failed: 'Failed',
-}
-
 export const APPROVAL_STATUS = {
   pending: 'Pending',
   approved: 'Approved',

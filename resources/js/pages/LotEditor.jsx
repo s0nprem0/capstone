@@ -717,7 +717,7 @@ export default function LotEditor() {
                     danger
                     onConfirm={removeLot}
                     busy={saving}
-                    message={`Delete ${form.lot_code}? This is only allowed while it has no reservations, payments, or burial records.`}
+                    message={`Delete ${form.lot_code}? This is only allowed while it has no reservations or burial records.`}
                   />
                 </div>
               </form>

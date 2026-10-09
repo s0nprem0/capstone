@@ -122,10 +122,7 @@ export default function Cemetery() {
 
   const recordLinks = user
     ? user.role === 'user'
-      ? [
-          { to: '/visitor/reservations', label: 'My reservations' },
-          { to: '/visitor/payments', label: 'My payments' },
-        ]
+      ? [{ to: '/visitor/reservations', label: 'My reservations' }]
       : [
           { to: `/${user.role}/reservations`, label: 'Reservations' },
           { to: `/${user.role}/burial-records`, label: 'Burial records' },

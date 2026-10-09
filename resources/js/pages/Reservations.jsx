@@ -16,7 +16,6 @@ export default function Reservations() {
   // Deep links from the map arrive as ?q=<lot code>. The existing search
   // already matches lot codes, so there is no second filter to maintain.
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [payment, setPayment] = useState('')
   const [approval, setApproval] = useState('')
   const [busy, setBusy] = useState(null)
   const q = useDebounced(search)
@@ -24,7 +23,6 @@ export default function Reservations() {
   const load = async () => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
-    if (payment) params.set('payment_status', payment)
     if (approval) params.set('approved_status', approval)
     const qs = params.toString()
     const base = user?.role === 'user' ? '/api/reservations/mine' : '/api/reservations'
@@ -37,7 +35,7 @@ export default function Reservations() {
 
   useEffect(() => {
     load()
-  }, [q, payment, approval, user])
+  }, [q, approval, user])
 
   const decide = async (id, action) => {
     setBusy(`${id}:${action}`)
@@ -68,12 +66,6 @@ export default function Reservations() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select aria-label="Filter by payment status" value={payment} onChange={(e) => setPayment(e.target.value)}>
-          <option value="">All payments</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="failed">Failed</option>
-        </select>
         <select aria-label="Filter by approval status" value={approval} onChange={(e) => setApproval(e.target.value)}>
           <option value="">All approvals</option>
           <option value="pending">Pending</option>
@@ -89,8 +81,8 @@ export default function Reservations() {
         {reservations.length === 0 ? (
           <EmptyState
             noun="reservations"
-            filtered={Boolean(q || payment || approval)}
-            onClear={() => { setSearch(''); setPayment(''); setApproval('') }}
+            filtered={Boolean(q || approval)}
+            onClear={() => { setSearch(''); setApproval('') }}
           />
         ) : (
           <table className="table">
@@ -104,7 +96,6 @@ export default function Reservations() {
                 <th>Date</th>
                 <th className="num">Slots</th>
                 <th className="num">Amount</th>
-                <th>Payment</th>
                 <th>Approval</th>
                 {isStaffView && <th>Actions</th>}
               </tr>
@@ -123,7 +114,6 @@ export default function Reservations() {
                   <td>{r.reservation_date}</td>
                   <td className="num">{r.number_of_slots}</td>
                   <td className="num">₱{Number(r.total_amount).toLocaleString()}</td>
-                  <td><span className={`badge badge--${r.payment_status}`}>{r.payment_status}</span></td>
                   <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
                   {isStaffView && (
                     <td>

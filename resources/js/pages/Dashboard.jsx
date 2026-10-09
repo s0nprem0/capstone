@@ -42,11 +42,6 @@ export default function Dashboard() {
           count: stats.reservations.pending,
         },
         {
-          to: `/${user.role}/payments`,
-          label: 'Payments to validate',
-          count: stats.payments.pending,
-        },
-        {
           to: `/${user.role}/burial-records`,
           label: 'Interments scheduled',
           count: stats.burials.pending,
@@ -105,7 +100,7 @@ export default function Dashboard() {
                 <dl className="figure-list">
                   <div><dt>Plots</dt><dd>{stats.lots.total}</dd></div>
                   <div><dt>Reservations</dt><dd>{stats.reservations.total}</dd></div>
-                  <div><dt>Revenue collected</dt><dd>₱{Number(stats.payments.total_revenue).toLocaleString()}</dd></div>
+                  <div><dt>Reservations approved</dt><dd>{stats.reservations.approved}</dd></div>
                   <div><dt>Burial records</dt><dd>{stats.burials.total}</dd></div>
                   <div><dt>Users</dt><dd>{stats.users}</dd></div>
                 </dl>

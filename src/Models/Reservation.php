@@ -55,10 +55,6 @@ class Reservation extends Model
             }
         }
 
-        if (isset($filters['payment_status']) && in_array($filters['payment_status'], ['pending', 'paid', 'failed'], true)) {
-            $where[] = 'r.payment_status = :payment_status';
-            $params['payment_status'] = $filters['payment_status'];
-        }
         if (isset($filters['approved_status']) && in_array($filters['approved_status'], ['pending', 'approved', 'rejected'], true)) {
             $where[] = 'r.approved_status = :approved_status';
             $params['approved_status'] = $filters['approved_status'];

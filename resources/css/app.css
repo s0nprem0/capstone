@@ -758,16 +758,6 @@ textarea {
   color: #92400e;
 }
 
-.badge--paid {
-  background: #e6f4ea;
-  color: #1e5c33;
-}
-
-.badge--failed {
-  background: #fde8e8;
-  color: #9b1c1c;
-}
-
 .badge--approved {
   background: #e6f4ea;
   color: #1e5c33;
@@ -794,7 +784,7 @@ textarea {
 }
 
 /* Interment reuses the done/upcoming colours but keeps its own classes, so
-   changing how payments are styled cannot silently restyle burial reporting. */
+   restyling lot status cannot silently restyle burial reporting. */
 .badge--interred {
   background: #e6f4ea;
   color: #1e5c33;

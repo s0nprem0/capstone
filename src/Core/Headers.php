@@ -8,7 +8,7 @@ class Headers
 {
     /**
      * Send baseline security headers on every response (API + SPA + files).
-     * - nosniff: prevent MIME sniffing (e.g. uploaded PDFs / receipts)
+     * - nosniff: prevent MIME sniffing of responses
      * - frame-ancestors 'none' + X-Frame-Options: block clickjacking
      * - Referrer-Policy: don't leak the app origin's full URL to third parties
      * - Permissions-Policy: deny camera/mic/geolocation (Data Privacy Act)

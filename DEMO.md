@@ -41,7 +41,7 @@ All demo accounts share one password so nothing has to be memorised on the spot.
 
 ## What is in the dataset
 
-1182 plots across 10 sections: **1162 available, 12 occupied, 8 reserved**. That
+1182 plots across 10 sections: **1162 available, 17 occupied, 3 reserved**. That
 split is chosen so all three status colours are visible on the map at once,
 which is the thing the redesign is about.
 
@@ -58,18 +58,15 @@ the two agree for roughly 70% of plots. Turning the illustration on is useful
 for showing the roads and lawns, but it is not a plot plan.
 
 22 reservations covering every status the schema allows — 3 awaiting approval,
-17 approved, 2 rejected — and every payment state: 12 fully paid, 4 with a
-balance outstanding, 1 whose payment was rejected, 1 with a payment still
-sitting unvalidated. 17 payments across GCash, card and cash, totalling
-**₱827,000** collected. 4 burial records, 3 interred and 1 scheduled. 9 users,
+17 approved, 2 rejected. 4 burial records, 3 interred and 1 scheduled. 9 users,
 one of them inactive. 20 audit-log entries.
 
 The rows are internally consistent on purpose, because the obvious question
 about a coloured plot is what is behind it:
 
-- a plot is `occupied` only when its reservation is fully paid, or a burial
+- a plot is `occupied` once its reservation has been approved, or when a burial
   record claims it
-- a plot is `reserved` only while a live reservation holds it
+- a plot is `reserved` while an unapproved reservation holds it
 - a plot is `available` only when no live reservation and no burial touch it
 - `number_of_slots` never exceeds the plot's capacity
 
@@ -85,18 +82,17 @@ Roughly eight minutes, in this order.
    through the sections, filter by status, search a plot code. Nothing is
    behind a login. Sign in to a plot to see it prompt you to log in.
 2. **Log in as `juan.delacruz@demo.test`** — a visitor. Reserve a plot: pick an
-   available one, choose a payment method, submit. Their own reservations and
-   payments are the only ones listed.
+   available one, pick a date and submit. Only their own reservations are
+   listed, and the plot they chose turns amber on the map while it is held.
 3. **Sign in as `staff@cemetery.test`** — the staff dashboard. The occupancy
    plan shows where the pressure is; the rail beside it queues the three
-   reservations awaiting approval, the payment awaiting validation, and the
-   interment still scheduled. Work the queue: approve a reservation, validate
-   a payment, and watch the plot change colour on the map.
+   reservations awaiting approval and the interment still scheduled. Work the
+   queue: approve a reservation and watch the plot change colour on the map.
 4. **The bidirectional link** — from a reservation row, open the plot on the
    map. The plot's detail pane links back to the reservation. It is the same
    state in the URL, so the address bar is shareable.
-5. **Reports** — reservations, payments, burial records, availability, audit
-   log. The audit log is the record of the actions just taken.
+5. **Reports** — reservations, burial records, availability, audit log. The
+   audit log is the record of the actions just taken.
 6. **Sign in as `admin@cemetery.test`** — users, sections and lots, and
    backup/restore (admin only; staff get 403 on it, worth saying out loud).
 

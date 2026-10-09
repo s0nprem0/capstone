@@ -1,6 +1,6 @@
 # Cemetery Reservation and Records Management System
 
-Web-based system for **St. John Memorial Garden & Parks** — a capstone project for managing cemetery lot reservations, payments, burial records, and visitor accounts.
+Web-based system for **St. John Memorial Garden & Parks** — a capstone project for managing cemetery lot reservations, burial records, and visitor accounts.
 
 Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized with Docker.
 
@@ -17,16 +17,15 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 ### Implemented
 - **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per IP per 15 minutes (HTTP 429)
 - **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
-- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot
-- **Payments** — GCash/card/cash recording, receipt upload + staff validation; the reservation settles only once the collected balance reaches the total (instalments supported), the lot becomes occupied at that point, and a validated payment that is deleted or rejected re-derives the reservation's state. Amounts are reconciled against the remaining balance (overpayment rejected)
+- **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved on submission, reserved → occupied on approval), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot. Rejecting or deleting a reservation returns its plot to the available pool unless a burial record already claims it
 - **Burial records** — deceased details, lot assignment, burial type, interment status; creation requires a reserved or occupied lot (a free lot cannot host a burial)
-- **Notifications** — per-user messages on reservation/payment events, unread badge and mark-read
-- **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
-- **Reports** — reservations, payments + revenue, burial records, availability, audit logs (printable)
+- **Notifications** — per-user messages on reservation events, unread badge and mark-read
+- **Search & filters** — debounced search and status/type/date filters across users, reservations, burial records, and lots
+- **Reports** — reservations, burial records, availability, audit logs (printable)
 - **Dashboards** — stats cards + recent activity for staff/admin
 - **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles; visitors manage their own profile and password
 - **Backup & restore** — admin-only SQL export/import, audit-logged
-- **Audit trail** — logs logins and every create/update/approve/validate/delete action
+- **Audit trail** — logs logins and every create/update/approve/reject/delete action
 - **Section management** — admin CRUD for `cemetery_sections` (name, location, description, SVG view box) with per-section lot/status counts and a guard that blocks deleting non-empty sections
 
 ### Remaining gaps
@@ -194,18 +193,12 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/reservations` | POST | Auth |
 | `/api/reservations/{id}`, `/api/reservations/{id}/delete` | POST | admin, staff |
 | `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject` | POST | admin, staff |
-| `/api/payments`, `/api/payments/{id}` | GET | admin, staff |
-| `/api/payments/mine` | GET | user |
-| `/api/payments` | POST | Auth (own reservation) |
-| `/api/payments/{id}/receipt` | GET | Auth (owner) / admin, staff |
-| `/api/payments/{id}/upload-receipt` | POST | Auth (owner) / admin, staff |
-| `/api/payments/{id}/validate`, `/api/payments/{id}/delete` | POST | admin, staff |
 | `/api/burial-records` | GET/POST | admin, staff |
 | `/api/burial-records/{id}`, `/api/burial-records/{id}/delete` | POST | admin, staff |
 | `/api/notifications` | GET | Auth |
 | `/api/notifications/{id}/read`, `/api/notifications/read-all` | POST | Auth |
 | `/api/stats/dashboard` | GET | admin, staff |
-| `/api/reports/{reservations,payments,burial-records,availability,audit-logs}` | GET | admin, staff |
+| `/api/reports/{reservations,burial-records,availability,audit-logs}` | GET | admin, staff |
 | `/api/backup/export` | GET | admin |
 | `/api/backup/import` | POST | admin |
 
@@ -231,7 +224,7 @@ make fresh       # rebuild everything from scratch
 - Sessions with HttpOnly/SameSite cookies
 - Login rate limiting (5 failed attempts per IP per 15 minutes) against brute force
 - Input validation and uniqueness checks server-side
-- Data-integrity rules: lots are claimed atomically (no double-booking), payments can't exceed the reservation balance, burials require a reserved/occupied lot
+- Data-integrity rules: lots are claimed atomically (no double-booking), approval is what turns a held plot into an occupied one, burials require a reserved/occupied lot
 - Personal data minimized per the Data Privacy Act of 2012; audit trail retained
 
 ## Conventions

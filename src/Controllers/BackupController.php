@@ -20,7 +20,6 @@ class BackupController
         'cemetery_sections',
         'cemetery_lots',
         'reservations',
-        'payments',
         'burial_records',
         'notifications',
         'audit_logs',

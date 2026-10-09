@@ -37,10 +37,6 @@ class StatsController
         $pendingBurials = $db->query("SELECT COUNT(*) FROM burial_records WHERE interment_status = 'scheduled'")->fetchColumn();
         $interredBurials = $db->query("SELECT COUNT(*) FROM burial_records WHERE interment_status = 'interred'")->fetchColumn();
 
-        $totalPayments = $db->query("SELECT COUNT(*) FROM payments")->fetchColumn();
-        $pendingPayments = $db->query("SELECT COUNT(*) FROM payments WHERE payment_status = 'pending'")->fetchColumn();
-        $totalRevenue = $db->query("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_status = 'paid'")->fetchColumn();
-
         $totalUsers = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
         $recentReservations = $db->query(
@@ -49,15 +45,6 @@ class StatsController
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN users u ON u.user_id = r.user_id
              ORDER BY r.created_at DESC LIMIT 5"
-        )->fetchAll();
-
-        $recentPayments = $db->query(
-            "SELECT p.payment_id, p.amount, p.payment_method, p.payment_status, u.fullname, l.lot_code, p.payment_date
-             FROM payments p
-             JOIN reservations r ON r.reservation_id = p.reservation_id
-             JOIN cemetery_lots l ON l.lot_id = r.lot_id
-             JOIN users u ON u.user_id = r.user_id
-             ORDER BY p.payment_id DESC LIMIT 5"
         )->fetchAll();
 
         Response::json([
@@ -78,14 +65,8 @@ class StatsController
                 'pending' => (int) $pendingBurials,
                 'interred' => (int) $interredBurials,
             ],
-            'payments' => [
-                'total' => (int) $totalPayments,
-                'pending' => (int) $pendingPayments,
-                'total_revenue' => (float) $totalRevenue,
-            ],
             'users' => (int) $totalUsers,
             'recent_reservations' => $recentReservations,
-            'recent_payments' => $recentPayments,
         ]);
     }
 }

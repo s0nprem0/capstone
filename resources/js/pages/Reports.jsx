@@ -41,10 +41,6 @@ export default function Reports() {
             <h3>Reservations Report</h3>
             <p>Total, pending, approved, and rejected reservations</p>
           </button>
-          <button className="report-card" onClick={() => generate('payments')} disabled={loading}>
-            <h3>Payments Report</h3>
-            <p>Payment totals, pending, and revenue summary</p>
-          </button>
           <button className="report-card" onClick={() => generate('burial-records')} disabled={loading}>
             <h3>Burial Records Report</h3>
             <p>All burial records with status breakdown</p>
@@ -75,7 +71,7 @@ export default function Reports() {
           <div className="table-container">
             <table className="table">
               <thead>
-                <tr><th>ID</th><th>Lot</th><th>Client</th><th>Date</th><th className="num">Amount</th><th>Approval</th><th>Payment</th></tr>
+                <tr><th>ID</th><th>Lot</th><th>Client</th><th>Date</th><th className="num">Amount</th><th>Approval</th></tr>
               </thead>
               <tbody>
                 {report.items.map((r) => (
@@ -86,39 +82,6 @@ export default function Reports() {
                     <td>{r.reservation_date}</td>
                     <td className="num">{formatCurrency(r.total_amount)}</td>
                     <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
-                    <td><span className={`badge badge--${r.payment_status}`}>{r.payment_status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button className="btn btn-secondary no-print" style={{ marginTop: '1rem' }} onClick={() => setReport(null)}>Back</button>
-        </div>
-      )}
-
-      {report && type === 'payments' && (
-        <div className="report-output">
-          <h3>Payments Report</h3>
-          <p className="text-muted">Generated: {new Date().toLocaleString()}</p>
-          <div className="report-stats">
-            <span>Total: {report.total}</span>
-            <span>Pending: {report.pending}</span>
-            <span>Total Revenue: {formatCurrency(report.total_revenue)}</span>
-          </div>
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr><th>ID</th><th>Lot</th><th>Client</th><th className="num">Amount</th><th>Method</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {report.items.map((p) => (
-                  <tr key={p.payment_id}>
-                    <td>{p.payment_id}</td>
-                    <td>{p.lot_code}</td>
-                    <td>{p.user_name}</td>
-                    <td className="num">{formatCurrency(p.amount)}</td>
-                    <td>{p.payment_method}</td>
-                    <td><span className={`badge badge--${p.payment_status}`}>{p.payment_status}</span></td>
                   </tr>
                 ))}
               </tbody>

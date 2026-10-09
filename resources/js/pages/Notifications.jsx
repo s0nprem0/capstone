@@ -41,7 +41,7 @@ export default function Notifications() {
   }
 
   const typeLabel = (type) => {
-    const map = { reservation: 'Reservation', payment: 'Payment', system: 'System' }
+    const map = { reservation: 'Reservation', system: 'System' }
     return map[type] || type
   }
 
@@ -70,7 +70,7 @@ export default function Notifications() {
               className={`notification-item ${!n.is_read ? 'notification-item--unread' : ''}`}
             >
               <div className="notification-content">
-                <span className={`badge badge--${n.type === 'reservation' ? 'pending' : n.type === 'payment' ? 'paid' : 'user'}`}>
+                <span className={`badge badge--${n.type === 'reservation' ? 'pending' : 'user'}`}>
                   {typeLabel(n.type)}
                 </span>
                 <p className="notification-message">{n.message}</p>

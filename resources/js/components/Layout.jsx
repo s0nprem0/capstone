@@ -17,10 +17,7 @@ function roleNav(role) {
       },
       {
         heading: 'My Records',
-        items: [
-          { to: '/visitor/reservations', label: 'My Reservations' },
-          { to: '/visitor/payments', label: 'My Payments' },
-        ],
+        items: [{ to: '/visitor/reservations', label: 'My Reservations' }],
       },
       {
         heading: 'Account',
@@ -42,7 +39,6 @@ function roleNav(role) {
         heading: 'Records',
         items: [
           { to: '/staff/reservations', label: 'Reservations' },
-          { to: '/staff/payments', label: 'Payments' },
           { to: '/staff/burial-records', label: 'Burial Records' },
         ],
       },
@@ -69,7 +65,6 @@ function roleNav(role) {
         heading: 'Records',
         items: [
           { to: '/admin/reservations', label: 'Reservations' },
-          { to: '/admin/payments', label: 'Payments' },
           { to: '/admin/burial-records', label: 'Burial Records' },
         ],
       },
