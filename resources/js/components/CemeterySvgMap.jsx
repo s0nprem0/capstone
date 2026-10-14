@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
 
 export const STATUS_COLORS = {
@@ -24,37 +24,118 @@ const SECTION_COLORS = [
 export const sectionColor = (sectionId) =>
   SECTION_COLORS[(Math.max(1, Number(sectionId) || 1) - 1) % SECTION_COLORS.length]
 
-// The outline is stored in site coordinates, the section detail view rebases
-// plots against the section's own origin, so shift the outline to match.
-const localPoints = (points, dx, dy) => {
-  const values = String(points || '').trim().split(/\s+/).map(Number)
-  if (values.length < 6 || values.some((v) => !Number.isFinite(v))) return null
-  const out = []
-  for (let i = 0; i + 1 < values.length; i += 2) {
-    out.push(`${values[i] - dx} ${values[i + 1] - dy}`)
-  }
-  return out.join(' ')
-}
+// The frame is clamped to the same ceiling the zoom controls use, so a fit can
+// never produce a view the user cannot zoom back out of. The floor is looser
+// than the zoom floor on purpose: framing a handful of matches wants to sit
+// closer than framing the whole site, without inflating one plot to fill a pane.
+const MAX_VIEW = 2500
+const MIN_FRAME = 200
+const MIN_ZOOM = 120
+
+// The overview letterboxes a 1.23:1 site into a portrait pane, and a wide
+// section worse. Framing on the pane's own shape -- growing the short axis
+// until it matches -- is what stops the map floating in blank paper. Only
+// works because the whole site is drawn at every zoom (see below), so the
+// space the frame opens up is neighbouring plots rather than emptiness.
+const DEFAULT_ASPECT = 1.2
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+const unionRect = (a, b) =>
+  a
+    ? [
+        Math.min(a[0], b[0]),
+        Math.min(a[1], b[1]),
+        Math.max(a[2], b[2]),
+        Math.max(a[3], b[3]),
+      ]
+    : b
+
+const lotsBounds = (lots) =>
+  lots.length === 0
+    ? null
+    : lots.reduce(
+        (acc, lot) =>
+          unionRect(acc, [lot.svg_x, lot.svg_y, lot.svg_x + lot.svg_w, lot.svg_y + lot.svg_h]),
+        [Infinity, Infinity, -Infinity, -Infinity]
+      )
 
 const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
-  return parts.length === 4 ? parts : [...MAP_VIEWBOX]
+  return parts.length === 4 && parts.every(Number.isFinite) ? parts : [...MAP_VIEWBOX]
 }
 
-const sectionPoints = (section) => section.points || null
-
 const pointsBounds = (points, fallback) => {
-  const values = String(points || '').split(/[ ,]+/).map(Number).filter(Number.isFinite)
+  const values = String(points || '')
+    .split(/[ ,]+/)
+    .map(Number)
+    .filter(Number.isFinite)
   if (values.length < 6 || values.length % 2 !== 0) return fallback
   const xs = values.filter((_, index) => index % 2 === 0)
   const ys = values.filter((_, index) => index % 2 === 1)
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 
-function LotRect({ lot, selected, showLabel }) {
+// A section's outline is its real extent; the stored crop rectangle is only the
+// fallback for the sections that have no traced outline yet.
+const sectionBounds = (section) => {
+  const [x, y, w, h] = parseViewBox(section.viewBox)
+  return pointsBounds(section.points, [x, y, x + w, y + h])
+}
+
+/**
+ * The viewBox that shows `bounds` filling a pane of the given aspect ratio.
+ *
+ * Growing the short axis to the pane's shape is what stops a wide section
+ * floating in blank paper. That only works because the whole site is drawn at
+ * every zoom, so the space the frame opens up is neighbouring plots — and
+ * `within` is what keeps that space on the cemetery: a section at the north
+ * edge would otherwise expand upwards into nothing at all.
+ *
+ * @param {[number, number, number, number]} bounds minX, minY, maxX, maxY
+ * @param {[number, number, number, number]} [within] the area to stay inside
+ */
+const frame = (bounds, aspect, within = null) => {
+  const [x0, y0, x1, y1] = bounds
+  const padding = Math.max(x1 - x0, y1 - y0) * 0.04
+  const width = Math.max(x1 - x0, 1) + padding * 2
+  const height = Math.max(y1 - y0, 1) + padding * 2
+
+  const viewWidth = Math.min(MAX_VIEW, Math.max(MIN_FRAME, Math.max(width, height * aspect)))
+  const viewHeight = viewWidth / aspect
+
+  const centreX = (x0 + x1) / 2
+  const centreY = (y0 + y1) / 2
+  let left = centreX - viewWidth / 2
+  let top = centreY - viewHeight / 2
+
+  if (within) {
+    // Slide rather than shrink: where the frame cannot sit fully inside the
+    // site, it is centred on the site instead of showing the void beyond it.
+    const [wx0, wy0, wx1, wy1] = within
+    const siteWidth = Math.max(wx1 - wx0, 1)
+    const siteHeight = Math.max(wy1 - wy0, 1)
+
+    const clamp = (start, extent, limit, limitExtent) =>
+      extent >= limitExtent
+        ? limit + limitExtent / 2 - extent / 2
+        : Math.min(Math.max(start, limit), limit + limitExtent - extent)
+
+    left = clamp(left, viewWidth, wx0, siteWidth)
+    top = clamp(top, viewHeight, wy0, siteHeight)
+  }
+
+  return [left, top, viewWidth, viewHeight]
+}
+
+function LotRect({ lot, selected, labelScale, dimmed, faded }) {
   const fill = STATUS_COLORS[lot.status] || 'var(--color-text-muted)'
   return (
-    <g data-lot-id={lot.lot_id} className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}`}>
+    <g
+      data-lot-id={lot.lot_id}
+      className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
+    >
       <rect
         x={lot.svg_x}
         y={lot.svg_y}
@@ -69,13 +150,18 @@ function LotRect({ lot, selected, showLabel }) {
         vectorEffect="non-scaling-stroke"
         strokeDasharray={lot.status === 'reserved' ? '5 4' : undefined}
       />
-      {showLabel && (
+      {labelScale > 0 && (
         <text
           x={lot.svg_x + lot.svg_w / 2}
           y={lot.svg_y + lot.svg_h / 2}
           textAnchor="middle"
           dominantBaseline="central"
           className="lot-label"
+          // Plot labels have the same problem as section titles: SVG text is in
+          // user units, so a size that reads in a section fills the plot when
+          // the map is zoomed further. Scaling by the current viewBox keeps
+          // every label the same height on screen at every zoom.
+          style={{ fontSize: `${labelScale}px`, strokeWidth: labelScale * 0.18 }}
           pointerEvents="none"
         >
           {lot.lot_code}
@@ -90,12 +176,15 @@ const MemoLotRect = memo(LotRect)
 
 export default function CemeterySvgMap({
   sections,
+  contextLots,
   activeSection,
   selectedLotId,
   showLayout,
+  query,
   onSelectLot,
   onFocusSection,
   onExitSection,
+  onClearSearch,
 }) {
   const svgRef = useRef(null)
   const rafRef = useRef(null)
@@ -103,16 +192,44 @@ export default function CemeterySvgMap({
   const movedRef = useRef(false)
   const pointersRef = useRef(new Map())
   const pinchRef = useRef(null)
+  const userAdjustedRef = useRef(false)
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
-  const focusKey = activeSection ? activeSection.section_id : null
-  const detailViewBox = activeSection
-    ? (() => {
-        const [, , width, height] = parseViewBox(activeSection.viewBox)
-        return [0, 0, width, height]
-      })()
-    : null
-  const fitViewBox = detailViewBox || [...MAP_VIEWBOX]
+  const [pane, setPane] = useState({ width: 0, height: 0 })
+
+  const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
+
+  // A search frames its matches closely enough that whatever the frame opens up
+  // has to be there — otherwise ten plots float in an empty box with no way to
+  // tell which part of the site they are in. The plots a search filtered out
+  // come back as context, faded.
+  const fadedLots = useMemo(() => {
+    if (!query) return []
+    const matched = new Set(allLots.map((l) => l.lot_id))
+    return (contextLots || []).filter((l) => !matched.has(l.lot_id))
+  }, [query, allLots, contextLots])
+
+  const siteBounds = useMemo(() => {
+    const bounds = sections.reduce((acc, s) => unionRect(acc, sectionBounds(s)), null)
+    return bounds || [...MAP_VIEWBOX]
+  }, [sections])
+
+  // What the map is framing. A search frames whatever it matched, so a result is
+  // never left as a few pixels somewhere off-screen; otherwise the open section,
+  // otherwise the whole site.
+  const focusBounds = useMemo(() => {
+    if (query) return lotsBounds(allLots)
+    if (activeSection) return sectionBounds(activeSection)
+    return siteBounds
+  }, [query, allLots, activeSection, siteBounds])
+
+  const focusKey = query
+    ? `q:${query}`
+    : activeSection
+      ? `section-${activeSection.section_id}`
+      : 'site'
+
+  const activeSectionId = activeSection?.section_id ?? null
 
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
@@ -123,6 +240,12 @@ export default function CemeterySvgMap({
     (target) => {
       cancelAnimationFrame(rafRef.current)
       const start = vbRef.current
+      // The zoom into a section is a large movement across the site; animating
+      // it is disorienting for anyone who has asked the OS for less motion.
+      if (prefersReducedMotion()) {
+        setVbBoth(target)
+        return
+      }
       const t0 = performance.now()
       const dur = 450
       const step = (t) => {
@@ -140,9 +263,38 @@ export default function CemeterySvgMap({
     return () => cancelAnimationFrame(rafRef.current)
   }, [])
 
+  // The pane's own shape, which decides how much room the frame opens up. Zero
+  // until the first measurement lands, so the opening fit is not animated from
+  // a guess and then immediately re-animated to the real shape.
+  const aspect = pane.width > 0 && pane.height > 0 ? pane.width / pane.height : 0
+
+  useLayoutEffect(() => {
+    const el = svgRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return undefined
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0) setPane({ width, height })
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
-    flyTo(fitViewBox)
+    if (!focusBounds) return
+    userAdjustedRef.current = false
+    const target = frame(focusBounds, aspect || DEFAULT_ASPECT, siteBounds)
+    if (aspect === 0) setVbBoth(target)
+    else flyTo(target)
   }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-frame on resize only while the view is still the one we chose. A window
+  // drag must not undo somewhere the user panned to.
+  useEffect(() => {
+    if (aspect === 0 || userAdjustedRef.current || !focusBounds) return
+    const target = frame(focusBounds, aspect, siteBounds)
+    if (prefersReducedMotion()) setVbBoth(target)
+    else flyTo(target)
+  }, [aspect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -152,10 +304,11 @@ export default function CemeterySvgMap({
       const [x, y, w, h] = vbRef.current
       const ux = (px / rect.width) * w + x
       const uy = (py / rect.height) * h + y
-      const nw = Math.min(2500, Math.max(120, w / factor))
+      const nw = Math.min(MAX_VIEW, Math.max(MIN_ZOOM, w / factor))
       const nh = (nw / w) * h
       const nx = ux - (px / rect.width) * nw
       const ny = uy - (py / rect.height) * nh
+      userAdjustedRef.current = true
       setVbBoth([nx, ny, nw, nh])
     },
     [setVbBoth]
@@ -216,12 +369,13 @@ export default function CemeterySvgMap({
       if (start.dist <= 0) return
       const factor = dist / start.dist
       const [x, y, w, h] = start.vb
-      const nw = Math.min(2500, Math.max(120, w / factor))
+      const nw = Math.min(MAX_VIEW, Math.max(MIN_ZOOM, w / factor))
       const nh = (nw / w) * h
       const px = (start.cx - rect.left) / rect.width
       const py = (start.cy - rect.top) / rect.height
       const nx = x + px * w - px * nw
       const ny = y + py * h - py * nh
+      userAdjustedRef.current = true
       setVbBoth([nx, ny, nw, nh])
       movedRef.current = true
       return
@@ -239,6 +393,7 @@ export default function CemeterySvgMap({
       }
     }
     const [x, y, w, h] = vbRef.current
+    userAdjustedRef.current = true
     setVbBoth([x - (dx / rect.width) * w, y - (dy / rect.height) * h, w, h])
     dragRef.current = { x: e.clientX, y: e.clientY }
   }
@@ -262,10 +417,7 @@ export default function CemeterySvgMap({
     const lotEl = e.target.closest?.('[data-lot-id]')
     if (lotEl) {
       const lotId = Number(lotEl.getAttribute('data-lot-id'))
-      // The overview draws every plot now, so a click there resolves against
-      // all sections; the detail view only has the open section's to choose from.
-      const pool = activeSection ? activeSection.lots || [] : sections.flatMap((s) => s.lots || [])
-      const lot = pool.find((l) => l.lot_id === lotId)
+      const lot = allLots.find((l) => l.lot_id === lotId)
       if (lot) onSelectLot(lot)
       return
     }
@@ -296,29 +448,39 @@ export default function CemeterySvgMap({
     zoomAt(rect.width / 2, rect.height / 2, factor)
   }
 
-  const showLabels = vb[2] < 1500
-  const [activeX, activeY] = activeSection ? parseViewBox(activeSection.viewBox) : [0, 0]
-  const activeLots = (activeSection?.lots || []).map((lot) => ({
-    ...lot,
-    svg_x: lot.svg_x - activeX,
-    svg_y: lot.svg_y - activeY,
-  }))
-  const activeOutline = activeSection ? localPoints(activeSection.points, activeX, activeY) : null
+  const fitView = () => {
+    if (!focusBounds) return
+    userAdjustedRef.current = false
+    const target = frame(focusBounds, aspect || DEFAULT_ASPECT, siteBounds)
+    if (prefersReducedMotion()) setVbBoth(target)
+    else flyTo(target)
+  }
 
-  // In the overview the plots are already in site coordinates, so they need no
-  // rebasing -- only the detail view shifts them against the section origin.
-  // Without this the legend would still total every plot while the overview
-  // drew none of them.
-  const overviewLots = activeSection ? [] : sections.flatMap((s) => s.lots || [])
+  // Section titles are set for the overview's scale; inside a section they are
+  // large enough to name the one place you are, and the rest are off-frame or
+  // in the way.
+  const showAllTitles = vb[2] > 1500
+  // CSS pixels per SVG user unit. SVG text is sized in user units, so a value
+  // that reads at one zoom fills the screen at another; dividing the target
+  // rendered size by this keeps titles and plot labels the same size on screen
+  // however far in the map is.
+  const pxPerUnit = pane.width > 0 ? pane.width / vb[2] : 0
+  const fit = (targetPx) => (pxPerUnit > 0 ? targetPx / pxPerUnit : 0)
+  const titleSize = fit(12)
+  const labelSize = vb[2] < 1500 ? fit(10) : 0
+  const noMatches = Boolean(query) && allLots.length === 0
 
   return (
     <div className="map-svg-wrap">
       <svg
         ref={svgRef}
-        key={activeSection ? `detail-${activeSection.section_id}` : 'overview'}
         className="map-svg"
         data-map-level={activeSection ? 'section-detail' : 'overview'}
-        aria-label={activeSection ? `${activeSection.section_name} detailed lot map` : 'Cemetery overview map, every plot coloured by status'}
+        aria-label={
+          activeSection
+            ? `${activeSection.section_name} detailed lot map`
+            : 'Cemetery overview map, every plot coloured by status'
+        }
         viewBox={vb.join(' ')}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPointerDown}
@@ -345,104 +507,102 @@ export default function CemeterySvgMap({
           </g>
         )}
 
-        {!activeSection ? (
-          <>
-            {/* Three passes, and the order matters: outlines underneath, plots
-                over them, labels on top. The section wash used to carry the
-                colour and had nowhere to hide; the plots do now, so it drops to
-                a stroke. The labels have to come last or 305 rectangles bury
-                them. */}
-            <g className="map-sections">
-              {sections.map((section) => {
-                const [x, y, w, h] = parseViewBox(section.viewBox)
-                const points = sectionPoints(section)
-                const color = sectionColor(section.section_id)
-                return points ? (
-                  <polygon
-                    key={section.section_id}
-                    data-section-id={section.section_id}
-                    points={points}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={3}
-                    strokeLinejoin="round"
-                    strokeDasharray="12 8"
-                  />
-                ) : (
-                  <rect
-                    key={section.section_id}
-                    data-section-id={section.section_id}
-                    x={x}
-                    y={y}
-                    width={w}
-                    height={h}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={2}
-                    strokeDasharray="8 6"
-                  />
-                )
-              })}
-            </g>
-
-            <g className="map-lots">
-              {overviewLots.map((lot) => (
-                <MemoLotRect
-                  key={lot.lot_id}
-                  lot={lot}
-                  selected={lot.lot_id === selectedLotId}
-                  showLabel={showLabels}
-                />
-              ))}
-            </g>
-
-            <g className="map-sections">
-              {sections.map((section) => {
-                const [x, y, w, h] = parseViewBox(section.viewBox)
-                const points = sectionPoints(section)
-                const [minX, minY, maxX, maxY] = pointsBounds(points, [x, y, x + w, y + h])
-                return (
-                  <text
-                    key={section.section_id}
-                    x={(minX + maxX) / 2}
-                    y={(minY + maxY) / 2}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    className="map-section-title map-overview-title"
-                    paintOrder="stroke"
-                    stroke="#ffffff"
-                    strokeWidth={10}
-                    strokeLinejoin="round"
-                  >
-                    {section.section_name}
-                  </text>
-                )
-              })}
-            </g>
-          </>
-        ) : (
-          <g className="map-lots">
-            {activeOutline && (
+        {/* Outlines underneath, plots over them, titles on top — the order is
+            what keeps 1182 rectangles from burying the labels. */}
+        <g className="map-sections">
+          {sections.map((section) => {
+            const [x, y, w, h] = parseViewBox(section.viewBox)
+            const points = section.points
+            const color = sectionColor(section.section_id)
+            const isActive = section.section_id === activeSectionId
+            return points ? (
               <polygon
-                points={activeOutline}
-                fill={sectionColor(activeSection.section_id)}
-                fillOpacity={0.1}
-                stroke={sectionColor(activeSection.section_id)}
-                strokeWidth={3}
-                strokeDasharray="12 8"
+                key={section.section_id}
+                data-section-id={section.section_id}
+                className={isActive ? 'map-outline map-outline--active' : 'map-outline'}
+                points={points}
+                fill={isActive ? color : 'none'}
+                fillOpacity={isActive ? 0.08 : undefined}
+                stroke={color}
+                strokeWidth={isActive ? 4 : 3}
                 strokeLinejoin="round"
+                strokeDasharray={isActive ? undefined : '12 8'}
               />
-            )}
-            {activeLots.map((lot) => (
+            ) : (
+              <rect
+                key={section.section_id}
+                data-section-id={section.section_id}
+                className={isActive ? 'map-outline map-outline--active' : 'map-outline'}
+                x={x}
+                y={y}
+                width={w}
+                height={h}
+                fill={isActive ? color : 'none'}
+                fillOpacity={isActive ? 0.08 : undefined}
+                stroke={color}
+                strokeWidth={isActive ? 4 : 2}
+                strokeDasharray={isActive ? undefined : '8 6'}
+              />
+            )
+          })}
+        </g>
+
+        {/* Every section's plots at every zoom. Cropping to one section is what
+            left the frame around it empty; drawing the neighbours instead fills
+            it, and the plot you came for grows to twice its overview size. */}
+        <g className="map-lots">
+          {fadedLots.map((lot) => (
+            <MemoLotRect key={lot.lot_id} lot={lot} selected={false} labelScale={0} dimmed faded />
+          ))}
+          {/* Labels are drawn in a second pass so the active section's sit on
+              top of its neighbours' rather than being buried by them. */}
+          {allLots
+            .filter((lot) => activeSectionId === null || lot.section_id === activeSectionId)
+            .map((lot) => (
               <MemoLotRect
                 key={lot.lot_id}
                 lot={lot}
                 selected={lot.lot_id === selectedLotId}
-                showLabel={showLabels}
+                labelScale={labelSize}
               />
             ))}
-          </g>
-        )}
+          {/* Neighbours are here for context only: faded, and without labels —
+              two hundred plot codes from the next section along read as noise
+              over the one you came for. */}
+          {allLots
+            .filter((lot) => activeSectionId !== null && lot.section_id !== activeSectionId)
+            .map((lot) => (
+              <MemoLotRect key={lot.lot_id} lot={lot} selected={false} labelScale={0} dimmed />
+            ))}
+        </g>
+
+        <g className="map-sections">
+          {sections.map((section) => {
+            if (!showAllTitles && section.section_id !== activeSectionId) return null
+            const [x, y, w, h] = parseViewBox(section.viewBox)
+            const [minX, minY, maxX, maxY] = pointsBounds(section.points, [x, y, x + w, y + h])
+            return (
+              <text
+                key={section.section_id}
+                x={(minX + maxX) / 2}
+                y={(minY + maxY) / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="map-section-title"
+                // SVG text is in user units, so a fixed size that survives the
+                // whole-site overview is enormous once zoomed into a section.
+                // Tracking the viewBox keeps a title the same size on screen at
+                // every zoom.
+                style={{ fontSize: `${titleSize}px`, strokeWidth: titleSize * 0.29 }}
+                paintOrder="stroke"
+                stroke="#ffffff"
+                strokeLinejoin="round"
+              >
+                {section.section_name}
+              </text>
+            )
+          })}
+        </g>
       </svg>
 
       <div className="map-zoom-controls">
@@ -451,13 +611,24 @@ export default function CemeterySvgMap({
         <button
           type="button"
           className="btn btn-secondary btn-sm"
-          onClick={() => flyTo(fitViewBox)}
+          onClick={fitView}
           title="Fit view"
           aria-label="Fit view"
         >
           ⌂
         </button>
       </div>
+
+      {noMatches && (
+        <div className="map-empty">
+          <p>
+            No plot matches <strong>{query}</strong>.
+          </p>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onClearSearch}>
+            Clear search
+          </button>
+        </div>
+      )}
 
       <div className="map-drag-hint">
         Drag to pan · scroll to zoom{activeSection && ' · Esc for overview'}

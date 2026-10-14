@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
@@ -22,6 +23,9 @@ export default function Cemetery() {
   const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const lotParam = searchParams.get('lot')
+  // The map reframes itself on whatever a search matched, so it follows the
+  // settled query rather than every keystroke.
+  const query = useDebounced(search.trim())
 
   useEffect(() => {
     api('/api/map').then(({ ok, data }) => {
@@ -35,7 +39,7 @@ export default function Cemetery() {
   // filter would otherwise hide it.
   const sections = useMemo(() => {
     if (!mapData) return []
-    const q = search.trim().toLowerCase()
+    const q = query.toLowerCase()
     return mapData.sections.map((s) => ({
       ...s,
       lots: (s.lots || []).filter((l) => {
@@ -45,7 +49,7 @@ export default function Cemetery() {
         return linked || (passesStatus && passesSearch)
       }),
     }))
-  }, [mapData, filterStatus, search, lotParam])
+  }, [mapData, filterStatus, query, lotParam])
 
   // Selection reads from the unfiltered set: a filtered-out lot must still be
   // reachable, or a ?lot= link stops working the moment someone sets a filter.
@@ -93,16 +97,18 @@ export default function Cemetery() {
 
   // The URL is the source of truth for selection, so ?lot= is shareable and
   // the back button works. A selected lot also wins the section, because the
-  // overview draws outlines only and the plot would be invisible until you
-  // clicked through to it. Derived rather than synced in an effect so a deep
-  // link lands on the right section on the very first render. The section is
-  // looked up by id in the current (filtered) list, so the filter applies to
-  // an open section instead of leaving a stale copy of its lots behind.
+  // plot would be a speck in the overview until you clicked through to it.
+  // Derived rather than synced in an effect so a deep link lands on the right
+  // section on the very first render. A section the search has emptied is left
+  // behind: the matches are elsewhere, and framing them inside a section that
+  // dims everything but itself would bury the very thing that was searched for.
   const activeSection = useMemo(() => {
     const id = selectedLot ? selectedLot.section_id : viewSectionId
     if (id === undefined || id === null) return null
-    return sections.find((s) => String(s.section_id) === String(id)) || null
-  }, [sections, selectedLot, viewSectionId])
+    const section = sections.find((s) => String(s.section_id) === String(id))
+    if (!section || (query && section.lots.length === 0)) return null
+    return section
+  }, [sections, selectedLot, viewSectionId, query])
 
   const selectLot = (lot) => {
     const next = lot ? String(lot.lot_id) : null
@@ -168,6 +174,8 @@ export default function Cemetery() {
               <p className="panel-heading">Filter</p>
               <input
                 className="search-input map-search"
+                type="search"
+                aria-label="Search plots by lot code"
                 placeholder="Search lot code…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -217,12 +225,15 @@ export default function Cemetery() {
           <div className="map-layout">
             <CemeterySvgMap
               sections={sections}
+              contextLots={allLots}
               activeSection={activeSection}
               selectedLotId={selectedLot?.lot_id}
               showLayout={showLayout}
+              query={query}
               onSelectLot={selectLot}
               onFocusSection={focusSection}
               onExitSection={showAll}
+              onClearSearch={() => setSearch('')}
             />
 
             <aside className="map-detail">

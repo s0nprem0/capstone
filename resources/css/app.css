@@ -1176,12 +1176,9 @@ textarea {
 }
 
 /* The overview draws the whole cemetery into roughly a third of its width, so
-   a 20px label lands at about 6px and reads as dirt on top of 305 plots. SVG
-   has no non-scaling-size, so the overview steps up to a size that survives
-   the zoom instead. */
-.map-overview-title {
-  font-size: 34px;
-}
+   a 20px label lands at about 6px and reads as dirt on top of 1182 plots. SVG
+   text has no non-scaling-size, so the map sets font-size per viewBox in JS
+   and keeps the rendered size constant instead of hard-coding one here. */
 
 .lot-rect {
   cursor: pointer;
@@ -1206,14 +1203,67 @@ rect.lot--selected {
 }
 
 .lot-label {
-  font-size: 11px;
   font-weight: 600;
   fill: #fff;
   paint-order: stroke;
   stroke: rgba(0, 0, 0, 0.55);
-  stroke-width: 2px;
   stroke-linejoin: round;
   pointer-events: none;
+}
+
+/* Sections other than the open one stay in the frame — that is what turns the
+   space around a wide section into neighbouring plots instead of blank paper —
+   but they recede so the place you asked for is the place you look. Dimmed by
+   opacity rather than fill so the status colour is still readable underneath,
+   and not a transition: this is set once on entry, not hovered. */
+.lot-rect.lot--dimmed {
+  opacity: 0.22;
+}
+
+.lot-rect.lot--dimmed:hover {
+  opacity: 0.6;
+}
+
+/* Search context: drawn only so a close frame on the matches is not floating in
+   a void. Not clickable — it did not match, and opening its record would be a
+   dead end. */
+.lot-rect.lot--faded {
+  pointer-events: none;
+}
+
+.map-outline--active {
+  stroke-dasharray: none;
+}
+
+/* A search that matched nothing used to leave the map silently blank. */
+.map-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: max-content;
+  max-width: 90%;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--color-text-muted);
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 4;
+}
+
+.map-empty p {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.map-empty strong {
+  color: var(--color-text);
 }
 
 @media print {
