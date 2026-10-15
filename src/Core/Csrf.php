@@ -6,17 +6,12 @@ namespace App\Core;
 
 class Csrf
 {
-    public static function generate(): string
+    public static function token(): string
     {
         if (!Session::has('csrf_token')) {
             Session::set('csrf_token', bin2hex(random_bytes(32)));
         }
         return Session::get('csrf_token');
-    }
-
-    public static function token(): string
-    {
-        return self::generate();
     }
 
     public static function validate(?string $token): bool

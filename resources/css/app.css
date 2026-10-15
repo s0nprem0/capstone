@@ -86,13 +86,11 @@ textarea {
      every pair stays separable under protanopia, deuteranopia and tritanopia
      (worst-case deltaE 30.9, against 22.4 for the previous green/amber/red
      set where occupied was red). Occupied is blue so that red stays reserved
-     for maintenance. unavailable + maintenance are defined for completeness
-     but render nowhere until the lot status enum grows. */
+     for maintenance. A fourth or fifth status joins this list when the lot
+     status enum grows to carry one. */
   --status-available: #2f9e44;
   --status-reserved: #eab308;
   --status-occupied: #1e40af;
-  --status-unavailable: #6b7280;
-  --status-maintenance: #b91c1c;
   --status-selected: #6d28d9;
 
   /* Ink for text drawn on a status fill. No single value works: white fails on
@@ -1168,11 +1166,6 @@ textarea {
   font-size: 20px;
   font-weight: 700;
   fill: var(--color-text);
-}
-
-.map-section-meta {
-  font-size: 13px;
-  fill: var(--color-text-muted);
 }
 
 /* The overview draws the whole cemetery into roughly a third of its width, so

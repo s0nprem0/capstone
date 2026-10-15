@@ -17,14 +17,6 @@ class Model
         return Database::connection();
     }
 
-    public static function all(): array
-    {
-        $stmt = self::db()->query(
-            "SELECT * FROM `" . static::$table . "` ORDER BY `" . static::$primaryKey . "` DESC"
-        );
-        return $stmt->fetchAll();
-    }
-
     public static function find(int $id): ?array
     {
         $stmt = self::db()->prepare(
