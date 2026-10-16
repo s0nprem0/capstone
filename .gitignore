@@ -12,3 +12,7 @@ dist-root-bak/
 
 # pnpm local store created by in-container installs
 .pnpm-store/
+
+# python bytecode from the survey tooling
+__pycache__/
+*.pyc
