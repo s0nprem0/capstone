@@ -269,12 +269,24 @@ export default function LotEditor() {
     setForm(null)
   }, [sectionRow?.section_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fly to the section when it (or the data) changes.
+  // Fly to the section when it (or the data) changes. Framed on the section's
+  // plots rather than its viewBox: a viewBox is a full-width band across the
+  // whole sheet, so framing that showed the entire site at a few pixels per
+  // grave - far too small to place anything.
   const focusKey = sectionId
   useEffect(() => {
     if (!mapData || focusKey == null) return
     const sec = mapData.sections.find((s) => s.section_id === focusKey)
     if (!sec) return
+    const sectionPlots = sec.lots || []
+    if (sectionPlots.length) {
+      const x0 = Math.min(...sectionPlots.map((l) => l.svg_x))
+      const y0 = Math.min(...sectionPlots.map((l) => l.svg_y))
+      const x1 = Math.max(...sectionPlots.map((l) => l.svg_x + l.svg_w))
+      const y1 = Math.max(...sectionPlots.map((l) => l.svg_y + l.svg_h))
+      flyTo(frameBox(x0, y0, x1, y1, { pad: 40 }))
+      return
+    }
     const [x, y, w, h] = parseViewBox(sec.viewBox)
     const pad = Math.max(60, w * 0.15, h * 0.15)
     flyTo([x - pad, y - pad, w + pad * 2, h + pad * 2])
@@ -282,6 +294,23 @@ export default function LotEditor() {
 
   const selectedLot = lots.find((l) => l.lot_id === selectedId) || null
 
+  // An aspect-correct frame around a rectangle. Height is derived from the pane's
+  // own aspect so the view does not letterbox, and a minimum width keeps a small
+  // target from filling the screen with itself.
+  const frameBox = (x0, y0, x1, y1, { pad = 0, minWidth = 0 } = {}) => {
+    const el = svgRef.current
+    const rect = el?.getBoundingClientRect()
+    const aspect = rect && rect.height > 0 ? rect.width / rect.height : 4096 / 3072
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
+    const width = Math.max(minWidth, x1 - x0 + pad * 2)
+    const height = width / aspect
+    return [cx - width / 2, cy - height / 2, width, height]
+  }
+
+  // Frame a plot with its neighbours. Sized to the plot alone it fills the pane
+  // with one grave blown up to 300px across, which says nothing about where in
+  // the section you are.
   const focusLot = (id) => {
     const lot = lots.find((item) => String(item.lot_id) === id)
     if (!lot) {
@@ -292,7 +321,7 @@ export default function LotEditor() {
     setSelectedId(lot.lot_id)
     setForm(fromLot(lot))
     const pad = Math.max(12, lot.svg_w * 0.75, lot.svg_h * 0.75)
-    flyTo([lot.svg_x - pad, lot.svg_y - pad, lot.svg_w + pad * 2, lot.svg_h + pad * 2])
+    flyTo(frameBox(lot.svg_x, lot.svg_y, lot.svg_x + lot.svg_w, lot.svg_y + lot.svg_h, { pad, minWidth: 520 }))
   }
 
   const onLotPointerDown = (e, lot, mode) => {
