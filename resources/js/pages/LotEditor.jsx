@@ -3,12 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
-import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX } from '../map/tracePaths'
+import { DEFAULT_REFERENCE, MapReferenceImage, readReference, saveReference } from '../map/reference'
 
 const STATUS_LABELS = { available: 'Available', reserved: 'Reserved', occupied: 'Occupied' }
 const LOT_TYPES = ['single', 'double', 'family']
 const MIN_SIZE = 10
-const NUDGE = 5
+const NUDGE = 1
+const round2 = (n) => Math.round(n * 100) / 100
 
 const parseViewBox = (s) => {
   const parts = String(s || MAP_VIEWBOX.join(' ')).split(/\s+/).map(Number)
@@ -40,6 +42,7 @@ export default function LotEditor() {
   const [drag, setDrag] = useState(null)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState(null)
+  const [reference, setReference] = useState(readReference)
 
   const svgRef = useRef(null)
   const rafRef = useRef(null)
@@ -58,6 +61,14 @@ export default function LotEditor() {
     vbRef.current = next
     setVb(next)
   }, [])
+
+  const updateReference = (patch) => {
+    setReference((current) => {
+      const next = { ...current, ...patch }
+      saveReference(next)
+      return next
+    })
+  }
 
   const flyTo = useCallback(
     (target) => {
@@ -227,6 +238,19 @@ export default function LotEditor() {
 
   const selectedLot = lots.find((l) => l.lot_id === selectedId) || null
 
+  const focusLot = (id) => {
+    const lot = lots.find((item) => String(item.lot_id) === id)
+    if (!lot) {
+      setSelectedId(null)
+      setForm(null)
+      return
+    }
+    setSelectedId(lot.lot_id)
+    setForm(fromLot(lot))
+    const pad = Math.max(12, lot.svg_w * 0.75, lot.svg_h * 0.75)
+    flyTo([lot.svg_x - pad, lot.svg_y - pad, lot.svg_w + pad * 2, lot.svg_h + pad * 2])
+  }
+
   const onLotPointerDown = (e, lot, mode) => {
     e.stopPropagation()
     setSelectedId(lot.lot_id)
@@ -263,13 +287,13 @@ export default function LotEditor() {
       let next
       if (drag.mode === 'move') {
         next = {
-          svg_x: Math.round(drag.origX + dx),
-          svg_y: Math.round(drag.origY + dy),
+          svg_x: round2(drag.origX + dx),
+          svg_y: round2(drag.origY + dy),
         }
       } else {
         next = {
-          svg_w: Math.max(MIN_SIZE, Math.round(drag.origW + dx)),
-          svg_h: Math.max(MIN_SIZE, Math.round(drag.origH + dy)),
+          svg_w: Math.max(MIN_SIZE, round2(drag.origW + dx)),
+          svg_h: Math.max(MIN_SIZE, round2(drag.origH + dy)),
         }
       }
       setLots((prev) => prev.map((l) => (l.lot_id === drag.lotId ? { ...l, ...next } : l)))
@@ -318,13 +342,14 @@ export default function LotEditor() {
         undo()
         return
       }
-      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.metaKey || e.ctrlKey) return
       if (e.key === 'Escape') {
         setSelectedId(null)
         return
       }
       if (selectedId == null) return
-      const dir = { ArrowUp: [0, -NUDGE], ArrowDown: [0, NUDGE], ArrowLeft: [-NUDGE, 0], ArrowRight: [NUDGE, 0] }[e.key]
+      const step = e.altKey ? 0.1 : NUDGE
+      const dir = { ArrowUp: [0, -step], ArrowDown: [0, step], ArrowLeft: [-step, 0], ArrowRight: [step, 0] }[e.key]
       if (!dir) return
       e.preventDefault()
       const lot = lots.find((l) => l.lot_id === selectedId)
@@ -333,11 +358,11 @@ export default function LotEditor() {
       let next
       if (e.shiftKey) {
         next = {
-          svg_w: Math.max(MIN_SIZE, Math.round(lot.svg_w + dir[0])),
-          svg_h: Math.max(MIN_SIZE, Math.round(lot.svg_h + dir[1])),
+          svg_w: Math.max(MIN_SIZE, round2(lot.svg_w + dir[0])),
+          svg_h: Math.max(MIN_SIZE, round2(lot.svg_h + dir[1])),
         }
       } else {
-        next = { svg_x: Math.round(lot.svg_x + dir[0]), svg_y: Math.round(lot.svg_y + dir[1]) }
+        next = { svg_x: round2(lot.svg_x + dir[0]), svg_y: round2(lot.svg_y + dir[1]) }
       }
       setLots((p) => p.map((l) => (l.lot_id === selectedId ? { ...l, ...next } : l)))
       pendingRef.current[selectedId] = { ...next }
@@ -451,6 +476,9 @@ export default function LotEditor() {
   }
 
   const showLabels = vb[2] < 700
+  const svgRect = svgRef.current?.getBoundingClientRect()
+  const pxPerUnit = svgRect ? Math.min(svgRect.width / vb[2], svgRect.height / vb[3]) : 0
+  const labelSize = pxPerUnit > 0 ? 10 / pxPerUnit : vb[2] / 85
   const box = sectionRow ? sectionOutline(sectionRow) : null
 
   return (
@@ -509,6 +537,77 @@ export default function LotEditor() {
         </span>
       </div>
 
+      {sectionRow && (
+        <div className="lot-reference-tools">
+          <label className="lot-reference-find">
+            Find a lot
+            <select value={selectedId ?? ''} onChange={(e) => focusLot(e.target.value)}>
+              <option value="">Choose a lot in {sectionRow.section_name}</option>
+              {lots.map((lot) => <option key={lot.lot_id} value={lot.lot_id}>{lot.lot_code}</option>)}
+            </select>
+          </label>
+          <label className="lot-reference-toggle">
+            <input
+              type="checkbox"
+              checked={reference.visible}
+              onChange={(e) => updateReference({ visible: e.target.checked })}
+            />
+            Survey reference
+          </label>
+          <label className="lot-reference-opacity">
+            Scan opacity
+            <input
+              type="range"
+              min="0.1"
+              max="1"
+              step="0.05"
+              value={reference.opacity}
+              disabled={!reference.visible}
+              onChange={(e) => updateReference({ opacity: Number(e.target.value) })}
+            />
+            <output>{Math.round(reference.opacity * 100)}%</output>
+          </label>
+          <details className="lot-reference-align">
+            <summary>Align scan</summary>
+            <div className="lot-reference-grid">
+              {[
+                ['Scale X', 'scaleX', 0.5, 1.5, 0.001],
+                ['Scale Y', 'scaleY', 0.5, 1.5, 0.001],
+                ['Rotation', 'rotation', -10, 10, 0.01],
+                ['Offset X', 'offsetX', -800, 800, 1],
+                ['Offset Y', 'offsetY', -800, 800, 1],
+              ].map(([label, key, min, max, step]) => (
+                <label key={key}>
+                  {label}
+                  <input
+                    type="number"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={reference[key]}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (Number.isFinite(value)) updateReference({ [key]: Math.min(max, Math.max(min, value)) })
+                    }}
+                  />
+                </label>
+              ))}
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setReference({ ...DEFAULT_REFERENCE })
+                  saveReference({ ...DEFAULT_REFERENCE })
+                }}
+              >
+                Reset scan alignment
+              </button>
+            </div>
+            <p className="text-muted">Alignment is saved in this browser only. Lot edits are saved to the database.</p>
+          </details>
+        </div>
+      )}
+
       {!mapData && <p className="text-muted">Loading map…</p>}
 
       {mapData && (
@@ -527,12 +626,7 @@ export default function LotEditor() {
             >
               <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
-              <g className="map-trace" opacity={0.5} pointerEvents="none">
-                {TRACE_PATHS.map((d, i) => (
-                  <path key={i} d={d} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} strokeLinejoin="round" />
-                ))}
-                <circle cx={TRACE_CIRCLE.cx} cy={TRACE_CIRCLE.cy} r={TRACE_CIRCLE.r} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} />
-              </g>
+              <MapReferenceImage reference={reference} width={MAP_VIEWBOX[2]} height={MAP_VIEWBOX[3]} />
 
               {sectionRow && (
                 <g pointerEvents="none">
@@ -574,9 +668,9 @@ export default function LotEditor() {
                         height={Math.max(0, lot.svg_h)}
                         rx={2}
                         style={{ fill: STATUS_COLORS[lot.status] || 'var(--color-text-muted)' }}
-                        fillOpacity={isSel ? 1 : 0.85}
-                        stroke="#fff"
-                        strokeWidth={1}
+                        fillOpacity={isSel ? 0.72 : 0.2}
+                        stroke={isSel ? '#15251b' : '#fff'}
+                        strokeWidth={isSel ? 2 : 1}
                         strokeDasharray={lot.status === 'reserved' && !isSel ? '5 4' : undefined}
                       />
                       {showLabels && (
@@ -586,6 +680,7 @@ export default function LotEditor() {
                           textAnchor="middle"
                           dominantBaseline="central"
                           className="lot-label"
+                          style={{ fontSize: `${labelSize}px`, strokeWidth: `${labelSize * 0.18}px` }}
                           pointerEvents="none"
                         >
                           {lot.lot_code}
@@ -634,7 +729,7 @@ export default function LotEditor() {
             </div>
 
             <div className="map-drag-hint">
-              Click to select · drag to move · corner handle to resize · arrows nudge · Shift+arrows resize · Ctrl/Cmd+Z undo
+              Click to select · drag to move · arrows nudge 1 unit · Alt+arrows nudge 0.1 · Shift+arrows resize · Ctrl/Cmd+Z undo
             </div>
           </div>
 

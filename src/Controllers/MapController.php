@@ -38,7 +38,7 @@ class MapController
                 'section_id' => $section['section_id'],
                 'section_name' => $section['section_name'],
                 'location' => $section['location'] ?? null,
-                'viewBox' => $section['svg_viewbox'] ?? '0 0 1791 1457',
+                'viewBox' => $section['svg_viewbox'] ?? '0 0 4096 3072',
                 'image' => $section['svg_image'] ?? null,
                 'points' => $section['svg_points'] ?? null,
                 'is_locked' => (int) ($section['is_locked'] ?? 0) === 1,
@@ -48,7 +48,7 @@ class MapController
         }, $sections);
 
         Response::json([
-            'viewBox' => [0, 0, 1791, 1457],
+            'viewBox' => [0, 0, 4096, 3072],
             'sections' => $grouped,
         ]);
     }

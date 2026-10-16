@@ -1902,6 +1902,116 @@ textarea:disabled {
   flex-shrink: 0;
 }
 
+.lot-reference-tools {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.lot-reference-find,
+.lot-reference-opacity,
+.lot-reference-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.lot-reference-find select {
+  min-width: 15rem;
+}
+
+.lot-reference-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 44px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.lot-reference-opacity {
+  display: grid;
+  grid-template-columns: auto minmax(6rem, 10rem) 3rem;
+  align-items: center;
+}
+
+.lot-reference-opacity output {
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-reference-align {
+  position: relative;
+  font-size: var(--text-sm);
+}
+
+.lot-reference-align summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.lot-reference-grid {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + var(--space-2xs));
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(6rem, 1fr));
+  gap: var(--space-sm);
+  min-width: min(36rem, calc(100vw - 3rem));
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.lot-reference-grid input {
+  width: 100%;
+}
+
+.lot-reference-grid .btn,
+.lot-reference-grid p {
+  grid-column: 1 / -1;
+}
+
+.map-reference-toggle {
+  margin-inline: var(--space-xs);
+}
+
+@media (max-width: 700px) {
+  .lot-reference-tools {
+    align-items: stretch;
+  }
+
+  .lot-reference-find,
+  .lot-reference-find select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .lot-reference-opacity {
+    grid-template-columns: auto minmax(5rem, 1fr) 3rem;
+  }
+
+  .lot-reference-grid {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+}
+
 /* ==== 3-pane map shell (Cemetery) ====
    Controls left, map centre, record right — no modals. Everything is scoped
    to .map-panes so the Lot Editor and Section Editor keep their existing

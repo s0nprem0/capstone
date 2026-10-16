@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX } from '../map/tracePaths'
+import { MapReferenceImage, readReference, saveReference } from '../map/reference'
 
 const MIN_VERTICES = 3
 const PICK_PX = 12 // click tolerance in screen pixels, so it survives zooming
@@ -26,8 +27,8 @@ const toPointsString = (pts) =>
     .join(' ')
 
 const outlineFromViewbox = (viewBox) => {
-  const parts = String(viewBox || '0 0 1791 1457').split(/\s+/).map(Number)
-  if (parts.length !== 4) parts.splice(0, parts.length, 0, 0, 1791, 1457)
+  const parts = String(viewBox || '0 0 4096 3072').split(/\s+/).map(Number)
+  if (parts.length !== 4) parts.splice(0, parts.length, 0, 0, 4096, 3072)
   const [x, y, w, h] = parts
   return [
     [x, y],
@@ -83,6 +84,7 @@ export default function SectionEditor() {
   const [placeholder, setPlaceholder] = useState(false)
   const [snap, setSnap] = useState(null)
   const [adding, setAdding] = useState(false)
+  const [reference, setReference] = useState(readReference)
 
   const svgRef = useRef(null)
   const vbRef = useRef([...MAP_VIEWBOX])
@@ -99,6 +101,12 @@ export default function SectionEditor() {
   }, [])
 
   const locked = Boolean(section?.is_locked)
+
+  const toggleReference = (visible) => {
+    const next = { ...reference, visible }
+    setReference(next)
+    saveReference(next)
+  }
 
   // Load the section + trace from the map endpoint.
   useEffect(() => {
@@ -410,6 +418,14 @@ export default function SectionEditor() {
               <span className={`editor-dirty${saving || savedAt || dirty ? '' : ' editor-dirty--muted'}`} aria-live="polite">
                 {saving ? 'Saving…' : savedAt ? 'Saved ✓' : dirty ? 'unsaved changes' : `${verticesLabel} · auto`}
               </span>
+              <label className="map-reference-toggle">
+                <input
+                  type="checkbox"
+                  checked={reference.visible}
+                  onChange={(e) => toggleReference(e.target.checked)}
+                />
+                Survey reference
+              </label>
               <Link to={`/admin/sections`} className="btn btn-secondary btn-sm">
                 Sections
               </Link>
@@ -489,12 +505,7 @@ export default function SectionEditor() {
             >
               <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
-              <g className="map-trace" opacity={0.5} pointerEvents="none">
-                {TRACE_PATHS.map((d, i) => (
-                  <path key={i} d={d} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} strokeLinejoin="round" />
-                ))}
-                <circle cx={TRACE_CIRCLE.cx} cy={TRACE_CIRCLE.cy} r={TRACE_CIRCLE.r} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} />
-              </g>
+              <MapReferenceImage reference={reference} width={MAP_VIEWBOX[2]} height={MAP_VIEWBOX[3]} />
 
               {pts.length >= MIN_VERTICES && (
                 <polygon

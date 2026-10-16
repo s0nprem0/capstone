@@ -105,10 +105,10 @@ printf("\n%d lots checked, %d problems (centres outside the outline, or overlapp
 // Every plot must sit within the whole-map viewBox too.
 $oob = 0;
 foreach ($lots as $l) {
-    if ($l['svg_x'] < 0 || $l['svg_y'] < 0 || $l['svg_x'] + $l['svg_w'] > 1791 || $l['svg_y'] + $l['svg_h'] > 1457) {
+    if ($l['svg_x'] < 0 || $l['svg_y'] < 0 || $l['svg_x'] + $l['svg_w'] > 4096 || $l['svg_y'] + $l['svg_h'] > 3072) {
         $oob++;
     }
 }
-printf("%d lots outside the overall viewBox 0 0 1791 1457\n", $oob);
+printf("%d lots outside the overall viewBox 0 0 4096 3072\n", $oob);
 
 exit($bad + $oob === 0 ? 0 : 1);

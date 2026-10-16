@@ -16,3 +16,6 @@ dist-root-bak/
 # python bytecode from the survey tooling
 __pycache__/
 *.pyc
+
+# transient output from browser verification runs
+.playwright-mcp/

@@ -1,7 +1,9 @@
 // Decorative trace of the cemetery layout (from the designer's SVG).
 // Rendered underneath the lot grid as a layout reference; toggle in the UI.
-// Overall map space: viewBox 0 0 1791 1457.
-export const MAP_VIEWBOX = [0, 0, 1791, 1457]
+// The survey plan is the map space: 0 0 4096 3072, matching the 4096x3072 scan
+// in public/traces/survey-lines.png. Lots and sections are stored in the scan's
+// own pixels, so geometry lands exactly on the plan instead of being scaled.
+export const MAP_VIEWBOX = [0, 0, 4096, 3072]
 
 export const TRACE_PATHS = [
   'M1224 1322.5L1060.5 1247L1364 1231L1291 1317L1224 1322.5Z',

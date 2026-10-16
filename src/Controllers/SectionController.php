@@ -97,7 +97,7 @@ class SectionController
             'section_name' => $name,
             'location' => $input['location'] ?? null,
             'description' => $input['description'] ?? null,
-            'svg_viewbox' => $viewbox !== '' ? $viewbox : '0 0 1791 1457',
+            'svg_viewbox' => $viewbox !== '' ? $viewbox : '0 0 4096 3072',
             'svg_image' => $input['svg_image'] ?? null,
             'svg_points' => $points,
             'is_locked' => !empty($input['is_locked']) ? 1 : 0,

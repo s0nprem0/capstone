@@ -18,7 +18,7 @@ export default function Cemetery() {
   const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
   const [viewSectionId, setViewSectionId] = useState(null)
-  const [showLayout, setShowLayout] = useState(false)
+  const [showLayout, setShowLayout] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -202,12 +202,11 @@ export default function Cemetery() {
                   checked={showLayout}
                   onChange={(e) => setShowLayout(e.target.checked)}
                 />
-                Site illustration
+                Survey plan
               </label>
               <p className="text-muted map-toggle-note">
-                An approximate traced sketch of the grounds, for orientation only.
-                Plot rectangles come from the survey and are authoritative, so
-                they do not line up with this overlay.
+                The scanned survey is the map base. Colored rectangles show the
+                current lot records and are being aligned to the plan.
               </p>
             </div>
 

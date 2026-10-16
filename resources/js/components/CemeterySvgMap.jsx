@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX } from '../map/tracePaths'
+import { MapReferenceImage, readReference } from '../map/reference'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -28,16 +29,16 @@ export const sectionColor = (sectionId) =>
 // never produce a view the user cannot zoom back out of. The floor is looser
 // than the zoom floor on purpose: framing a handful of matches wants to sit
 // closer than framing the whole site, without inflating one plot to fill a pane.
-const MAX_VIEW = 2500
-const MIN_FRAME = 200
-const MIN_ZOOM = 120
+const MAX_VIEW = 4500
+const MIN_FRAME = 300
+const MIN_ZOOM = 250
 
 // The overview letterboxes a 1.23:1 site into a portrait pane, and a wide
 // section worse. Framing on the pane's own shape -- growing the short axis
 // until it matches -- is what stops the map floating in blank paper. Only
 // works because the whole site is drawn at every zoom (see below), so the
 // space the frame opens up is neighbouring plots rather than emptiness.
-const DEFAULT_ASPECT = 1.2
+const DEFAULT_ASPECT = 4096 / 3072
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -196,6 +197,7 @@ export default function CemeterySvgMap({
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
   const [pane, setPane] = useState({ width: 0, height: 0 })
+  const [reference] = useState(readReference)
 
   const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
 
@@ -456,10 +458,6 @@ export default function CemeterySvgMap({
     else flyTo(target)
   }
 
-  // Section titles are set for the overview's scale; inside a section they are
-  // large enough to name the one place you are, and the rest are off-frame or
-  // in the way.
-  const showAllTitles = vb[2] > 1500
   // CSS pixels per SVG user unit. SVG text is sized in user units, so a value
   // that reads at one zoom fills the screen at another; dividing the target
   // rendered size by this keeps titles and plot labels the same size on screen
@@ -492,56 +490,47 @@ export default function CemeterySvgMap({
         <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
         {showLayout && (
-          <g className="map-trace" opacity={0.45}>
-            {TRACE_PATHS.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="#e9dcb8"
-                stroke="#3E6B4C"
-                strokeWidth={6}
-                strokeLinejoin="round"
-              />
-            ))}
-            <circle cx={TRACE_CIRCLE.cx} cy={TRACE_CIRCLE.cy} r={TRACE_CIRCLE.r} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} />
-          </g>
+          <MapReferenceImage
+            reference={{ ...reference, visible: true }}
+            width={MAP_VIEWBOX[2]}
+            height={MAP_VIEWBOX[3]}
+          />
         )}
 
-        {/* Outlines underneath, plots over them, titles on top — the order is
-            what keeps 1182 rectangles from burying the labels. */}
+        {/* Section outlines underneath, plots over them, titles on top. The
+            survey plan already draws each row of plots, so only the open section
+            is outlined — 66 stacked band outlines over the plan read as noise. */}
         <g className="map-sections">
           {sections.map((section) => {
             const [x, y, w, h] = parseViewBox(section.viewBox)
             const points = section.points
             const color = sectionColor(section.section_id)
-            const isActive = section.section_id === activeSectionId
+            if (section.section_id !== activeSectionId) return null
             return points ? (
               <polygon
                 key={section.section_id}
                 data-section-id={section.section_id}
-                className={isActive ? 'map-outline map-outline--active' : 'map-outline'}
+                className="map-outline map-outline--active"
                 points={points}
-                fill={isActive ? color : 'none'}
-                fillOpacity={isActive ? 0.08 : undefined}
+                fill={color}
+                fillOpacity={0.08}
                 stroke={color}
-                strokeWidth={isActive ? 4 : 3}
+                strokeWidth={4}
                 strokeLinejoin="round"
-                strokeDasharray={isActive ? undefined : '12 8'}
               />
             ) : (
               <rect
                 key={section.section_id}
                 data-section-id={section.section_id}
-                className={isActive ? 'map-outline map-outline--active' : 'map-outline'}
+                className="map-outline map-outline--active"
                 x={x}
                 y={y}
                 width={w}
                 height={h}
-                fill={isActive ? color : 'none'}
-                fillOpacity={isActive ? 0.08 : undefined}
+                fill={color}
+                fillOpacity={0.08}
                 stroke={color}
-                strokeWidth={isActive ? 4 : 2}
-                strokeDasharray={isActive ? undefined : '8 6'}
+                strokeWidth={4}
               />
             )
           })}
@@ -578,7 +567,10 @@ export default function CemeterySvgMap({
 
         <g className="map-sections">
           {sections.map((section) => {
-            if (!showAllTitles && section.section_id !== activeSectionId) return null
+            // The plan has its section numbers printed on it, so a title is
+            // only useful for the section actually open; 66 of them at once
+            // just pile up in the middle of the site.
+            if (section.section_id !== activeSectionId) return null
             const [x, y, w, h] = parseViewBox(section.viewBox)
             const [minX, minY, maxX, maxY] = pointsBounds(section.points, [x, y, x + w, y + h])
             return (

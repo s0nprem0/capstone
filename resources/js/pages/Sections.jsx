@@ -5,7 +5,7 @@ import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
 
-const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 1791 1457' }
+const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 4096 3072' }
 
 export default function Sections() {
   const [sections, setSections] = useState([])

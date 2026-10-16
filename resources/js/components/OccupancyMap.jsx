@@ -1,4 +1,4 @@
-import { MAP_VIEWBOX, TRACE_CIRCLE, TRACE_PATHS } from '../map/tracePaths'
+import { MAP_VIEWBOX } from '../map/tracePaths'
 import { STATUS_COLORS } from './CemeterySvgMap'
 
 const [vbX, vbY, vbWidth, vbHeight] = MAP_VIEWBOX
@@ -27,19 +27,16 @@ export default function OccupancyMap({ sections }) {
     >
       <rect x={vbX - 200} y={vbY - 200} width={vbWidth + 400} height={vbHeight + 400} fill="#f4f1e8" />
 
-      <g className="map-trace" opacity={0.45}>
-        {TRACE_PATHS.map((d, i) => (
-          <path key={i} d={d} fill="#e9dcb8" stroke="#3E6B4C" strokeWidth={6} strokeLinejoin="round" />
-        ))}
-        <circle
-          cx={TRACE_CIRCLE.cx}
-          cy={TRACE_CIRCLE.cy}
-          r={TRACE_CIRCLE.r}
-          fill="#e9dcb8"
-          stroke="#3E6B4C"
-          strokeWidth={6}
-        />
-      </g>
+      <image
+        href="/traces/survey-lines.png"
+        x="0"
+        y="0"
+        width={vbWidth}
+        height={vbHeight}
+        preserveAspectRatio="xMidYMid meet"
+        opacity={0.9}
+        aria-hidden="true"
+      />
 
       <g>
         {lots.map((lot) => (
