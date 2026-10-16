@@ -48,7 +48,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 make up        # docker compose up -d
 make install   # composer install + pnpm install (in containers)
 make migrate   # apply database/schema.sql to MySQL
-make map-data  # apply database/survey/lots.sql (66 surveyed sections, 3863 plots)
+make map-data  # apply database/survey/lots.sql (66 surveyed sections, 3890 plots)
 make demo      # apply database/demo.sql (demo clients, reservations, burials)
 ```
 - React dev server: http://localhost:5173 (proxies `/api` to PHP)

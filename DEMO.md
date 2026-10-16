@@ -9,7 +9,7 @@ order to show it in.
 make up        # docker compose up -d
 make install   # composer install + pnpm install
 make migrate   # reset the database to database/schema.sql
-make map-data  # load the 66 surveyed sections and 3863 plots
+make map-data  # load the 66 surveyed sections and 3890 plots
 make demo      # load the demo dataset
 make build     # build the frontend bundle
 ```
@@ -19,7 +19,7 @@ inside the docroot the PHP server serves from, so :8000 is the only address you
 need — the Vite dev server on :5173 is optional and only useful while editing.
 
 If you would rather show the project with no client data at all, run
-`make migrate && make map-data` and stop there. That gives 3863 available plots,
+`make migrate && make map-data` and stop there. That gives 3890 available plots,
 one admin, and an empty queue.
 
 ## Accounts
@@ -42,21 +42,21 @@ All demo accounts share one password so nothing has to be memorised on the spot.
 
 ## What is in the dataset
 
-1182 plots across 10 sections: **1162 available, 17 occupied, 3 reserved**. That
+3890 plots across 66 sections: **3871 available, 17 occupied, 3 reserved**. That
 split is chosen so all three status colours are visible on the map at once,
 which is the thing the redesign is about.
 
-The plots are a real survey of St. John Memorial Garden & Parks, so the section
-names and lot codes mean something: `N01-11` is plat 11 of block 01 in North
-Terrace. Size and price both follow the plot type — ₱45,000 for the 870 single
-plots, ₱85,000 for 159 doubles, ₱140,000 for 87 family plots, and a flat
-₱28,000 for the 66 single plots in the perimeter ring.
+The plots are the real survey of St. John Memorial Garden & Parks, read from
+the traced plan in `public/traces/line detailed.svg`. The grids there are
+serpentine paths rather than one path per plot, so the polylines are walked and
+each enclosed grid cell becomes a plot — 3890, which is what the drawing says
+rather than what a threshold recovered. The map base is a render of that same
+file, so plots and plan land on each other exactly. A lot code is
+`S<section number>-<position in section>`, e.g. `S3-001`.
 
-The map's "Site illustration" toggle is off by default on purpose. The plot
-rectangles are the surveyed positions and they are what the database stores;
-the traced overlay underneath is only an approximate sketch for orientation, and
-the two agree for roughly 70% of plots. Turning the illustration on is useful
-for showing the roads and lawns, but it is not a plot plan.
+Six sections (22, 29, 40, 66, 67, 68) hold no plots. 66–68 covered only the
+perimeter ring, which is not in this set; the others have their circled number
+drawn in a gap rather than on a plot.
 
 22 reservations covering every status the schema allows — 3 awaiting approval,
 17 approved, 2 rejected. 4 burial records, 3 interred and 1 scheduled. 9 users,
