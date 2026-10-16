@@ -22,6 +22,50 @@ const sectionOutline = (sec) => {
   return { x, y, w, h }
 }
 
+// Where a newly added plot should land. The section's viewBox is a full-width
+// band across the whole site, so placing from it drops the plot at the map's
+// left edge rather than in the section - which is where the first two lots here
+// ended up, both at x=4 on top of each other. Prefer the drawn outline, then
+// where the section's plots already are, and scan for a gap that does not
+// collide with one of them.
+const plotArea = (sec, existing) => {
+  const pts = String(sec?.points || '')
+    .trim()
+    .split(/\s+/)
+    .map(Number)
+    .filter((n) => Number.isFinite(n))
+  if (pts.length >= 6) {
+    const xs = pts.filter((_, i) => i % 2 === 0)
+    const ys = pts.filter((_, i) => i % 2 === 1)
+    const x = Math.min(...xs)
+    const y = Math.min(...ys)
+    return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y }
+  }
+  if (existing.length) {
+    const x = Math.min(...existing.map((l) => l.svg_x))
+    const y = Math.min(...existing.map((l) => l.svg_y))
+    return {
+      x,
+      y,
+      w: Math.max(...existing.map((l) => l.svg_x + l.svg_w)) - x,
+      h: Math.max(...existing.map((l) => l.svg_y + l.svg_h)) - y,
+    }
+  }
+  return sectionOutline(sec)
+}
+
+const freeSlot = (area, existing, w, h) => {
+  const hits = (x, y) =>
+    existing.some((l) => x < l.svg_x + l.svg_w && x + w > l.svg_x && y < l.svg_y + l.svg_h && y + h > l.svg_y)
+  for (let y = area.y; y + h <= area.y + area.h; y += 6) {
+    for (let x = area.x; x + w <= area.x + area.w; x += 6) {
+      if (!hits(x, y)) return { x, y }
+    }
+  }
+  // The section is full: sit just below its last plot rather than on top of one.
+  return { x: Math.round(area.x + (area.w - w) / 2), y: Math.round(area.y + area.h + 4) }
+}
+
 const fromLot = (lot) => ({
   lot_code: lot.lot_code || '',
   block: lot.block || '',
@@ -406,32 +450,40 @@ export default function LotEditor() {
   const addLot = async () => {
     if (!sectionRow) return
     setError('')
-    const box = sectionOutline(sectionRow)
-    let n = 1
-    const codes = new Set(lots.map((l) => l.lot_code))
-    let code = ''
-    const prefix = sectionRow.section_name.replace(/\s+/g, '').toUpperCase()
-    do {
-      code = `${prefix}-${n++}`
-    } while (codes.has(code))
+    const w = 40
+    const h = 40
+    const at = freeSlot(plotArea(sectionRow, lots), lots, w, h)
+    // No lot_code: the server allocates the next free one in the section's
+    // surveyed sequence. Generating it here used to walk a list of codes held
+    // in memory, which is re-seeded from a map snapshot taken at page load, so
+    // the number it picked was already taken as soon as you changed section.
     const { ok, data } = await api('/api/lots', {
       method: 'POST',
       body: {
-        lot_code: code,
         section_id: sectionId,
         block: null,
         lot_type: 'single',
         price: 0,
         status: 'available',
         description: '',
-        svg_x: Math.round(box.x + 4),
-        svg_y: Math.round(box.y + 4),
-        svg_w: 40,
-        svg_h: 40,
+        svg_x: at.x,
+        svg_y: at.y,
+        svg_w: w,
+        svg_h: h,
       },
     })
     if (ok) {
       setLots((prev) => [data, ...prev])
+      // Keep the map snapshot in step too, or the section switch below re-seeds
+      // the lot list from it and drops the lot that was just added.
+      setMapData((prev) =>
+        prev && {
+          ...prev,
+          sections: prev.sections.map((s) =>
+            s.section_id === sectionId ? { ...s, lots: [data, ...(s.lots || [])] } : s
+          ),
+        }
+      )
       setSelectedId(data.lot_id)
       setForm(fromLot(data))
       flashSaved()

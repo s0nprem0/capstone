@@ -60,6 +60,31 @@ class Lot extends Model
         return self::update($id, ['status' => 'reserved']);
     }
 
+    /**
+     * Next free code in a section's surveyed sequence, e.g. 12 -> "S12-050".
+     *
+     * Allocated here rather than in the browser because the browser cannot see
+     * the current codes: the map is fetched once when the page loads and the
+     * lot list is re-seeded from that snapshot when the section changes, so a
+     * client-side "first free number" goes stale the moment a lot is added and
+     * re-issues a code that already exists. The database owns the unique key,
+     * so it is the only place that can answer this correctly.
+     *
+     * Max+1 rather than first-free, so the sequence stays monotonic even where
+     * a section has gaps in it.
+     */
+    public static function nextSurveyCode(int $sectionNumber): string
+    {
+        $prefix = 'S' . $sectionNumber . '-';
+        $stmt = self::db()->prepare(
+            "SELECT MAX(CAST(SUBSTRING_INDEX(`lot_code`, '-', -1) AS UNSIGNED))
+             FROM `" . static::$table . "` WHERE `lot_code` LIKE :prefix"
+        );
+        $stmt->execute(['prefix' => $prefix . '%']);
+        $max = $stmt->fetchColumn();
+        return $prefix . str_pad((string) (((int) $max) + 1), 3, '0', STR_PAD_LEFT);
+    }
+
     public static function occupy(int $id): bool
     {
         return self::update($id, ['status' => 'occupied']);

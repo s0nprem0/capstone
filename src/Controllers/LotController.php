@@ -100,7 +100,7 @@ class LotController
         Auth::requireRole(['admin']);
         $input = $this->router->input();
 
-        $required = ['lot_code', 'section_id', 'price'];
+        $required = ['section_id', 'price'];
         foreach ($required as $field) {
             if (($input[$field] ?? '') === '') {
                 Response::json(['error' => "$field is required"], 422);
@@ -108,18 +108,26 @@ class LotController
             }
         }
 
-        if (Lot::findBy('lot_code', $input['lot_code'])) {
-            Response::json(['error' => 'lot_code already exists'], 422);
-            return;
-        }
-
         $sectionId = (int) ($input['section_id'] ?? 0);
-        if ($sectionId <= 0 || !CemeterySection::find($sectionId)) {
+        $section = $sectionId > 0 ? CemeterySection::find($sectionId) : null;
+        if (!$section) {
             Response::json(['error' => 'Unknown section'], 422);
             return;
         }
         if ($this->sectionLocked($sectionId)) {
             Response::json(['error' => 'Section is locked — its layout is frozen. Unlock the section to add lots.'], 409);
+            return;
+        }
+
+        // A code is optional on create. The Lot Editor leaves it out and lets
+        // the database allocate the next free one, because only the database
+        // can see every code already in use.
+        $lotCode = trim((string) ($input['lot_code'] ?? ''));
+        if ($lotCode === '') {
+            $number = $section['section_number'] !== null ? (int) $section['section_number'] : $sectionId;
+            $lotCode = Lot::nextSurveyCode($number);
+        } elseif (Lot::findBy('lot_code', $lotCode)) {
+            Response::json(['error' => 'lot_code already exists'], 422);
             return;
         }
         if (isset($input['lot_type']) && !in_array($input['lot_type'], ['single', 'double', 'family'], true)) {
@@ -143,7 +151,7 @@ class LotController
         }
 
         $id = Lot::create([
-            'lot_code' => $input['lot_code'],
+            'lot_code' => $lotCode,
             'section_id' => $sectionId,
             'block' => $input['block'] ?? null,
             'lot_type' => $input['lot_type'] ?? 'single',
