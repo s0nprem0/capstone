@@ -197,6 +197,7 @@ export default function CemeterySvgMap({
   const [vb, setVb] = useState([...MAP_VIEWBOX])
   const vbRef = useRef(vb)
   const [pane, setPane] = useState({ width: 0, height: 0 })
+  const [fillPane, setFillPane] = useState(true)
   const [reference] = useState(readReference)
 
   const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
@@ -212,9 +213,13 @@ export default function CemeterySvgMap({
   }, [query, allLots, contextLots])
 
   const siteBounds = useMemo(() => {
-    const bounds = sections.reduce((acc, s) => unionRect(acc, sectionBounds(s)), null)
-    return bounds || [...MAP_VIEWBOX]
-  }, [sections])
+    // Over the plots, not over the sections: a section's viewBox is a full-width
+    // band across the sheet, so taking the union of those frames the entire
+    // scan including its paper margins and title block, and the plan then sits
+    // small in the middle of the pane. The plots are where the cemetery is.
+    const plots = lotsBounds(allLots)
+    return plots || sections.reduce((acc, s) => unionRect(acc, sectionBounds(s)), null) || [...MAP_VIEWBOX]
+  }, [sections, allLots])
 
   // What the map is framing. A search frames whatever it matched, so a result is
   // never left as a few pixels somewhere off-screen; otherwise the open section,
@@ -281,21 +286,37 @@ export default function CemeterySvgMap({
     return () => observer.disconnect()
   }, [])
 
+  // What the view frames: the section in focus, else the whole site. Framing the
+  // site when nothing is focused is what removes the dead margin — the overview
+  // used to keep the raw 4096x3072 canvas as its viewBox, so a pane that is not
+  // 4:3 letterboxed the plan against its own edges however the window was sized.
+  // In fit-sheet mode the canvas is shown whole instead, margins and all.
+  const frameTo = useCallback(
+    (animate) => {
+      const target = fillPane
+        ? frame(focusBounds || siteBounds, aspect || DEFAULT_ASPECT, siteBounds)
+        : [...MAP_VIEWBOX]
+      userAdjustedRef.current = false
+      if (!animate || aspect === 0 || prefersReducedMotion()) setVbBoth(target)
+      else flyTo(target)
+    },
+    [fillPane, focusBounds, siteBounds, aspect, setVbBoth, flyTo]
+  )
+
   useEffect(() => {
-    if (!focusBounds) return
-    userAdjustedRef.current = false
-    const target = frame(focusBounds, aspect || DEFAULT_ASPECT, siteBounds)
-    if (aspect === 0) setVbBoth(target)
-    else flyTo(target)
+    frameTo(aspect !== 0)
   }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-frame on resize only while the view is still the one we chose. A window
-  // drag must not undo somewhere the user panned to.
   useEffect(() => {
-    if (aspect === 0 || userAdjustedRef.current || !focusBounds) return
-    const target = frame(focusBounds, aspect, siteBounds)
-    if (prefersReducedMotion()) setVbBoth(target)
-    else flyTo(target)
+    frameTo(false)
+  }, [fillPane]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-frame on resize only while the view is still the one we chose. A window
+  // drag must not undo somewhere the user panned to. Not animated: a resize
+  // arrives as a stream of sizes, and a tween toward each one lags the pane.
+  useEffect(() => {
+    if (aspect === 0 || userAdjustedRef.current) return
+    frameTo(false)
   }, [aspect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
@@ -450,13 +471,7 @@ export default function CemeterySvgMap({
     zoomAt(rect.width / 2, rect.height / 2, factor)
   }
 
-  const fitView = () => {
-    if (!focusBounds) return
-    userAdjustedRef.current = false
-    const target = frame(focusBounds, aspect || DEFAULT_ASPECT, siteBounds)
-    if (prefersReducedMotion()) setVbBoth(target)
-    else flyTo(target)
-  }
+  const fitView = () => frameTo(true)
 
   // CSS pixels per SVG user unit. SVG text is sized in user units, so a value
   // that reads at one zoom fills the screen at another; dividing the target
@@ -608,6 +623,16 @@ export default function CemeterySvgMap({
           aria-label="Fit view"
         >
           ⌂
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={() => setFillPane((v) => !v)}
+          aria-pressed={fillPane}
+          aria-label="Fill pane with the plan"
+          title={fillPane ? 'Showing the pane filled — click for the whole sheet' : 'Showing the whole sheet — click to fill the pane'}
+        >
+          {fillPane ? 'Fill' : 'Fit'}
         </button>
       </div>
 

@@ -2026,7 +2026,10 @@ textarea:disabled {
 }
 
 .map-rail {
-  flex: 0 0 260px;
+  /* Sized against the map panes rather than the viewport: cqi is the pane's own
+     inline size, so the rail narrows with the space the map actually has left
+     over instead of holding 260px while the map gives way beside it. */
+  flex: 0 0 clamp(168px, 24cqi, 260px);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -2055,9 +2058,11 @@ textarea:disabled {
 }
 
 /* Stretched rather than content-sized so both flanks read as panes instead
-   of one panel floating beside a full-height map. */
+   of one panel floating beside a full-height map. The basis tracks the panes
+   the same way the rail's does, so the pair give ground together. */
 .map-panes .map-detail {
   align-self: stretch;
+  flex: 0 0 clamp(196px, 22cqi, 280px);
 }
 
 /* In a column the rail's controls stretch and wrap rather than hug a row. */
