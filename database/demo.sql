@@ -59,23 +59,23 @@ INSERT INTO `users` (`user_id`, `fullname`, `email`, `phone`, `password`, `role`
 INSERT INTO `reservations`
   (`reservation_id`, `user_id`, `lot_id`, `reservation_date`, `purpose`, `number_of_slots`, `total_amount`, `approved_status`, `created_at`)
 VALUES
-  (1,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S3-001'),   '2026-02-14', 'Family plot for my parents',      2, 90000.00, 'approved', '2026-02-14 09:15:00'),
+  (1,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S3-025'),   '2026-02-14', 'Family plot for my parents',      2, 90000.00, 'approved', '2026-02-14 09:15:00'),
   (2,  5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S5-002'),   '2026-02-28', 'Single plot for my grandmother',  1, 45000.00, 'approved', '2026-02-28 10:20:00'),
-  (3,  6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S8-003'),   '2026-03-10', 'Single plot',                      1, 45000.00, 'approved', '2026-03-10 14:05:00'),
-  (4,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S12-004'),  '2026-03-22', 'Single plot for my mother',         1, 45000.00, 'approved', '2026-03-22 08:45:00'),
+  (3,  6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S8-004'),   '2026-03-10', 'Single plot',                      1, 45000.00, 'approved', '2026-03-10 14:05:00'),
+  (4,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S12-085'),  '2026-03-22', 'Single plot for my mother',         1, 45000.00, 'approved', '2026-03-22 08:45:00'),
   (5,  8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S16-005'),  '2026-04-05', 'Single plot',                      1, 45000.00, 'approved', '2026-04-05 11:30:00'),
-  (6,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S20-006'),  '2026-04-18', 'Family plot, four members',         4, 180000.00,'approved', '2026-04-18 09:10:00'),
+  (6,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S20-020'),  '2026-04-18', 'Family plot, four members',         4, 180000.00,'approved', '2026-04-18 09:10:00'),
   (7,  5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S26-002'),  '2026-05-02', 'Single plot',                      1, 45000.00, 'approved', '2026-05-02 13:25:00'),
   (8,  6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S30-003'),  '2026-05-16', 'Single plot',                      1, 45000.00, 'approved', '2026-05-16 10:00:00'),
-  (9,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S33-005'),  '2026-05-30', 'Double plot, husband and wife',    2, 90000.00, 'approved', '2026-05-30 15:40:00'),
-  (10, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S36-004'),  '2026-06-12', 'Single plot',                      1, 45000.00, 'approved', '2026-06-12 09:35:00'),
-  (11, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S38-006'),  '2026-06-25', 'Single plot',                      1, 45000.00, 'approved', '2026-06-25 11:15:00'),
-  (12, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S41-003'),  '2026-07-08', 'Single plot',                      1, 45000.00, 'approved', '2026-07-08 08:20:00'),
-  (13, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S45-010'),  '2026-07-20', 'Single plot',                      1, 45000.00, 'approved', '2026-07-20 10:00:00'),
+  (9,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S33-006'),  '2026-05-30', 'Double plot, husband and wife',    2, 90000.00, 'approved', '2026-05-30 15:40:00'),
+  (10, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S36-057'),  '2026-06-12', 'Single plot',                      1, 45000.00, 'approved', '2026-06-12 09:35:00'),
+  (11, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S38-058'),  '2026-06-25', 'Single plot',                      1, 45000.00, 'approved', '2026-06-25 11:15:00'),
+  (12, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S41-008'),  '2026-07-08', 'Single plot',                      1, 45000.00, 'approved', '2026-07-08 08:20:00'),
+  (13, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S45-231'),  '2026-07-20', 'Single plot',                      1, 45000.00, 'approved', '2026-07-20 10:00:00'),
   (14, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S49-008'),  '2026-08-01', 'Single plot',                      1, 45000.00, 'approved', '2026-08-01 10:00:00'),
-  (15, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S52-005'),  '2026-08-14', 'Single plot',                      1, 45000.00, 'approved', '2026-08-14 10:00:00'),
-  (16, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S55-012'),  '2026-08-27', 'Single plot',                      1, 45000.00, 'approved', '2026-08-27 10:00:00'),
-  (17, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S58-009'),  '2026-09-05', 'Single plot',                      1, 45000.00, 'approved', '2026-09-05 10:00:00');
+  (15, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S52-062'),  '2026-08-14', 'Single plot',                      1, 45000.00, 'approved', '2026-08-14 10:00:00'),
+  (16, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S55-087'),  '2026-08-27', 'Single plot',                      1, 45000.00, 'approved', '2026-08-27 10:00:00'),
+  (17, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S58-010'),  '2026-09-05', 'Single plot',                      1, 45000.00, 'approved', '2026-09-05 10:00:00');
 
 -- Ids 18-20: still awaiting approval. These are what the dashboard queues up,
 -- and their plots are held as reserved.
@@ -84,7 +84,7 @@ INSERT INTO `reservations`
 VALUES
   (18, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S61-015'),  '2026-09-10', 'Family plot, four members',  4, 180000.00,'pending', '2026-09-10 09:20:00'),
   (19, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-020'),  '2026-09-18', 'Single plot',              1, 45000.00, 'pending', '2026-09-18 14:50:00'),
-  (20, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S67-003'),  '2026-09-24', 'Single plot for my sister', 1, 45000.00, 'pending', '2026-09-24 08:30:00');
+  (20, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-092'),  '2026-09-24', 'Single plot for my sister', 1, 45000.00, 'pending', '2026-09-24 08:30:00');
 
 -- Ids 21-22: rejected, which returned their plots to the available pool. They
 -- stay on the plots' history but must not be holding anything.
@@ -92,17 +92,17 @@ INSERT INTO `reservations`
   (`reservation_id`, `user_id`, `lot_id`, `reservation_date`, `purpose`, `number_of_slots`, `total_amount`, `approved_status`, `created_at`)
 VALUES
   (21, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S34-002'),  '2026-03-02', 'Single plot', 1, 45000.00, 'rejected', '2026-03-02 10:00:00'),
-  (22, 9, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S43-007'),  '2026-06-05', 'Single plot', 1, 45000.00, 'rejected', '2026-06-05 10:00:00');
+  (22, 9, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S43-008'),  '2026-06-05', 'Single plot', 1, 45000.00, 'rejected', '2026-06-05 10:00:00');
 
 -- ===== Burial records =====
 -- S41-003 is still scheduled, which is the third item the dashboard queues up.
 INSERT INTO `burial_records`
   (`burial_id`, `deceased_fullname`, `date_of_birth`, `date_of_death`, `burial_date`, `lot_id`, `burial_type`, `next_of_kin_name`, `next_of_kin_phone`, `interment_status`, `created_at`)
 VALUES
-  (1, 'Ramon L. Aquino',        '1941-03-02', '2026-06-28', '2026-07-20', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S33-005'), 'double',   'Teresa S. Aquino',   '09171230001', 'interred',  '2026-06-29 09:00:00'),
-  (2, 'Jose Rizal Mercado',     '1950-11-11', '2026-07-19', '2026-08-05', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S36-004'), 'single',   'Rosa G. Mercado',    '09181230002', 'interred',  '2026-07-20 09:00:00'),
-  (3, 'Lourdes P. Santos',      '1946-05-17', '2026-08-10', '2026-08-25', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S38-006'), 'single',   'Ana R. Santos',      '09201230003', 'interred',  '2026-08-11 09:00:00'),
-  (4, 'Ricardo P. Dela Cruz',   '1952-09-30', '2026-09-02', '2026-10-12', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S41-003'), 'single',   'Juan C. Dela Cruz',  '09171230004', 'scheduled', '2026-09-03 09:00:00');
+  (1, 'Ramon L. Aquino',        '1941-03-02', '2026-06-28', '2026-07-20', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S33-006'), 'double',   'Teresa S. Aquino',   '09171230001', 'interred',  '2026-06-29 09:00:00'),
+  (2, 'Jose Rizal Mercado',     '1950-11-11', '2026-07-19', '2026-08-05', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S36-057'), 'single',   'Rosa G. Mercado',    '09181230002', 'interred',  '2026-07-20 09:00:00'),
+  (3, 'Lourdes P. Santos',      '1946-05-17', '2026-08-10', '2026-08-25', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S38-058'), 'single',   'Ana R. Santos',      '09201230003', 'interred',  '2026-08-11 09:00:00'),
+  (4, 'Ricardo P. Dela Cruz',   '1952-09-30', '2026-09-02', '2026-10-12', (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S41-008'), 'single',   'Juan C. Dela Cruz',  '09171230004', 'scheduled', '2026-09-03 09:00:00');
 
 -- ===== Lot status =====
 -- Reset first, then derived from the reservations and burials above and set in
@@ -111,10 +111,10 @@ VALUES
 UPDATE `cemetery_lots` SET `status` = 'available';
 
 UPDATE `cemetery_lots` SET `status` = 'occupied'
-WHERE `lot_code` IN ('S3-001','S5-002','S8-003','S12-004','S16-005','S20-006','S26-002','S30-003','S33-005','S36-004','S38-006','S41-003','S45-010','S49-008','S52-005','S55-012','S58-009');
+WHERE `lot_code` IN ('S3-025','S5-002','S8-004','S12-085','S16-005','S20-020','S26-002','S30-003','S33-006','S36-057','S38-058','S41-008','S45-231','S49-008','S52-062','S55-087','S58-010');
 
 UPDATE `cemetery_lots` SET `status` = 'reserved'
-WHERE `lot_code` IN ('S61-015','S65-020','S67-003');
+WHERE `lot_code` IN ('S61-015','S65-020','S65-092');
 
 -- ===== Notifications =====
 INSERT INTO `notifications` (`user_id`, `message`, `type`, `is_read`, `created_at`) VALUES

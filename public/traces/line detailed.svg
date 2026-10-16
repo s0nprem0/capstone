@@ -1,0 +1,487 @@
+<svg id="lines" xmlns="http://www.w3.org/2000/svg" width="4096" height="3072" viewBox="0 0 4096 3072">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        fill: none;
+        stroke: #000;
+        fill-rule: evenodd;
+      }
+
+      .cls-1 {
+        stroke-width: 3px;
+      }
+
+      .cls-2 {
+        stroke-width: 1px;
+      }
+
+      .cls-3 {
+        stroke-width: 1.5px;
+      }
+    </style>
+  </defs>
+  <path class="cls-1" d="M902,262l523,511s5.61,38-33,38-995-6-995-6l43-547Z"/>
+  <path class="cls-1" d="M904,261l998-38,134-7,291-2,281,34,404,59,432,1141,302,485L2828,3050l-56-14L1764,2573l-435-262-329,10-599-88L482,806H397L384,961l-61,895-13,314-3,143,989,133,33-136"/>
+  <path id="Line_1" data-name="Line 1" class="cls-1" d="M392,871v-1h87v1H392Z"/>
+  <path id="Line_2" data-name="Line 2" class="cls-1" d="M387.994,935.5l0.012-1,86,1-0.012,1Z"/>
+  <path id="Line_3" data-name="Line 3" class="cls-1" d="M382.006,1006.5l-0.012-1,86-1,0.012,1Z"/>
+  <path id="Line_4" data-name="Line 4" class="cls-1" d="M378,1070v-1h89v1H378Z"/>
+  <path id="Line_5" data-name="Line 5" class="cls-1" d="M372,1139v-1h90v1H372Z"/>
+  <path id="Line_6" data-name="Line 6" class="cls-1" d="M367.005,1207.5l-0.011-1,93-1,0.011,1Z"/>
+  <path id="Line_7" data-name="Line 7" class="cls-1" d="M366,1272v-1h89v1H366Z"/>
+  <path id="Line_9" data-name="Line 9" class="cls-1" d="M355.978,1405.5l0.044-1,89,4-0.044,1Z"/>
+  <path id="Line_10" data-name="Line 10" class="cls-1" d="M348.979,1474.5l0.042-1,96,4-0.042,1Z"/>
+  <path id="Line_11" data-name="Line 11" class="cls-1" d="M342.984,1540.5l0.031-1,96,3-0.031,1Z"/>
+  <path id="Line_12" data-name="Line 12" class="cls-1" d="M340.978,1611.5l0.043-1,92,4-0.043,1Z"/>
+  <path id="Line_13" data-name="Line 13" class="cls-1" d="M335.984,1683.5l0.032-1,93,3-0.032,1Z"/>
+  <path id="Line_14" data-name="Line 14" class="cls-1" d="M332,1750.5l0.01-1,96,1-0.01,1Z"/>
+  <path id="Line_15" data-name="Line 15" class="cls-1" d="M329.005,1820.5l-0.01-1,94-1,0.01,1Z"/>
+  <path id="Line_16" data-name="Line 16" class="cls-1" d="M324.99,1887.5l0.02-1,97,2-0.02,1Z"/>
+  <path id="Line_17" data-name="Line 17" class="cls-1" d="M319.969,1956.5l0.062-1,96,6-0.062,1Z"/>
+  <path id="Line_18" data-name="Line 18" class="cls-1" d="M312.99,2028.5l0.02-1,98,2-0.02,1Z"/>
+  <path id="Line_19" data-name="Line 19" class="cls-1" d="M312,2096v-1h96v1H312Z"/>
+  <path id="Line_20" data-name="Line 20" class="cls-1" d="M312,2167v-1h90v1H312Z"/>
+  <path id="Line_21" data-name="Line 21" class="cls-1" d="M403.673,2228.62l0.654,0.76-96,83-0.654-.76Z"/>
+  <path id="Line_22" data-name="Line 22" class="cls-1" d="M462.5,2243.97l1,0.06-6,90-1-.06Z"/>
+  <path id="Line_23" data-name="Line 23" class="cls-1" d="M542.506,2255.92l0.987,0.16-14,87-0.987-.16Z"/>
+  <path id="Line_24" data-name="Line 24" class="cls-1" d="M611.5,2264.93l0.992,0.14-12,91-0.992-.14Z"/>
+  <path id="Line_25" data-name="Line 25" class="cls-1" d="M684.505,2273.93l0.99,0.14-13,90-0.99-.14Z"/>
+  <path id="Line_26" data-name="Line 26" class="cls-1" d="M753.5,2283.93l0.992,0.14-12,90-0.992-.14Z"/>
+  <path id="Line_27" data-name="Line 27" class="cls-1" d="M821.505,2295.93l0.99,0.14-12,85-0.99-.14Z"/>
+  <path id="Line_28" data-name="Line 28" class="cls-1" d="M889.505,2305.93l0.99,0.14-12,87-0.99-.14Z"/>
+  <path id="Line_29" data-name="Line 29" class="cls-1" d="M960.505,2316.93l0.99,0.14-12,83-0.99-.14Z"/>
+  <path id="Line_30" data-name="Line 30" class="cls-1" d="M1033.51,2320.91l0.98,0.18-16,88-0.98-.18Z"/>
+  <path id="Line_31" data-name="Line 31" class="cls-1" d="M1105.51,2317.92l0.98,0.16-17,101-0.98-.16Z"/>
+  <path id="Line_32" data-name="Line 32" class="cls-1" d="M1177.51,2317.92l0.98,0.16-18,111-0.98-.16Z"/>
+  <path id="Line_33" data-name="Line 33" class="cls-1" d="M1253.51,2317.91l0.98,0.18-23,120-0.98-.18Z"/>
+  <path id="Line_8" data-name="Line 8" class="cls-1" d="M452.021,1340.5l-0.042,1-94-4,0.042-1Z"/>
+  <path class="cls-1" d="M1330,2312l158-9,316,194,1000,464,230-277,206-247,200-248,117-148,97-115-94-151-167-262-84-202-83-224L3110,786"/>
+  <path class="cls-1" d="M1043,256l155,162,1854,45,3-42"/>
+  <path class="cls-1" d="M531,851l533,3-5,758-575,7,35-515Z"/>
+  <path class="cls-1" d="M1082,856l-4,756,930-9,2-327-56-52s-59.9,79-193,79-235-132.15-235-227,26.1-146.147,33-150l-52-64Z"/>
+  <path class="cls-1" d="M1930,870"/>
+  <path id="Line_37" data-name="Line 37" class="cls-2" d="M516,1490.5l-0.008-1,544-4v1Z"/>
+  <path id="Line_38" data-name="Line 38" class="cls-2" d="M516,1442.5l0-1,543-1v1Z"/>
+  <path id="Line_39" data-name="Line 39" class="cls-2" d="M516,1401.5l-0.008-1,544-4v1Z"/>
+  <path id="Line_40" data-name="Line 40" class="cls-2" d="M516,1356v-1h546v1H516Z"/>
+  <path id="Line_41" data-name="Line 41" class="cls-2" d="M518,1314.5l0-1,540,1v1Z"/>
+  <path id="Line_42" data-name="Line 42" class="cls-2" d="M520,1274v-1h539v1H520Z"/>
+  <path id="Line_43" data-name="Line 43" class="cls-2" d="M516,1232.5l0-1,544,1v1Z"/>
+  <path id="Line_44" data-name="Line 44" class="cls-2" d="M517,1188.5l0-1,544,1v1Z"/>
+  <path id="Line_45" data-name="Line 45" class="cls-2" d="M520,1148v-1h542v1H520Z"/>
+  <path id="Line_46" data-name="Line 46" class="cls-2" d="M519,1104.5l0.006-1,543,3v1Z"/>
+  <path id="Line_47" data-name="Line 47" class="cls-2" d="M537,1064.5l0-1,525,2v1Z"/>
+  <path id="Line_48" data-name="Line 48" class="cls-2" d="M1065,1022.5v1l-527-4,0.008-1Z"/>
+  <path id="Line_49" data-name="Line 49" class="cls-2" d="M538,979.5l0.006-1,523,3v1Z"/>
+  <path id="Line_50" data-name="Line 50" class="cls-2" d="M540.5,851.993l1,0.013-10,767-1-.02Z"/>
+  <path id="Line_51" data-name="Line 51" class="cls-2" d="M540,935.5l0-1,522,2v1Z"/>
+  <path id="Line_52" data-name="Line 52" class="cls-2" d="M539,894.5l0.008-1,523,4v1Z"/>
+  <path id="Line_53" data-name="Line 53" class="cls-2" d="M557.5,850.993l1,0.013-10,768-1-.02Z"/>
+  <path id="Line_54" data-name="Line 54" class="cls-2" d="M577.5,851.992l1,0.016-12,768-1-.02Z"/>
+  <path id="Line_54_copy" data-name="Line 54 copy" class="cls-2" d="M577.5,851.992l1,0.016-12,768-1-.02Z"/>
+  <path id="Line_55" data-name="Line 55" class="cls-2" d="M582.5,1619.01l-1-.02,13-767,1,0.017Z"/>
+  <path id="Line_56" data-name="Line 56" class="cls-2" d="M610.5,851.993l1,0.014-11,768-1-.02Z"/>
+  <path id="Line_57" data-name="Line 57" class="cls-2" d="M621.5,1619h-1l6-767,1,0.008Z"/>
+  <path id="Line_58" data-name="Line 58" class="cls-2" d="M645.5,852l1,0.009-7,766h-1Z"/>
+  <path id="Line_59" data-name="Line 59" class="cls-2" d="M664.5,850.994l1,0.012-9,768-1-.02Z"/>
+  <path id="Line_60" data-name="Line 60" class="cls-2" d="M674.5,1616h-1l6-765,1,0.008Z"/>
+  <path id="Line_61" data-name="Line 61" class="cls-2" d="M697.5,853l1,0.01-7,766h-1Z"/>
+  <path class="cls-1" d="M2057,2497l1,55,62,33,158,80,735-28,137-164Z"/>
+  <path class="cls-1" d="M3184,2431l136-169-1264,26,2,169Z"/>
+  <path class="cls-1" d="M3353,2220l163-205-1459,22v209Z"/>
+  <path class="cls-1" d="M2055,1355v-99l-71-71s63.32-130.05,19-204-74-108-74-108l1167,9,174,472Z"/>
+  <path class="cls-1" d="M3193,789L1554,764,1218,436l1858,41Z"/>
+  <path class="cls-1" d="M1772.5,935c67.65,0,122.5,55.293,122.5,123.5S1840.15,1182,1772.5,1182,1650,1126.71,1650,1058.5,1704.84,935,1772.5,935Z"/>
+  <path class="cls-1" d="M2370,2704l330,153,135-8,142-172Z"/>
+  <path id="Line_34" data-name="Line 34" class="cls-2" d="M518.5,1102.99l1,0.02-6,516-1-.02Z"/>
+  <path id="Line_35" data-name="Line 35" class="cls-2" d="M491,1530.5l0-1,568-2v1Z"/>
+  <path id="Line_36" data-name="Line 36" class="cls-2" d="M488,1574.5l-0.007-1,571-4v1Z"/>
+  <path class="cls-1" d="M483,1634l-26,555,544,79,243-10,5-628Z"/>
+  <path class="cls-1" d="M1265,2258l3-628,739-7-1,907s-79.78-28.66-177-83c-143.89-80.42-324-197-324-197Z"/>
+  <path class="cls-1" d="M2057,2370l1194-22"/>
+  <path class="cls-1" d="M2120,2287l1,168"/>
+  <path id="Shape_89_copy" data-name="Shape 89 copy" class="cls-1" d="M2120,2287l1,168"/>
+  <path class="cls-1" d="M2187,2286l3,167"/>
+  <path class="cls-1" d="M2248,2283l3,167"/>
+  <path class="cls-1" d="M2312,2283l2,168"/>
+  <path class="cls-1" d="M2375,2282l3,166"/>
+  <path class="cls-1" d="M2438,2279l3,168"/>
+  <path class="cls-1" d="M2510,2446l-2-168"/>
+  <path class="cls-1" d="M2571,2278l3,167"/>
+  <path class="cls-1" d="M2637,2277l4,167"/>
+  <path class="cls-1" d="M2700,2275l4,166"/>
+  <path class="cls-1" d="M2765,2273l5,168"/>
+  <path class="cls-1" d="M2830,2272l5,166"/>
+  <path class="cls-1" d="M2893,2270l5,167"/>
+  <path class="cls-1" d="M2959,2269l5,167"/>
+  <path class="cls-1" d="M3022,2268l5,165"/>
+  <path class="cls-1" d="M3087,2267l3,165"/>
+  <path class="cls-1" d="M3148,2266l3,164"/>
+  <path class="cls-1" d="M3209,2264l1,86"/>
+  <path id="Line_62" data-name="Line 62" class="cls-2" d="M716.5,853l1,0.01-8,764.005-1-.02Z"/>
+  <path id="Line_63" data-name="Line 63" class="cls-2" d="M732.5,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy" data-name="Line 63 copy" class="cls-2" d="M748,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_2" data-name="Line 63 copy 2" class="cls-2" d="M764,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_3" data-name="Line 63 copy 3" class="cls-2" d="M784,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_4" data-name="Line 63 copy 4" class="cls-2" d="M804,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_5" data-name="Line 63 copy 5" class="cls-2" d="M824,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_6" data-name="Line 63 copy 6" class="cls-2" d="M842,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_7" data-name="Line 63 copy 7" class="cls-2" d="M858,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_8" data-name="Line 63 copy 8" class="cls-2" d="M871,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_9" data-name="Line 63 copy 9" class="cls-2" d="M888,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_10" data-name="Line 63 copy 10" class="cls-2" d="M908,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_11" data-name="Line 63 copy 11" class="cls-2" d="M908,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_12" data-name="Line 63 copy 12" class="cls-2" d="M926,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_13" data-name="Line 63 copy 13" class="cls-2" d="M943,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_14" data-name="Line 63 copy 14" class="cls-2" d="M943,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_15" data-name="Line 63 copy 15" class="cls-2" d="M960,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_16" data-name="Line 63 copy 16" class="cls-2" d="M975,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_17" data-name="Line 63 copy 17" class="cls-2" d="M995,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_18" data-name="Line 63 copy 18" class="cls-2" d="M1014,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_19" data-name="Line 63 copy 19" class="cls-2" d="M1029,853.994l1,0.012-9,762-1-.02Z"/>
+  <path id="Line_63_copy_20" data-name="Line 63 copy 20" class="cls-2" d="M1044,853.994l1,0.012-9,762-1-.02Z"/>
+  <path class="cls-2" d="M496,1636"/>
+  <path id="Line_65" data-name="Line 65" class="cls-2" d="M477.013,1976.5l-0.026-1,769-20,0.02,1Z"/>
+  <path id="Line_66" data-name="Line 66" class="cls-2" d="M472.5,1887.01l1-.02,5,261-1,.02Z"/>
+  <path id="Line_67" data-name="Line 67" class="cls-2" d="M1244.99,2127.5l0.02,1-766,20-0.026-1Z"/>
+  <path id="Line_68" data-name="Line 68" class="cls-2" d="M493,1635h1v560h-1V1635Z"/>
+  <path id="Line_69" data-name="Line 69" class="cls-2" d="M1242.99,2171.5l0.02,1-749,21-0.028-1Z"/>
+  <path id="Line_70" data-name="Line 70" class="cls-2" d="M511,1634h1v559h-1V1634Z"/>
+  <path id="Line_70_copy" data-name="Line 70 copy" class="cls-2" d="M530,1634h1v559h-1V1634Z"/>
+  <path id="Line_70_copy_2" data-name="Line 70 copy 2" class="cls-2" d="M549,1634h1v559h-1V1634Z"/>
+  <path id="Line_70_copy_3" data-name="Line 70 copy 3" class="cls-2" d="M565,1634h1v559h-1V1634Z"/>
+  <path id="Line_70_copy_4" data-name="Line 70 copy 4" class="cls-2" d="M583,1634h1v559h-1V1634Z"/>
+  <path id="Line_70_copy_5" data-name="Line 70 copy 5" class="cls-2" d="M602,1634h1v556h-1V1634Z"/>
+  <path id="Line_71" data-name="Line 71" class="cls-2" d="M740.5,1635h1l-0.991,551h-1Z"/>
+  <path id="Line_71_copy" data-name="Line 71 copy" class="cls-2" d="M757.5,1635h1l-0.991,596h-1Z"/>
+  <path id="Line_71_copy_2" data-name="Line 71 copy 2" class="cls-2" d="M776.5,1635h1l-0.991,594h-1Z"/>
+  <path id="Line_71_copy_3" data-name="Line 71 copy 3" class="cls-2" d="M794.5,1635h1l-0.991,593h-1Z"/>
+  <path id="Line_71_copy_4" data-name="Line 71 copy 4" class="cls-2" d="M813.5,1635h1l-0.991,592h-1Z"/>
+  <path id="Line_71_copy_5" data-name="Line 71 copy 5" class="cls-2" d="M830.5,1635h1l-0.991,592h-1Z"/>
+  <path id="Line_71_copy_6" data-name="Line 71 copy 6" class="cls-2" d="M846.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_71_copy_7" data-name="Line 71 copy 7" class="cls-2" d="M863.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_71_copy_8" data-name="Line 71 copy 8" class="cls-2" d="M881.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_71_copy_9" data-name="Line 71 copy 9" class="cls-2" d="M897.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_71_copy_10" data-name="Line 71 copy 10" class="cls-2" d="M913.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_71_copy_11" data-name="Line 71 copy 11" class="cls-2" d="M934.5,1635h1l-0.991,591h-1Z"/>
+  <path id="Line_73" data-name="Line 73" class="cls-2" d="M475.011,2060.5l-0.023-1,769-18,0.02,1Z"/>
+  <path id="Line_74" data-name="Line 74" class="cls-2" d="M477.011,2104.5l-0.022-1,767-17,0.02,1Z"/>
+  <path id="Line_75" data-name="Line 75" class="cls-2" d="M474.01,1933.5l-0.02-1,772-15,0.02,1Z"/>
+  <path id="Line_76" data-name="Line 76" class="cls-2" d="M471.008,1845.5l-0.016-1,777-12,0.02,1Z"/>
+  <path id="Line_77" data-name="Line 77" class="cls-2" d="M477.007,1759.5l-0.014-1,769-11,0.02,1Z"/>
+  <path id="Line_78" data-name="Line 78" class="cls-2" d="M480,1676.5l-0.008-1,768-6v1Z"/>
+  <path id="Line_79" data-name="Line 79" class="cls-2" d="M949.5,1634h1l-1,589h-1Z"/>
+  <path id="Line_72" data-name="Line 72" class="cls-2" d="M757.015,2229.5l-0.031-1,487-15,0.04,1Z"/>
+  <path id="Line_70_copy_6" data-name="Line 70 copy 6" class="cls-2" d="M616,1634h1v555h-1V1634Z"/>
+  <path id="Line_70_copy_7" data-name="Line 70 copy 7" class="cls-2" d="M634,1634h1v555h-1V1634Z"/>
+  <path id="Line_70_copy_9" data-name="Line 70 copy 9" class="cls-2" d="M653,1634h1v554h-1V1634Z"/>
+  <path id="Line_70_copy_10" data-name="Line 70 copy 10" class="cls-2" d="M670,1634h1v554h-1V1634Z"/>
+  <path id="Line_70_copy_11" data-name="Line 70 copy 11" class="cls-2" d="M687,1634h1v553h-1V1634Z"/>
+  <path id="Line_70_copy_12" data-name="Line 70 copy 12" class="cls-2" d="M707,1634h1v553h-1V1634Z"/>
+  <path id="Line_70_copy_13" data-name="Line 70 copy 13" class="cls-2" d="M724,1634h1v552h-1V1634Z"/>
+  <path id="Line_64" data-name="Line 64" class="cls-2" d="M478.007,1715.5l-0.014-1,771-11,0.02,1Z"/>
+  <path id="Line_64_copy" data-name="Line 64 copy" class="cls-2" d="M474.007,1803l-0.014-1,771-11,0.02,1Z"/>
+  <path id="Line_64_copy_2" data-name="Line 64 copy 2" class="cls-2" d="M472.022,1888.06l-0.014-1L1246.99,1876l0.02,1Z"/>
+  <path id="Line_80" data-name="Line 80" class="cls-2" d="M968.5,1633h1l-3,590h-1Z"/>
+  <path id="Line_80_copy" data-name="Line 80 copy" class="cls-2" d="M988.5,1633h1l-3,590h-1Z"/>
+  <path id="Line_80_copy_2" data-name="Line 80 copy 2" class="cls-2" d="M1005.5,1633h1l-3,634h-1Z"/>
+  <path id="Line_80_copy_3" data-name="Line 80 copy 3" class="cls-2" d="M1025,1632.99l1,0.01-3,633.01-1-.01Z"/>
+  <path id="Line_80_copy_4" data-name="Line 80 copy 4" class="cls-2" d="M1042,1633h1l-3,634h-1Z"/>
+  <path id="Line_80_copy_5" data-name="Line 80 copy 5" class="cls-2" d="M1060,1633h1l-3,634h-1Z"/>
+  <path id="Line_80_copy_6" data-name="Line 80 copy 6" class="cls-2" d="M1076,1633h1l-3,632h-1Z"/>
+  <path id="Line_80_copy_7" data-name="Line 80 copy 7" class="cls-2" d="M1093,1633h1l-3,632h-1Z"/>
+  <path id="Line_80_copy_8" data-name="Line 80 copy 8" class="cls-2" d="M1113,1633h1l-3,632h-1Z"/>
+  <path id="Line_80_copy_9" data-name="Line 80 copy 9" class="cls-2" d="M1132,1633h1l-3,629h-1Z"/>
+  <path id="Line_80_copy_10" data-name="Line 80 copy 10" class="cls-2" d="M1150,1633h1l-3,629h-1Z"/>
+  <path id="Line_80_copy_11" data-name="Line 80 copy 11" class="cls-2" d="M1167,1633h1l-3,629h-1Z"/>
+  <path id="Line_80_copy_12" data-name="Line 80 copy 12" class="cls-2" d="M1184,1633h1l-3,629h-1Z"/>
+  <path id="Line_80_copy_13" data-name="Line 80 copy 13" class="cls-2" d="M1204,1633h1l-3,626h-1Z"/>
+  <path id="Line_80_copy_14" data-name="Line 80 copy 14" class="cls-2" d="M1218.01,1630h1L1216,2259h-1Z"/>
+  <path id="Line_80_copy_15" data-name="Line 80 copy 15" class="cls-2" d="M1235.01,1630h1l-2.96,629.01h-1Z"/>
+  <path id="Line_81" data-name="Line 81" class="cls-2" d="M2122.02,2583.5l-0.04-1,963-31,0.04,1Z"/>
+  <path id="Line_82" data-name="Line 82" class="cls-2" d="M2150.5,2494.99l1,0.02-1,88-1-.02Z"/>
+  <path id="Line_83" data-name="Line 83" class="cls-2" d="M2221,2494h1v142h-1V2494Z"/>
+  <path id="Line_84" data-name="Line 84" class="cls-2" d="M2278,2492h1v172h-1V2492Zm63-1h1v169h-1V2491Z"/>
+  <path id="Line_85" data-name="Line 85" class="cls-2" d="M2408,2491h1v167h-1V2491Z"/>
+  <path id="Line_86" data-name="Line 86" class="cls-2" d="M2470,2489h1v170h-1V2489Z"/>
+  <path id="Line_87" data-name="Line 87" class="cls-2" d="M2539,2487h1v170h-1V2487Zm62-3h1v166h-1V2484Zm69,1h1v162h-1V2485Zm62-1h1v163h-1V2484Z"/>
+  <path id="Line_88" data-name="Line 88" class="cls-2" d="M2798,2481h1v165h-1V2481Z"/>
+  <path id="Line_89" data-name="Line 89" class="cls-2" d="M2862,2478h1v162h-1V2478Z"/>
+  <path id="Line_90" data-name="Line 90" class="cls-2" d="M2929,2477h1v163h-1V2477Z"/>
+  <path id="Line_91" data-name="Line 91" class="cls-2" d="M2991,2473h1v163h-1V2473Zm66,2h1v78h-1v-78Z"/>
+  <path class="cls-3" d="M1084,898l425,8"/>
+  <path class="cls-3" d="M1510,945l-427-6"/>
+  <path class="cls-3" d="M1510,989l-427-8"/>
+  <path class="cls-3" d="M1511,1029l-429-7"/>
+  <path class="cls-3" d="M1511,1073l-430-6"/>
+  <path class="cls-3" d="M1084,1108l427,5"/>
+  <path class="cls-3" d="M1081,1149l449,7"/>
+  <path class="cls-3" d="M1081,1190l464,7"/>
+  <path class="cls-3" d="M1082,1234"/>
+  <path class="cls-3" d="M1561,1238l-479-3"/>
+  <path class="cls-3" d="M1545,1197v409"/>
+  <path class="cls-3" d="M1529,1156l-1,450"/>
+  <path class="cls-3" d="M1507,863l4,744"/>
+  <path class="cls-3" d="M1493,1607l-2-746"/>
+  <path class="cls-3" d="M1474,863l2,744"/>
+  <path class="cls-3" d="M1460,1607l-3-746"/>
+  <path id="Shape_48_copy" data-name="Shape 48 copy" class="cls-3" d="M1445,1607l-3-746"/>
+  <path id="Shape_48_copy_2" data-name="Shape 48 copy 2" class="cls-3" d="M1428,1607l-3-746"/>
+  <path id="Shape_48_copy_3" data-name="Shape 48 copy 3" class="cls-3" d="M1409,1607l-3-746"/>
+  <path id="Shape_48_copy_4" data-name="Shape 48 copy 4" class="cls-3" d="M1394,1607l-3-746"/>
+  <path id="Shape_48_copy_5" data-name="Shape 48 copy 5" class="cls-3" d="M1378,1607l-3-746"/>
+  <path id="Shape_48_copy_6" data-name="Shape 48 copy 6" class="cls-3" d="M1358,1607l-3-746"/>
+  <path id="Shape_48_copy_7" data-name="Shape 48 copy 7" class="cls-3" d="M1341,1607l-3-746"/>
+  <path id="Shape_48_copy_8" data-name="Shape 48 copy 8" class="cls-3" d="M1325,1607l-3-746"/>
+  <path id="Shape_48_copy_9" data-name="Shape 48 copy 9" class="cls-3" d="M1325,1607l-3-746"/>
+  <path id="Shape_48_copy_10" data-name="Shape 48 copy 10" class="cls-3" d="M1307,1610l-3-751"/>
+  <path id="Shape_48_copy_11" data-name="Shape 48 copy 11" class="cls-3" d="M1289,1609l-3-751"/>
+  <path id="Shape_48_copy_12" data-name="Shape 48 copy 12" class="cls-3" d="M1273,1609l-3-751"/>
+  <path id="Shape_48_copy_13" data-name="Shape 48 copy 13" class="cls-3" d="M1256,1609l-3-751"/>
+  <path id="Shape_48_copy_14" data-name="Shape 48 copy 14" class="cls-3" d="M1240,1609l-3-751"/>
+  <path id="Shape_48_copy_15" data-name="Shape 48 copy 15" class="cls-3" d="M1223,1609l-3-751"/>
+  <path id="Shape_48_copy_16" data-name="Shape 48 copy 16" class="cls-3" d="M1207,1609l-3-751"/>
+  <path id="Shape_48_copy_17" data-name="Shape 48 copy 17" class="cls-3" d="M1188,1609l-3-751"/>
+  <path id="Shape_48_copy_18" data-name="Shape 48 copy 18" class="cls-3" d="M1171,1609l-3-751"/>
+  <path id="Shape_48_copy_19" data-name="Shape 48 copy 19" class="cls-3" d="M1157.17,1609l-3.34-751"/>
+  <path id="Shape_48_copy_20" data-name="Shape 48 copy 20" class="cls-3" d="M1102.17,1609l-3.34-751"/>
+  <path id="Shape_48_copy_21" data-name="Shape 48 copy 21" class="cls-3" d="M1120.17,1609l-3.34-751"/>
+  <path id="Shape_48_copy_22" data-name="Shape 48 copy 22" class="cls-3" d="M1138.17,1609l-3.34-751"/>
+  <path class="cls-3" d="M1081,1274l535,4"/>
+  <path class="cls-3" d="M1081,1316l600,3"/>
+  <path class="cls-3" d="M1681,1358l-602-2"/>
+  <path class="cls-3" d="M1681,1401l-602-2"/>
+  <path class="cls-3" d="M1681,1442l-602-2"/>
+  <path class="cls-3" d="M1680,1487l-600-1"/>
+  <path class="cls-3" d="M1080,1529l601-3"/>
+  <path class="cls-3" d="M1681,1567l-601,3"/>
+  <path class="cls-3" d="M1681,1605V1318"/>
+  <path class="cls-3" d="M1615,1278v327"/>
+  <path class="cls-3" d="M1561,1237v369"/>
+  <path class="cls-3" d="M2539,2781l365-17"/>
+  <path class="cls-3" d="M2594,2695l1,84"/>
+  <path class="cls-3" d="M2658,2691v145"/>
+  <path class="cls-3" d="M2724,2691v165"/>
+  <path class="cls-3" d="M2788,2688v164"/>
+  <path class="cls-3" d="M2854,2683l-1,81"/>
+  <path class="cls-3" d="M2528,2696l1,80"/>
+  <path class="cls-3" d="M1476,2400l50-75"/>
+  <path class="cls-3" d="M1534,2437l49-77"/>
+  <path class="cls-3" d="M1593,2471l47-76"/>
+  <path class="cls-3" d="M1650,2506l46-78"/>
+  <path class="cls-3" d="M1705,2540l47-76"/>
+  <path class="cls-3" d="M1765,2575l39-79"/>
+  <path class="cls-3" d="M1827,2602l37-78"/>
+  <path class="cls-3" d="M1923,2551l-34,80"/>
+  <path class="cls-3" d="M1980,2577l-35,80"/>
+  <path class="cls-3" d="M2041,2605l-38,80"/>
+  <path class="cls-3" d="M2099,2632l-37,79"/>
+  <path class="cls-3" d="M2159,2662l-34,79"/>
+  <path class="cls-3" d="M2223,2691l-37,78"/>
+  <path class="cls-3" d="M2279,2717l-36,78"/>
+  <path class="cls-3" d="M2339,2744l-39,77"/>
+  <path class="cls-3" d="M2392,2770l-33,78"/>
+  <path class="cls-3" d="M2451,2797l-35,78"/>
+  <path class="cls-3" d="M2509,2824l-35,76"/>
+  <path class="cls-3" d="M2570,2852l-35,77"/>
+  <path class="cls-3" d="M2630,2879l-34,78"/>
+  <path class="cls-3" d="M2685,2904l-33,78"/>
+  <path class="cls-3" d="M2745,2933l-34,76"/>
+  <path class="cls-3" d="M2803,2959l-34,75"/>
+  <path class="cls-3" d="M2820,2941l55,50"/>
+  <path class="cls-3" d="M2863,2889l56,51"/>
+  <path class="cls-3" d="M2904,2841l55,48"/>
+  <path class="cls-3" d="M2949,2786l55,48"/>
+  <path class="cls-3" d="M2990,2735l55,49"/>
+  <path class="cls-3" d="M3035,2682l53,52"/>
+  <path class="cls-3" d="M3075,2635l53,48"/>
+  <path class="cls-3" d="M3117,2584l53,48"/>
+  <path class="cls-3" d="M3158,2532l53,51"/>
+  <path class="cls-3" d="M3199,2486l54,48"/>
+  <path class="cls-3" d="M3239,2437l52,48"/>
+  <path class="cls-3" d="M3281,2387l51,47"/>
+  <path class="cls-3" d="M3322,2337l52,48"/>
+  <path class="cls-3" d="M3360,2287l53,48"/>
+  <path class="cls-3" d="M3401,2237l54,50"/>
+  <path class="cls-3" d="M3440,2189l55,48"/>
+  <path class="cls-3" d="M3477,2139c0.13,0.61,59,52,59,52"/>
+  <path class="cls-3" d="M3517,2091l56,52"/>
+  <path class="cls-3" d="M3556,2041l56,52"/>
+  <path class="cls-3" d="M3598,1992"/>
+  <path class="cls-3" d="M3599,1993l55,51"/>
+  <path class="cls-3" d="M3635,1946l57,53"/>
+  <path class="cls-3" d="M3653,1926c2.93-1.59,69-29,69-29"/>
+  <path class="cls-3" d="M3628,1881l60-41"/>
+  <path class="cls-3" d="M3592,1826l61-42"/>
+  <path class="cls-3" d="M3561,1776l62-41"/>
+  <path class="cls-3" d="M3526,1722l62-43"/>
+  <path class="cls-3" d="M3494,1670l61-42"/>
+  <path class="cls-3" d="M3462,1620l63-43"/>
+  <path class="cls-3" d="M3429,1567l62-44"/>
+  <path class="cls-3" d="M3394,1513l63-43"/>
+  <path class="cls-3" d="M3367,1446l67-24"/>
+  <path class="cls-3" d="M3341,1385l73-23"/>
+  <path class="cls-3" d="M3316,1325l73-23"/>
+  <path class="cls-3" d="M3293,1267l74-24"/>
+  <path class="cls-3" d="M3271,1208l73-25"/>
+  <path class="cls-3" d="M3250,1148l71-25"/>
+  <path class="cls-3" d="M3227,1087l71-23"/>
+  <path class="cls-3" d="M3209,1039l70-24"/>
+  <path class="cls-3" d="M3186,980l71-26"/>
+  <path class="cls-3" d="M3162,919l72-24"/>
+  <path class="cls-1" d="M3138,857l74-21"/>
+  <path class="cls-1" d="M2730,1373l9,639-679,9-5-647Z"/>
+  <path class="cls-3" d="M2746,1375l534-3,52,135,65,106,171,263-1,79-31,40-777,15Z"/>
+  <path class="cls-3" d="M3567,1876c-2.15.51-64,43-64,43"/>
+  <path class="cls-3" d="M3469,1865l63-42"/>
+  <path class="cls-3" d="M3435,1815l61-44"/>
+  <path class="cls-3" d="M3400,1760l66-42"/>
+  <path class="cls-3" d="M3366,1709l64-43"/>
+  <path class="cls-3" d="M3332,1655l68-43"/>
+  <path class="cls-3" d="M3298,1606l67-41,31,50"/>
+  <path class="cls-3" d="M3365,1565l-33-58-64,47"/>
+  <path class="cls-3" d="M3332,1507c-0.28-1.25-19-48-19-48l-73,23"/>
+  <path class="cls-3" d="M3312,1458l-32-84"/>
+  <path class="cls-3" d="M3226,1374v76"/>
+  <path class="cls-3" d="M2068,1374l4,646"/>
+  <path id="Shape_512_copy" data-name="Shape 512 copy" class="cls-3" d="M2068,1374l4,646"/>
+  <path id="Shape_512_copy_2" data-name="Shape 512 copy 2" class="cls-3" d="M2083,1374l4,646"/>
+  <path id="Shape_512_copy_3" data-name="Shape 512 copy 3" class="cls-3" d="M2098,1374l4,646"/>
+  <path id="Shape_512_copy_4" data-name="Shape 512 copy 4" class="cls-3" d="M2114,1374l4,646"/>
+  <path id="Shape_512_copy_5" data-name="Shape 512 copy 5" class="cls-3" d="M2133,1374l4,646"/>
+  <path id="Shape_512_copy_6" data-name="Shape 512 copy 6" class="cls-3" d="M2148,1374l4,646"/>
+  <path id="Shape_512_copy_7" data-name="Shape 512 copy 7" class="cls-3" d="M2164,1374l4,646"/>
+  <path id="Shape_512_copy_8" data-name="Shape 512 copy 8" class="cls-3" d="M2181,1374l4,646"/>
+  <path id="Shape_512_copy_9" data-name="Shape 512 copy 9" class="cls-3" d="M2204,1374l4,646"/>
+  <path id="Shape_512_copy_10" data-name="Shape 512 copy 10" class="cls-3" d="M2224,1374l4,646"/>
+  <path id="Shape_512_copy_11" data-name="Shape 512 copy 11" class="cls-3" d="M2241,1374l4,646"/>
+  <path id="Shape_512_copy_12" data-name="Shape 512 copy 12" class="cls-3" d="M2258,1374l4,646"/>
+  <path id="Shape_512_copy_13" data-name="Shape 512 copy 13" class="cls-3" d="M2273,1374l4,646"/>
+  <path id="Shape_512_copy_14" data-name="Shape 512 copy 14" class="cls-3" d="M2287,1374l4,646"/>
+  <path id="Shape_512_copy_15" data-name="Shape 512 copy 15" class="cls-3" d="M2301,1374l4,646"/>
+  <path id="Shape_512_copy_16" data-name="Shape 512 copy 16" class="cls-3" d="M2318,1374l4,646"/>
+  <path id="Shape_512_copy_17" data-name="Shape 512 copy 17" class="cls-3" d="M2332,1374l4,646"/>
+  <path id="Shape_512_copy_18" data-name="Shape 512 copy 18" class="cls-3" d="M2347,1374l4,646"/>
+  <path id="Shape_512_copy_19" data-name="Shape 512 copy 19" class="cls-3" d="M2362,1374l4,646"/>
+  <path id="Shape_512_copy_20" data-name="Shape 512 copy 20" class="cls-3" d="M2378,1374l4,646"/>
+  <path id="Shape_512_copy_21" data-name="Shape 512 copy 21" class="cls-3" d="M2394,1374l4,646"/>
+  <path id="Shape_512_copy_22" data-name="Shape 512 copy 22" class="cls-3" d="M2411,1374l4,646"/>
+  <path id="Shape_512_copy_23" data-name="Shape 512 copy 23" class="cls-3" d="M2427,1374l4,646"/>
+  <path id="Shape_512_copy_24" data-name="Shape 512 copy 24" class="cls-3" d="M2443,1374l4,646"/>
+  <path id="Shape_512_copy_25" data-name="Shape 512 copy 25" class="cls-3" d="M2459,1374l4,646"/>
+  <path id="Shape_512_copy_26" data-name="Shape 512 copy 26" class="cls-3" d="M2476,1374l4,646"/>
+  <path id="Shape_512_copy_27" data-name="Shape 512 copy 27" class="cls-3" d="M2493,1374l4,646"/>
+  <path id="Shape_512_copy_28" data-name="Shape 512 copy 28" class="cls-3" d="M2493,1374l4,646"/>
+  <path id="Shape_512_copy_29" data-name="Shape 512 copy 29" class="cls-3" d="M2508,1374l4,646"/>
+  <path id="Shape_512_copy_30" data-name="Shape 512 copy 30" class="cls-3" d="M2525,1374l4,646"/>
+  <path id="Shape_512_copy_31" data-name="Shape 512 copy 31" class="cls-3" d="M2540,1374l4,646"/>
+  <path id="Shape_512_copy_32" data-name="Shape 512 copy 32" class="cls-3" d="M2556,1374l4,646"/>
+  <path id="Shape_512_copy_33" data-name="Shape 512 copy 33" class="cls-3" d="M2572,1374l4,646"/>
+  <path id="Shape_512_copy_34" data-name="Shape 512 copy 34" class="cls-3" d="M2586,1374l4,646"/>
+  <path id="Shape_512_copy_35" data-name="Shape 512 copy 35" class="cls-3" d="M2603,1374l4,646"/>
+  <path id="Shape_512_copy_36" data-name="Shape 512 copy 36" class="cls-3" d="M2620,1374l4,646"/>
+  <path id="Shape_512_copy_37" data-name="Shape 512 copy 37" class="cls-3" d="M2637,1374l4,646"/>
+  <path id="Shape_512_copy_38" data-name="Shape 512 copy 38" class="cls-3" d="M2655,1374l4,646"/>
+  <path id="Shape_512_copy_39" data-name="Shape 512 copy 39" class="cls-3" d="M2668,1374l4,646"/>
+  <path id="Shape_512_copy_40" data-name="Shape 512 copy 40" class="cls-3" d="M2685,1374l4,646"/>
+  <path id="Shape_512_copy_41" data-name="Shape 512 copy 41" class="cls-3" d="M2700,1374l4,646"/>
+  <path id="Shape_512_copy_42" data-name="Shape 512 copy 42" class="cls-3" d="M2716,1374l4,646"/>
+  <path class="cls-3" d="M1578,1278l2,327"/>
+  <path class="cls-3" d="M1597,1278l2,329"/>
+  <path class="cls-3" d="M1633,1319l-3,285"/>
+  <path class="cls-3" d="M1650,1320l-3,284"/>
+  <path class="cls-3" d="M1665,1320v286"/>
+  <path class="cls-3" d="M1682,1327l205,1-1-17h41v-33h38l1,16h45"/>
+  <path class="cls-3" d="M1682,1344h329"/>
+  <path class="cls-3" d="M1887,1328h123"/>
+  <path class="cls-3" d="M1927,1311v291"/>
+  <path class="cls-3" d="M1682,1359l329-1"/>
+  <path class="cls-3" d="M1682,1375l327-1"/>
+  <path class="cls-3" d="M1682,1391l328-2"/>
+  <path class="cls-3" d="M1681,1407h329"/>
+  <path class="cls-3" d="M1682,1424h328"/>
+  <path class="cls-3" d="M1681,1443l329-3"/>
+  <path class="cls-3" d="M1682,1457l327-2"/>
+  <path class="cls-3" d="M1719,1327v277"/>
+  <path class="cls-3" d="M1763,1327v278"/>
+  <path class="cls-3" d="M1804,1327v276"/>
+  <path class="cls-3" d="M1844,1329v274"/>
+  <path class="cls-3" d="M1887,1329l-1,273"/>
+  <path class="cls-3" d="M1965,1294l1,309"/>
+  <path class="cls-3" d="M1682,1592l327-4"/>
+  <path class="cls-3" d="M1681,1576l327-4"/>
+  <path class="cls-3" d="M1681,1559l326-3"/>
+  <path class="cls-3" d="M1681,1542l328-2"/>
+  <path class="cls-3" d="M1681,1524l326-1"/>
+  <path class="cls-3" d="M1682,1509l326-1"/>
+  <path class="cls-3" d="M1680,1493l328-3"/>
+  <path class="cls-3" d="M1682,1475l326-2"/>
+  <path class="cls-3" d="M1927,1311h85"/>
+  <path class="cls-3" d="M1927,1294h41"/>
+  <path class="cls-3" d="M2056,1416l675-4v43l-676-1,2,42,675-4v42l-674,2v43l676-6v41l-677,7,1,41,676-11,2,37-677,5v41l677-4v39l-677,7v41l677-8,2,41-678,7-1,41,679-9v41l-677,9,1,40,677-7"/>
+  <path class="cls-3" d="M2761,1375l12,635h16l-13-635h20l9,634h17l-10-635h17l9,634h18l-11-634h16l8,634h17l-8-634h15l8,634,17-1-7-633h16l8,632h16l-8-633,17,1,7,632,16-1-9-632h18l8,633,15-1-8-632h16l9,632h16l-9-632,16-1,9,632,16-1-10-631,17,1,8,631,18-1-10-630h15l8,630h15l-9-630h15l8,630,15-1-8-629,16-1,7,630h16l-8-630h15l7,630,17-1-6-628"/>
+  <path class="cls-3" d="M3248,2000l-2-467"/>
+  <path class="cls-3" d="M3226,1454l42,101,132,205,105,159,3,77"/>
+  <path class="cls-3" d="M3506,1959l-749,11v-42l747-7"/>
+  <path class="cls-3" d="M3473,1920v-41l-717,9-1-38,688-7,1,37"/>
+  <path class="cls-3" d="M3414,1843l-1-41-658,8"/>
+  <path class="cls-3" d="M3398,1802l-1-40-642,7"/>
+  <path class="cls-3" d="M3363,1763c-0.64-1.71-1-37-1-37l-608,4"/>
+  <path class="cls-3" d="M3333,1725l1-40-581,4"/>
+  <path class="cls-3" d="M3319,1684v-38l-567,3"/>
+  <path class="cls-3" d="M3289,1645l1-35-538,4"/>
+  <path class="cls-3" d="M3260,1610l1-42-511,6"/>
+  <path class="cls-3" d="M3259,1533l-510,2"/>
+  <path class="cls-3" d="M2749,1494l478-5"/>
+  <path class="cls-3" d="M2748,1453l479-2"/>
+  <path class="cls-3" d="M3227,1411l-480,2"/>
+  <path class="cls-3" d="M3260,1609l2,391,16,1-4-390,15-1,3,390h14l-3-354h17l3,352h14l-4-271,14-1,4,272h17l-4-235h17l2,235h16l-1-196,16,1,1,194h15l-2-154h15l-1,154h19V1880l12-1,1,117,17,1v-76"/>
+  <path class="cls-3" d="M1270,1669l739-9-3,33-738,9,1,45,739-13v41l-740,12,2,44,738-13,1,40-743,13,4,45,736-19,2,41-739,17v46l739-22-1,43-740,17v48l740-25,1,40-742,27-1,43,743-26-1,39-740,28-1,46,742-30-1,40-432,18"/>
+  <path class="cls-3" d="M2006,2314l-360,16-1-45"/>
+  <path class="cls-3" d="M2008,2357c-2.29-.66-295,13-295,13l-3-46"/>
+  <path class="cls-3" d="M2006,2397l-247,9-2-37"/>
+  <path class="cls-3" d="M2006,2438l-179,9-3-44"/>
+  <path class="cls-3" d="M2006,2481l-97,5-1-42"/>
+  <path class="cls-3" d="M1575,2285l5-656"/>
+  <path class="cls-3" d="M1973,874l1,38,1123,9,1,38-1091-5-3-79"/>
+  <path class="cls-3" d="M1990,875l-1,36"/>
+  <path class="cls-3" d="M2056,1254l-7-379-13-3,4,365"/>
+  <path class="cls-3" d="M2006,1198l-1-36,1184-3,1,37Z"/>
+  <path class="cls-3" d="M2019,873l2,122,1093,7-3-40-1074-7"/>
+  <path class="cls-3" d="M2071,1354l-5-482"/>
+  <path class="cls-3" d="M2023,1198l-1-81,1152,1,4,234"/>
+  <path class="cls-3" d="M2089,1354l-5-481"/>
+  <path class="cls-3" d="M2099,874l5,480"/>
+  <path class="cls-3" d="M2120,1355l-6-480"/>
+  <path class="cls-3" d="M2130,875l6,479"/>
+  <path class="cls-3" d="M2151,1355l-4-480"/>
+  <path class="cls-3" d="M2162,875l5,478"/>
+  <path class="cls-3" d="M2182,1354l-7-479,14-1,12,479"/>
+  <path class="cls-3" d="M2233,876l6,477,17,2-7-481,15-1,7,479,15,1-5-477,16-2,6,481,15-1-7-478,14-2,7,481h15l-7-479,16,1,6,477,18,1-9-478h17l6,478,16,1-4-478,13-1,5,477,17,1-6-477,17-1,5,477h16l-4-479,18,3,3,475,18,1-6-477h18l2,475,16,1-6-476h18l5,478,14-1-4-474,17-1,2,474,17,1-3-476h15l4,476,17-1-3-476,18,1,1,475h18l-6-476,18,1,1,476,19-1-4-476,14,2,5,475,13-2-5-474,16,1,5,474,17,1-8-474h19l4,474h18l-3-475,16,1,4,473,20,2-9-477h18l6,477,16-2-7-473,19-1,3,474,15,1-4-474h17l5,474h17l-5-475h14l6,475h17l-6-473,15,1,5,472h18l-6-473h15l6,473,17,1-7-474h15l7,474,16-1-6-473h17l4,472h18l-7-472"/>
+  <path class="cls-3" d="M3098,960l5,394h14l-4-353"/>
+  <path class="cls-3" d="M3114,1001h17l2,351"/>
+  <path class="cls-3" d="M3147,1353l-5-314-1105-5"/>
+  <path class="cls-3" d="M2039,1077l1119,2,3,274"/>
+  <path class="cls-3" d="M2040,1236l1166,2-2-41-14-1"/>
+  <path class="cls-3" d="M3190,1194l2,160"/>
+  <path class="cls-3" d="M3206,1238l1,115"/>
+  <path class="cls-3" d="M3240,1353c0.11-1.18-2-77-2-77l-1182,1"/>
+  <path class="cls-3" d="M2055,1320l1185-3"/>
+  <path class="cls-3" d="M3206,1238h15l3,114"/>
+  <path class="cls-3" d="M2224,1354l-8-479"/>
+  <path class="cls-3" d="M1288,1632l-8,627,17-2,6-624,18-1-7,624,20,1,5-627h17l-7,627h19l2-628h20l-5,626,18-1,5-624h19l-7,625,17-1,6-625,16,1-4,622,16-3,4-620h16l-2,620,16,1,3-622h20l-4,620,17-1,3-619h17l-2,618"/>
+  <path class="cls-3" d="M1593,2286l1-658,22-1-6,658h17l5-657,16-1-4,657"/>
+  <path class="cls-3" d="M1661,2329l5-701,15-1-5,701h17l3-701,15-2v702"/>
+  <path class="cls-3" d="M1991,2482l-1-859-16,1,2,858-15,3V1624l-18,1,1,861h-19l2-859-17-2-2,818-17,1,4-819-17,1-1,818-17,2,2-820h-17l-2,819"/>
+  <path class="cls-3" d="M1826,2403l2-777h-15l-3,777-16,2,2-780-17,1v779"/>
+  <path class="cls-3" d="M1759,2367l5-740"/>
+  <path class="cls-3" d="M1747,1627l-4,743"/>
+  <path class="cls-3" d="M1729,2369l2-741"/>
+  <path class="cls-3" d="M2072,2037v206l15,2,1-210,16-1v208l18,1-1-208h17l1,207,15,1,2-209,14,1,1,208,18-1-3-208,14,1,4,206"/>
+  <path class="cls-3" d="M2228,2036l3,206,15-2-1-206,17-1-2,208,19-2-2-209,18,3v208l17-1-2-208,15,1,1,206h17l-5-205,19-2,2,207,15-2-1-204,13-1,5,206h18l-4-205,14-2,4,207h17l-5-207h17l4,205,17,1-4-205h14l4,204,21,1-7-206h17l7,205h14l-6-206,18-2,4,207,15-2-4-203h14l6,203,16-1-5-204h17l3,205,17,1-5-206h16l5,203h19l-5-205,13,2,7,203h14l-4-204,17-1,4,204h18l-6-204,16-1,4,205h17l-5-205h15l4,203,17,1-5-203h17l4,203h20l-9-204h19l4,203,18,1-7-204,14-1,6,204,16,2-6-206h16l7,203,16-1-5-201,15-2,4,203,21,1-9-204,15,2,7,202h18l-8-206,19,3,2,202,17-1-4-200,15-1,4,201,17,1-3-205,14,1,4,203,16-1-2-200,17-2,1,201,18,3-6-207,16,2,4,203,16-1-3-203h13l6,202,15-1-8-201,15,1,6,200,17,2-6-203h14l9,201,14-1-6-200h15l8,199h16l-10-198h13l8,199h17l-9-201,17-2,7,202h13l-6-201,14,1,7,198,11,4,7-13-10-191"/>
+  <path class="cls-3" d="M3376,2177l-7-160h16l2,121,17-1-1-120h12l3,118"/>
+  <path class="cls-3" d="M3475,2018v35l-1416,25-3,40,1391-21-2-82"/>
+  <path class="cls-3" d="M2055,2160l1365-24"/>
+  <path class="cls-3" d="M3383,2177l-1324,25"/>
+  <path class="cls-3" d="M2213,2036l5,206"/>
+</svg>

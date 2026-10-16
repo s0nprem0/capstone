@@ -28,7 +28,7 @@ export default function OccupancyMap({ sections }) {
       <rect x={vbX - 200} y={vbY - 200} width={vbWidth + 400} height={vbHeight + 400} fill="#f4f1e8" />
 
       <image
-        href="/traces/survey-lines.png"
+        href="/traces/cemetery-base.png"
         x="0"
         y="0"
         width={vbWidth}
