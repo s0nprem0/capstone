@@ -48,6 +48,8 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 make up        # docker compose up -d
 make install   # composer install + pnpm install (in containers)
 make migrate   # apply database/schema.sql to MySQL
+make map-data  # apply database/survey/lots.sql (66 surveyed sections, 3863 plots)
+make demo      # apply database/demo.sql (demo clients, reservations, burials)
 ```
 - React dev server: http://localhost:5173 (proxies `/api` to PHP)
 - PHP server: http://localhost:8000
@@ -117,7 +119,7 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 - React: function components + hooks, existing import style; do not introduce TypeScript.
 - No unnecessary comments; keep code clean and idiomatic.
 - Commit in logical chunks with conventional commit messages (`feat:`, `fix:`, `refactor:`).
-- Verify with the Makefile workflow: `make up`, `make install`, `make migrate`; smoke-test API via curl; `pnpm build` must pass.
+- Verify with the Makefile workflow: `make up`, `make install`, `make migrate`, `make map-data`; smoke-test API via curl; `pnpm build` must pass.
 - Keep `database/schema.sql` authoritative so a fresh `make migrate` reproduces the full database.
 
 ## Software engineering process (Agile — Scrum)

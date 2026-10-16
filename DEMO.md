@@ -9,6 +9,7 @@ order to show it in.
 make up        # docker compose up -d
 make install   # composer install + pnpm install
 make migrate   # reset the database to database/schema.sql
+make map-data  # load the 66 surveyed sections and 3863 plots
 make demo      # load the demo dataset
 make build     # build the frontend bundle
 ```
@@ -18,8 +19,8 @@ inside the docroot the PHP server serves from, so :8000 is the only address you
 need — the Vite dev server on :5173 is optional and only useful while editing.
 
 If you would rather show the project with no client data at all, run
-`make migrate` and stop there. That gives 1182 available plots, one admin, and
-an empty queue.
+`make migrate && make map-data` and stop there. That gives 3863 available plots,
+one admin, and an empty queue.
 
 ## Accounts
 
@@ -100,7 +101,7 @@ Steps 3 and 4 are the ones to slow down on. Everything else is context.
 
 ## Before you present
 
-- [ ] `make migrate && make demo && make build` from a clean checkout
+- [ ] `make migrate && make map-data && make demo && make build` from a clean checkout
 - [ ] http://localhost:8000 loads with styling, not a blank page
 - [ ] `bash /tmp/opencode/demo-walk.sh` passes, if you have it
 - [ ] browser zoom at 100%; the layout is built for 1366x768 and up
@@ -109,12 +110,16 @@ Steps 3 and 4 are the ones to slow down on. Everything else is context.
 
 ```bash
 make migrate   # drops every table and reloads schema.sql
+make map-data  # reloads the surveyed sections and plots
 ```
 
 `migrate` is destructive by design — that is what makes it able to put the
 database back the way the schema says it should be. `make demo` is re-runnable
 on its own: it truncates the transactional tables first and reloads them, and
-leaves sections, plots and the admin account alone.
+leaves sections, plots and the admin account alone. `map-data` replaces the
+plots rather than adding to them, so it is the step to run after editing the
+survey trace — but it takes the reservations and burials with it, because those
+hang off the plots. Load `make demo` after it, not before.
 
 The demo dataset lives in `database/demo.sql` rather than `schema.sql` on
 purpose. `schema.sql` is the authoritative definition of the database and a

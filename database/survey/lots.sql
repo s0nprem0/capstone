@@ -7,6 +7,13 @@
 -- value, carried here so a reservation's total is not zero.
 --
 -- Run after the schema is loaded: `make map-data`.
+--
+-- Re-running replaces the plots rather than adding to them, since the codes are
+-- fixed and a duplicate would be rejected. Sections, users and accounts are left
+-- alone; reservations and burials go with the plots they point at, because the
+-- lots table is what they hang off.
+
+DELETE FROM `cemetery_lots`;
 
 INSERT INTO `cemetery_lots` (`lot_code`, `section_id`, `lot_type`, `price`, `svg_x`, `svg_y`, `svg_w`, `svg_h`) VALUES
   ('S3-001', (SELECT section_id FROM cemetery_sections WHERE section_number = 3), 'single', 45000.00, 543, 854, 12, 38),
