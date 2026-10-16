@@ -51,7 +51,9 @@ CREATE TABLE `cemetery_sections` (
   `svg_viewbox` VARCHAR(50) NOT NULL DEFAULT '0 0 1791 1457' COMMENT 'SVG crop region (x y w h) in map space',
   `svg_image` VARCHAR(255) NULL COMMENT 'trace background image path',
   `svg_points` VARCHAR(1024) NULL COMMENT 'SVG polygon outline "x y x y ..." in map space (drawn with the section editor)',
-  `is_locked` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Freezes the outline and lot geometry until unlocked'
+  `section_number` SMALLINT UNSIGNED NULL COMMENT 'number printed on the survey plan; NULL until the section is placed on the plan',
+  `is_locked` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Freezes the outline and lot geometry until unlocked',
+  UNIQUE KEY `uq_section_number` (`section_number`)
 ) ENGINE=InnoDB;
 
 -- 3. CEMETERY_LOTS
@@ -65,10 +67,13 @@ CREATE TABLE `cemetery_lots` (
   `status` ENUM('available', 'reserved', 'occupied') NOT NULL DEFAULT 'available',
   `latitude` DECIMAL(10,8) NULL,
   `longitude` DECIMAL(11,8) NULL,
-  `svg_x` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  `svg_y` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  `svg_w` SMALLINT UNSIGNED NOT NULL DEFAULT 40,
-  `svg_h` SMALLINT UNSIGNED NOT NULL DEFAULT 40,
+  -- Two decimals because surveyed lots are scaled out of the trace's 4096-wide
+  -- canvas. At the survey's pitch a plot is only about 7 map units across, so
+  -- rounding to whole units would move it by a seventh of its own width.
+  `svg_x` DECIMAL(6,2) NOT NULL DEFAULT 0.00,
+  `svg_y` DECIMAL(6,2) NOT NULL DEFAULT 0.00,
+  `svg_w` DECIMAL(6,2) NOT NULL DEFAULT 40.00,
+  `svg_h` DECIMAL(6,2) NOT NULL DEFAULT 40.00,
   `description` TEXT NULL,
   FOREIGN KEY (`section_id`) REFERENCES `cemetery_sections`(`section_id`) ON DELETE CASCADE,
   UNIQUE KEY `uq_lot_code` (`lot_code`),

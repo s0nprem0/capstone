@@ -31,10 +31,17 @@ class LotController
         return ($lat === null || abs($lat) <= 90) && ($lng === null || abs($lng) <= 180);
     }
 
-    private function svgInt(mixed $value, int $default): int
+    /**
+     * Lot geometry, rounded to the column's two decimals.
+     *
+     * Surveyed lots are scaled out of the trace's 4096-wide canvas and land at
+     * a pitch of only about 7 map units, so an integer here would move a plot
+     * by roughly a seventh of its own width.
+     */
+    private function svgCoord(mixed $value, float $default): float
     {
         if ($value === null || $value === '') return $default;
-        return max(0, (int) $value);
+        return round(max(0.0, (float) $value), 2);
     }
 
     private function sectionLocked(int $sectionId): bool
@@ -145,10 +152,10 @@ class LotController
             'description' => $input['description'] ?? null,
             'latitude' => $latitude,
             'longitude' => $longitude,
-            'svg_x' => $this->svgInt($input['svg_x'] ?? null, 0),
-            'svg_y' => $this->svgInt($input['svg_y'] ?? null, 0),
-            'svg_w' => $this->svgInt($input['svg_w'] ?? null, 40),
-            'svg_h' => $this->svgInt($input['svg_h'] ?? null, 40),
+            'svg_x' => $this->svgCoord($input['svg_x'] ?? null, 0.0),
+            'svg_y' => $this->svgCoord($input['svg_y'] ?? null, 0.0),
+            'svg_w' => $this->svgCoord($input['svg_w'] ?? null, 40.0),
+            'svg_h' => $this->svgCoord($input['svg_h'] ?? null, 40.0),
         ]);
 
         AuditLog::record(Auth::id(), 'create', 'cemetery_lots', $id);
@@ -218,10 +225,10 @@ class LotController
             return;
         }
         foreach (['svg_x', 'svg_y'] as $field) {
-            if (array_key_exists($field, $data)) $data[$field] = $this->svgInt($data[$field], 0);
+            if (array_key_exists($field, $data)) $data[$field] = $this->svgCoord($data[$field], 0.0);
         }
         foreach (['svg_w', 'svg_h'] as $field) {
-            if (array_key_exists($field, $data)) $data[$field] = $this->svgInt($data[$field], 40);
+            if (array_key_exists($field, $data)) $data[$field] = $this->svgCoord($data[$field], 40.0);
         }
 
         if ($data !== []) {
@@ -267,10 +274,10 @@ class LotController
                 'lot_type' => in_array($row['lot_type'] ?? '', ['single', 'double', 'family'], true) ? $row['lot_type'] : 'single',
                 'price' => (float) ($row['price'] ?? 0),
                 'status' => in_array($row['status'] ?? '', ['available', 'reserved', 'occupied'], true) ? $row['status'] : 'available',
-                'svg_x' => $this->svgInt($row['svg_x'] ?? null, 0),
-                'svg_y' => $this->svgInt($row['svg_y'] ?? null, 0),
-                'svg_w' => $this->svgInt($row['svg_w'] ?? null, 40),
-                'svg_h' => $this->svgInt($row['svg_h'] ?? null, 40),
+                'svg_x' => $this->svgCoord($row['svg_x'] ?? null, 0.0),
+                'svg_y' => $this->svgCoord($row['svg_y'] ?? null, 0.0),
+                'svg_w' => $this->svgCoord($row['svg_w'] ?? null, 40.0),
+                'svg_h' => $this->svgCoord($row['svg_h'] ?? null, 40.0),
             ]);
             $created++;
         }
@@ -371,10 +378,10 @@ class LotController
             }
             [$x, $y, $cellW, $cellH] = $cells[$i];
             Lot::update((int) $lot['lot_id'], [
-                'svg_x' => (int) $x,
-                'svg_y' => (int) $y,
-                'svg_w' => (int) $cellW,
-                'svg_h' => (int) $cellH,
+                'svg_x' => $this->svgCoord($x, 0.0),
+                'svg_y' => $this->svgCoord($y, 0.0),
+                'svg_w' => $this->svgCoord($cellW, 40.0),
+                'svg_h' => $this->svgCoord($cellH, 40.0),
             ]);
             $updated++;
         }

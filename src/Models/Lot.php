@@ -9,10 +9,41 @@ class Lot extends Model
     protected static string $table = 'cemetery_lots';
     protected static string $primaryKey = 'lot_id';
 
+    /**
+     * Lot geometry as numbers.
+     *
+     * The svg_* columns are DECIMAL, and PDO hands a DECIMAL back as a string
+     * so its precision survives the trip. The map does arithmetic on these
+     * values - a label sits at x + w / 2, a drag adds a delta - and string
+     * arithmetic concatenates instead of adding, so they are converted once
+     * here rather than coerced at every call site.
+     */
+    private static function withNumbers(array $row): array
+    {
+        foreach (['svg_x', 'svg_y', 'svg_w', 'svg_h'] as $field) {
+            if (array_key_exists($field, $row)) {
+                $row[$field] = (float) $row[$field];
+            }
+        }
+        return $row;
+    }
+
+    /** @param list<array<string, mixed>> $rows */
+    private static function rowsWithNumbers(array $rows): array
+    {
+        return array_map([self::class, 'withNumbers'], $rows);
+    }
+
+    public static function find(int $id): ?array
+    {
+        $row = parent::find($id);
+        return $row === null ? null : self::withNumbers($row);
+    }
+
     public static function available(): array
     {
         $stmt = self::db()->query("SELECT * FROM `" . static::$table . "` WHERE status = 'available' ORDER BY `lot_code`");
-        return $stmt->fetchAll();
+        return self::rowsWithNumbers($stmt->fetchAll());
     }
 
     public static function findForUpdate(int $id): ?array
@@ -45,7 +76,7 @@ class Lot extends Model
              JOIN cemetery_sections s ON s.section_id = l.section_id
              ORDER BY s.section_name, l.lot_code"
         );
-        return $stmt->fetchAll();
+        return self::rowsWithNumbers($stmt->fetchAll());
     }
 
     public static function grid(int $sectionId): array
@@ -106,6 +137,6 @@ class Lot extends Model
 
         $stmt = self::db()->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return self::rowsWithNumbers($stmt->fetchAll());
     }
 }
