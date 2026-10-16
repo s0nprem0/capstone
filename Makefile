@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate demo fresh build verify-map
+.PHONY: up down restart logs install migrate map-data demo fresh build verify-map
 
 up:
 	docker compose up -d
@@ -22,8 +22,16 @@ build:
 migrate:
 	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
 
-# Loads the demo dataset. Run after `make migrate`, which resets the database
-# to the schema alone.
+# Loads the surveyed map: the 66 sections and the 3863 plots traced off the plan
+# in public/traces/survey-lines.png. Kept out of schema.sql because it is
+# thousands of rows of surveyed geometry rather than a definition of the
+# database, and the plan can be re-traced without the schema moving.
+# Run after `make migrate`.
+map-data:
+	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/survey/lots.sql
+
+# Loads the demo dataset. Run after `make migrate` and `make map-data`, which
+# reset the database to the schema and the surveyed plots alone.
 demo:
 	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/demo.sql
 
