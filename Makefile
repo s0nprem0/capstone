@@ -1,55 +1,80 @@
-.PHONY: up down restart logs install migrate map-data demo fresh build verify-map
+.PHONY: up down restart logs install migrate map-data demo fresh build verify-map setup php node mysql
+
+# Compose provider. `docker compose` also works under Podman Desktop, where the
+# docker CLI is a shim over podman-compose; override for a bare podman install:
+#   make DC="podman-compose" up
+DC ?= docker compose
+
+# Under rootless Podman the node image's `node` user (uid 1000) maps to a subuid
+# and cannot write the bind-mounted workspace, so the build — the one step that
+# writes into it — runs as root, which maps back to your own host user. Plain
+# Docker already matches the host uid, so it keeps using `node`.
+ROOTLESS_PODMAN := $(shell podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)
+ifeq ($(ROOTLESS_PODMAN),true)
+NODE_EXEC := $(DC) exec -u root node
+else
+NODE_EXEC := $(DC) exec node
+endif
+
+# One-shot bring-up from a clean clone. The .env copy matters: bootstrap reads
+# it when present, and the file is gitignored, so a fresh checkout has none.
+setup:
+	@[ -f .env ] || cp .env.example .env
+	$(MAKE) up
+	$(MAKE) install
+	$(MAKE) migrate
+	$(MAKE) map-data
 
 up:
-	docker compose up -d
+	$(DC) up -d
 
 down:
-	docker compose down
+	$(DC) down
 
 restart:
-	docker compose restart
+	$(DC) restart
 
 logs:
-	docker compose logs -f
+	$(DC) logs -f
 
 install:
-	docker compose exec php composer install
-	docker compose exec node pnpm install
+	$(DC) exec php composer install
+	$(DC) exec node pnpm install
 
 build:
-	docker compose exec node pnpm build
+	$(NODE_EXEC) pnpm build
 
 migrate:
-	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
+	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
 
-# Loads the surveyed map: the 66 sections and the 3863 plots traced off the plan
+# Loads the surveyed map: the 66 sections and the 3890 plots traced off the plan
 # in public/traces/survey-lines.png. Kept out of schema.sql because it is
 # thousands of rows of surveyed geometry rather than a definition of the
 # database, and the plan can be re-traced without the schema moving.
 # Run after `make migrate`.
 map-data:
-	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/survey/lots.sql
+	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/survey/lots.sql
 
 # Loads the demo dataset. Run after `make migrate` and `make map-data`, which
 # reset the database to the schema and the surveyed plots alone.
 demo:
-	docker compose exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/demo.sql
+	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/demo.sql
 
 fresh:
-	docker compose down -v
-	docker compose up -d --build
+	$(DC) down -v
+	$(DC) up -d --build
 
 # Checks the map geometry the seed and the lot editor both depend on: every
 # plot's centre inside its section outline, no two plots overlapping, and
 # nothing outside the overall viewBox. Exits non-zero when one is not.
 verify-map:
-	docker compose exec -T php php verify-map.php
+	$(DC) exec -T php php verify-map.php
 
 php:
-	docker compose exec php bash
+	$(DC) exec php bash
 
 node:
-	docker compose exec node sh
+	$(DC) exec node sh
 
 mysql:
-	docker compose exec mysql mysql -u cemetery_user -psecret cemetery_db
+	$(DC) exec mysql mysql -u cemetery_user -psecret cemetery_db

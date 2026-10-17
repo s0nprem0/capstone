@@ -39,8 +39,18 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 
 ### 1. Start the stack
 ```bash
+make setup         # .env (if absent) + up + install + migrate + map-data
+```
+`make setup` is the one-shot path from a clean clone. To run the steps yourself:
+
+```bash
+[ -f .env ] || cp .env.example .env   # optional under Docker: compose injects DB_*
 make up            # docker compose up -d
 ```
+
+`.env` is gitignored, so a fresh checkout has none. Under Docker it is optional —
+`docker-compose.yml` supplies `DB_*` as environment variables and the app loads
+`.env` only when present. It is required for the non-container (XAMPP) setup below.
 
 ### 2. Install dependencies
 ```bash
@@ -52,6 +62,7 @@ The schema (including seed data) auto-loads on first MySQL start. To reset the d
 
 ```bash
 make migrate      # drops every table and reloads database/schema.sql
+make map-data     # load the 66 surveyed sections and 3890 plots
 make demo         # optional: load the demo dataset for a walkthrough
 ```
 
@@ -72,6 +83,28 @@ make build         # docker compose exec node pnpm build
 
 The bundle is written to `public/dist`, inside the docroot the PHP server (and
 Apache, under XAMPP) serves from, so :8000 needs nothing else running.
+
+## Running with Podman
+
+Podman runs the same stack. Where the `docker` CLI is a shim over `podman-compose`
+(Podman Desktop, or a `docker` wrapper), the Makefile works unchanged. For a bare
+`podman-compose` install, point the Makefile at it:
+
+```bash
+make DC="podman-compose" setup
+```
+
+Two host-side notes for a bare Podman install:
+
+- **Image short names.** Podman does not default to Docker Hub; `php:8.3-cli` and
+  friends fail to resolve. Add a search registry in `~/.config/containers/registries.conf`:
+  ```toml
+  unqualified-search-registries = ["docker.io"]
+  ```
+- **Rootless builds.** Rootless Podman maps container root to your host user, so the
+  node image's `node` user cannot write the bind-mounted workspace and `pnpm build`
+  fails with `EACCES`. The Makefile detects this and runs the build as root, which
+  maps back to you. No change is needed if you use rootful Podman or Docker.
 
 ## Running with XAMPP (no Docker)
 
@@ -205,6 +238,7 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 ## Development workflow
 
 ```bash
+make setup       # one-shot: .env + up + install + migrate + map-data
 make logs        # tail container logs
 make php         # shell into PHP container
 make node        # shell into Node container

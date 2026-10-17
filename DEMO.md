@@ -6,13 +6,21 @@ order to show it in.
 ## Run it
 
 ```bash
-make up        # docker compose up -d
-make install   # composer install + pnpm install
-make migrate   # reset the database to database/schema.sql
-make map-data  # load the 66 surveyed sections and 3890 plots
+make setup     # .env (if absent) + up + install + migrate + map-data
 make demo      # load the demo dataset
 make build     # build the frontend bundle
 ```
+
+`make setup` collapses the bring-up steps and writes `.env` from `.env.example`
+if it is missing (the file is gitignored, so a clean clone has none; under Docker
+it is optional since compose injects `DB_*`). Running the steps by hand:
+
+```bash
+make up && make install && make migrate && make map-data && make demo && make build
+```
+
+On a bare Podman install, use `make DC="podman-compose" setup` (see the Podman
+notes in [README.md](README.md)).
 
 Then open **http://localhost:8000**. The bundle is built into `public/dist`,
 inside the docroot the PHP server serves from, so :8000 is the only address you
