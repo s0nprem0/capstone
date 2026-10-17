@@ -1375,13 +1375,10 @@ textarea {
 
 .lot-rect {
   cursor: pointer;
-}
-
-.lot-rect rect {
   transition: stroke-width 0.12s, filter 0.12s;
 }
 
-.lot-rect:hover rect {
+.lot-rect:hover {
   stroke-width: 3;
   filter: brightness(1.1);
 }
@@ -1389,8 +1386,7 @@ textarea {
 /* Selection is marked in purple rather than by darkening, so the lot keeps
    telling you its status while it is selected. A CSS rule beats the white
    stroke presentation attribute on the element. */
-.lot--selected rect,
-rect.lot--selected {
+.lot--selected {
   stroke: var(--status-selected);
   stroke-width: 3;
 }

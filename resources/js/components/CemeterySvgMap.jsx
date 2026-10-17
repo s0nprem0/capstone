@@ -132,12 +132,17 @@ const frame = (bounds, aspect, within = null) => {
 
 function LotRect({ lot, selected, labelScale, dimmed, faded }) {
   const fill = STATUS_COLORS[lot.status] || 'var(--color-text-muted)'
+  // One <rect> per plot rather than a <g> wrapper: the map draws every plot at
+  // every zoom, so ~3,890 wrappers (and their <title> tooltips) were pure DOM
+  // weight. The click handler targets data-lot-id via closest(), and the state
+  // classes live on the rect, which the stylesheet already anticipates
+  // (rect.lot--selected). Per-plot detail is on the click-through pane, not a
+  // hover tooltip.
   return (
-    <g
-      data-lot-id={lot.lot_id}
-      className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
-    >
+    <>
       <rect
+        data-lot-id={lot.lot_id}
+        className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
         x={lot.svg_x}
         y={lot.svg_y}
         width={lot.svg_w}
@@ -168,8 +173,7 @@ function LotRect({ lot, selected, labelScale, dimmed, faded }) {
           {lot.lot_code}
         </text>
       )}
-      <title>{`${lot.lot_code} · ${lot.status} · ₱${Number(lot.price || 0).toLocaleString()}`}</title>
-    </g>
+    </>
   )
 }
 
