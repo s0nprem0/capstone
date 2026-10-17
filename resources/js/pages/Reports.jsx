@@ -134,6 +134,9 @@ export default function Reports() {
             <span>Reserved: {report.reserved}</span>
             <span>Occupied: {report.occupied}</span>
           </div>
+          {report.total > report.items.length && (
+            <p className="text-muted">Showing the first {report.items.length} of {report.total} lots.</p>
+          )}
           <div className="table-container">
             <table className="table">
               <thead>

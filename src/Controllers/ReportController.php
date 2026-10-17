@@ -29,11 +29,13 @@ class ReportController
         $rejected = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'rejected'")->fetchColumn();
 
         $items = $db->query(
-            "SELECT r.*, l.lot_code, u.fullname AS user_name
+            "SELECT r.reservation_id, r.reservation_date, r.total_amount, r.approved_status,
+                    l.lot_code, u.fullname AS user_name
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN users u ON u.user_id = r.user_id
-             ORDER BY r.reservation_id DESC"
+             ORDER BY r.reservation_id DESC
+             LIMIT 1000"
         )->fetchAll();
 
         Response::json([
@@ -55,11 +57,13 @@ class ReportController
         $interred = $db->query("SELECT COUNT(*) FROM burial_records WHERE interment_status = 'interred'")->fetchColumn();
 
         $items = $db->query(
-            "SELECT b.*, l.lot_code, s.section_name
+            "SELECT b.burial_id, b.deceased_fullname, b.burial_date, b.burial_type, b.interment_status,
+                    l.lot_code, s.section_name
              FROM burial_records b
              JOIN cemetery_lots l ON l.lot_id = b.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
-             ORDER BY b.burial_id DESC"
+             ORDER BY b.burial_id DESC
+             LIMIT 1000"
         )->fetchAll();
 
         Response::json([
@@ -80,11 +84,14 @@ class ReportController
         $reserved = $db->query("SELECT COUNT(*) FROM cemetery_lots WHERE status = 'reserved'")->fetchColumn();
         $occupied = $db->query("SELECT COUNT(*) FROM cemetery_lots WHERE status = 'occupied'")->fetchColumn();
 
+        // Capped, and only the columns the report renders. The full lot set is
+        // ~3,890 rows; the frontend discloses the cap against the total below.
         $items = $db->query(
-            "SELECT l.*, s.section_name
+            "SELECT l.lot_id, l.lot_code, l.lot_type, l.block, l.price, l.status, s.section_name
              FROM cemetery_lots l
              JOIN cemetery_sections s ON s.section_id = l.section_id
-             ORDER BY s.section_name, l.lot_code"
+             ORDER BY s.section_name, l.lot_code
+             LIMIT 2000"
         )->fetchAll();
 
         Response::json([

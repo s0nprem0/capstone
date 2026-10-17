@@ -26,6 +26,13 @@ class NotificationController
         Response::json(['notifications' => $notifications, 'unread_count' => $unread]);
     }
 
+    /** Just the badge count, so the header poll does not pull the whole list. */
+    public function unreadCount(): void
+    {
+        Auth::requireRole(['user', 'admin', 'staff']);
+        Response::json(['unread_count' => Notification::unreadCount(Auth::id())]);
+    }
+
     public function markRead(int $id): void
     {
         Auth::requireRole(['user', 'admin', 'staff']);

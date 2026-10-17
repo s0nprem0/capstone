@@ -111,7 +111,7 @@ export default function Layout() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const { ok, data } = await api('/api/notifications')
+      const { ok, data } = await api('/api/notifications/unread-count')
       if (ok) setUnreadCount(data.unread_count)
     }
     load()

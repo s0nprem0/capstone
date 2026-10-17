@@ -82,7 +82,7 @@ class LotController
 
     public function available(): void
     {
-        Response::json(Lot::available());
+        Response::json(Lot::available($_GET));
     }
 
     public function show(int $id): void

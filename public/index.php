@@ -65,6 +65,7 @@ $router->post('/api/burial-records/{id}', [$burialRecords, 'update']);
 $router->post('/api/burial-records/{id}/delete', [$burialRecords, 'destroy']);
 
 $router->get('/api/notifications', [$notifications, 'mine']);
+$router->get('/api/notifications/unread-count', [$notifications, 'unreadCount']);
 $router->post('/api/notifications/{id}/read', [$notifications, 'markRead']);
 $router->post('/api/notifications/read-all', [$notifications, 'markAllRead']);
 
@@ -131,6 +132,9 @@ if (str_starts_with($uri, '/api/')) {
     <meta name="description" content="St. John Memorial Garden & Parks — reserve cemetery lots and manage burial records online.">
     <meta name="theme-color" content="#2c5530">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- Referenced only from the stylesheet, so without this the browser would
+         not discover the font until it had parsed the CSS. -->
+    <link rel="preload" href="/fonts/source-serif-4-latin.woff2" as="font" type="font/woff2" crossorigin>
     <title>St. John Memorial Garden &amp; Parks — Cemetery Reservation &amp; Records</title>
     <?php if ($vite): ?>
     <?php echo $vite; ?>

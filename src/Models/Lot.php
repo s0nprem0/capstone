@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use PDO;
+
 class Lot extends Model
 {
     protected static string $table = 'cemetery_lots';
@@ -40,9 +42,15 @@ class Lot extends Model
         return $row === null ? null : self::withNumbers($row);
     }
 
-    public static function available(): array
+    public static function available(array $filters = []): array
     {
-        $stmt = self::db()->query("SELECT * FROM `" . static::$table . "` WHERE status = 'available' ORDER BY `lot_code`");
+        [$limit, $offset] = self::paginate($filters, 200, 1000);
+        $stmt = self::db()->prepare(
+            "SELECT * FROM `" . static::$table . "` WHERE status = 'available' ORDER BY `lot_code` LIMIT :limit OFFSET :offset"
+        );
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
         return self::rowsWithNumbers($stmt->fetchAll());
     }
 
@@ -161,9 +169,16 @@ class Lot extends Model
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
         $sql .= ' ORDER BY lot_code';
+        [$limit, $offset] = self::paginate($filters, 200, 1000);
+        $sql .= ' LIMIT :limit OFFSET :offset';
 
         $stmt = self::db()->prepare($sql);
-        $stmt->execute($params);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
         return self::rowsWithNumbers($stmt->fetchAll());
     }
 }

@@ -17,6 +17,21 @@ class Model
         return Database::connection();
     }
 
+    /**
+     * Clamp a LIMIT/OFFSET from request filters. A capped default keeps an
+     * unpaginated caller from pulling every row, which on cemetery_lots is
+     * thousands.
+     *
+     * @return array{0: int, 1: int}
+     */
+    protected static function paginate(array $filters, int $default = 200, int $max = 1000): array
+    {
+        $limit = (int) ($filters['limit'] ?? $default);
+        $limit = max(1, min($max, $limit));
+        $offset = max(0, (int) ($filters['offset'] ?? 0));
+        return [$limit, $offset];
+    }
+
     public static function find(int $id): ?array
     {
         $stmt = self::db()->prepare(
