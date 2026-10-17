@@ -1,5 +1,12 @@
 let csrfToken = null
 
+// The map payload is ~1.1 MB of JSON and five pages load it on mount. Cache the
+// in-flight promise per path so switching between those pages fetches it once
+// per session. Any successful mutation drops the cache, so approving a
+// reservation is reflected the next time the map is opened.
+const getCache = new Map()
+const CACHEABLE = new Set(['/api/map'])
+
 export async function getCsrf() {
   if (!csrfToken) {
     const res = await fetch('/api/csrf-token', { credentials: 'same-origin' })
@@ -30,7 +37,7 @@ async function request(path, options = {}) {
   })
 }
 
-export async function api(path, options = {}) {
+async function perform(path, options) {
   // The token lives in the PHP session, which is rebuilt on login/logout or
   // after a server restart. When the cached token no longer matches (419),
   // drop it and retry once with a freshly issued one. The router rejects the
@@ -47,4 +54,28 @@ export async function api(path, options = {}) {
 
   const data = await res.json().catch(() => null)
   return { ok: res.ok, status: res.status, data }
+}
+
+export async function api(path, options = {}) {
+  const method = options.method || 'GET'
+  const cacheable = method === 'GET' && CACHEABLE.has(path)
+
+  if (cacheable && getCache.has(path)) {
+    return getCache.get(path)
+  }
+
+  const pending = perform(path, options)
+
+  if (cacheable) {
+    getCache.set(path, pending)
+    pending.then((r) => {
+      if (!r.ok) getCache.delete(path)
+    })
+  }
+
+  const result = await pending
+  if (method !== 'GET' && result.ok) {
+    getCache.clear()
+  }
+  return result
 }

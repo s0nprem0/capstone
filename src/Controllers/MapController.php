@@ -26,8 +26,15 @@ class MapController
         $sections = $stmt->fetchAll();
         $lots = Lot::map();
 
-        $grouped = array_map(function ($section) use ($lots) {
-            $sectionLots = array_values(array_filter($lots, fn($l) => (int) $l['section_id'] === (int) $section['section_id']));
+        // One pass over the lots into per-section buckets, rather than scanning
+        // the whole set once per section (66 x 3,890).
+        $bySection = [];
+        foreach ($lots as $lot) {
+            $bySection[(int) $lot['section_id']][] = $lot;
+        }
+
+        $grouped = array_map(function ($section) use ($bySection) {
+            $sectionLots = $bySection[(int) $section['section_id']] ?? [];
             $counts = ['available' => 0, 'reserved' => 0, 'occupied' => 0];
             foreach ($sectionLots as $lot) {
                 if (isset($counts[$lot['status']])) {

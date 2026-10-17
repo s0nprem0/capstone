@@ -92,9 +92,11 @@ class Lot extends Model
 
     public static function map(): array
     {
+        // latitude/longitude are not selected: nothing in the SVG map reads
+        // them, and at ~3,890 rows they are dead weight on the largest payload
+        // the app sends. Use find() when a single lot's coordinates are needed.
         $stmt = self::db()->query(
             "SELECT l.lot_id, l.lot_code, l.block, l.lot_type, l.price, l.status,
-                    l.latitude, l.longitude,
                     l.svg_x, l.svg_y, l.svg_w, l.svg_h, l.description,
                     s.section_id, s.section_name, s.location, s.svg_viewbox
              FROM cemetery_lots l

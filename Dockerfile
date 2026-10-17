@@ -19,4 +19,8 @@ RUN composer dump-autoload --optimize 2>/dev/null || true
 
 EXPOSE 8000
 
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+# opcache is bundled in the CLI image but off for CLI by default. The built-in
+# server handles requests in one process, so enabling it stops recompiling the
+# same scripts on every request. Timestamps are always revalidated so edits
+# still take effect immediately during development.
+CMD ["php", "-d", "opcache.enable_cli=1", "-d", "opcache.validate_timestamps=1", "-d", "opcache.revalidate_freq=0", "-S", "0.0.0.0:8000", "-t", "public"]
