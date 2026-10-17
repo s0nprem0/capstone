@@ -20,6 +20,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 ## Architecture
 - Client-Server + MVC: Models = data layer, Views = React pages, Controllers = request logic.
 - Single front controller `public/index.php`: serves JSON API under `/api`; serves the built Vite bundle (or dev server) for all other routes.
+- The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor the diagram omits, and records that the Payment Monitoring module and Payment Records datastore are deliberately not part of this build.
 
 ## Project structure
 ```

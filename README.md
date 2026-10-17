@@ -31,6 +31,18 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 ### Remaining gaps
 - Responsive layout polish before production deployment
 
+## Architecture
+
+A layered client–server system: React 18 SPA → REST API (`/api`, custom PHP Router
+in `public/index.php`) → MySQL 8, with PDO-only Models behind the Controllers.
+
+The study's layered architecture diagram, reconciled with the code, is in
+[docs/architecture.md](docs/architecture.md). Two things to know when comparing
+it to the study: the **Payment Monitoring module and Payment Records datastore
+are not part of this build** (payments were removed by request), and the
+**Administrator actor** is added to the user access layer (the system's RBAC has
+`admin` / `staff` / `user`).
+
 ## Getting started
 
 ### Prerequisites
@@ -191,6 +203,7 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── docker-compose.yml         # php / node / mysql services
 ├── Dockerfile                 # PHP 8.3-cli + composer
 ├── docker/node.Dockerfile     # Node 22 + pnpm
+├── docs/architecture.md       # layered architecture reconciled with the build
 ├── DEMO.md                    # tech demo runbook + demo accounts
 ├── .htaccess                  # Apache/XAMPP: redirect into public/
 ├── .env.example               # Docker/standalone env template
