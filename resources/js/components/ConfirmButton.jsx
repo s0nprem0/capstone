@@ -12,14 +12,44 @@ export default function ConfirmButton({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const confirmRef = useRef(null)
+  const returnFocusRef = useRef(false)
+
+  // Closing always returns focus to the trigger, so a keyboard user is put back
+  // where they were instead of being dropped at the top of the document. The
+  // trigger is unmounted while the confirm is open, so focus has to be restored
+  // in the effect below, after it is back in the DOM — not here.
+  const close = () => {
+    returnFocusRef.current = true
+    setOpen(false)
+  }
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return undefined
     const onDocClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target)) close()
+    }
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') close()
     }
     document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  // Move focus onto the choice when it opens, and back onto the trigger when it
+  // closes (once the trigger has re-mounted).
+  useEffect(() => {
+    if (open) {
+      confirmRef.current?.focus()
+    } else if (returnFocusRef.current) {
+      returnFocusRef.current = false
+      triggerRef.current?.focus()
+    }
   }, [open])
 
   if (open) {
@@ -29,16 +59,17 @@ export default function ConfirmButton({
         <span className="confirm-message">{message}</span>
         <button
           type="button"
+          ref={confirmRef}
           className={confirmClass}
           disabled={busy}
           onClick={async () => {
             await onConfirm()
-            setOpen(false)
+            close()
           }}
         >
           {busy ? 'Working...' : confirmLabel}
         </button>
-        <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => setOpen(false)}>
+        <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={close}>
           Cancel
         </button>
       </span>
@@ -46,7 +77,7 @@ export default function ConfirmButton({
   }
 
   return (
-    <button type="button" className={className} disabled={disabled} onClick={() => setOpen(true)}>
+    <button type="button" ref={triggerRef} className={className} disabled={disabled} onClick={() => setOpen(true)}>
       {label}
     </button>
   )

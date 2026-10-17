@@ -903,9 +903,9 @@ export default function LotEditor() {
       )}
 
       <div className="map-legend lot-editor-legend">
-        <span><i className="dot" style={{ background: STATUS_COLORS.available }} /> Available</span>
-        <span><i className="dot" style={{ background: STATUS_COLORS.reserved }} /> Reserved</span>
-        <span><i className="dot" style={{ background: STATUS_COLORS.occupied }} /> Occupied</span>
+        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.available }} /> Available</span>
+        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.reserved }} /> Reserved</span>
+        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.occupied }} /> Occupied</span>
       </div>
     </div>
   )

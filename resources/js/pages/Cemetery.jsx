@@ -110,6 +110,16 @@ export default function Cemetery() {
     return section
   }, [sections, selectedLot, viewSectionId, query])
 
+  // The plots the map is framing, exposed as a keyboard-operable list. The SVG
+  // plots answer only to a pointer (click handled on the map root), so a list of
+  // buttons is how a keyboard or screen-reader user selects one. It mirrors the
+  // active section, or the search matches when browsing across sections, so the
+  // two never disagree. Capped so a one-letter search cannot mount thousands of
+  // nodes; the search box is right above it to narrow.
+  const MAX_LISTED = 300
+  const listedLots = activeSection ? activeSection.lots || [] : query ? compositeLots : []
+  const shownLots = listedLots.slice(0, MAX_LISTED)
+
   const selectLot = (lot) => {
     const next = lot ? String(lot.lot_id) : null
     if (next === lotParam) return
@@ -140,12 +150,12 @@ export default function Cemetery() {
   return (
     <div className="map-page">
       <h2>Cemetery Map</h2>
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
       {!mapData && !error && <Loading message="Loading map..." />}
 
       {mapData && (
         <div className="map-panes">
-          <aside className="map-rail">
+          <aside className="map-rail" aria-label="Map controls">
             <div className="map-rail-group">
               <p className="panel-heading">Sections</p>
               <div className="map-tabs">
@@ -153,6 +163,7 @@ export default function Cemetery() {
                   type="button"
                   className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
                   onClick={showAll}
+                  aria-pressed={!activeSection}
                 >
                   Overview
                 </button>
@@ -162,8 +173,9 @@ export default function Cemetery() {
                     type="button"
                     className={activeSection?.section_id === s.section_id ? 'map-tab map-tab--active' : 'map-tab'}
                     onClick={() => focusSection(s)}
+                    aria-pressed={activeSection?.section_id === s.section_id}
                   >
-                    <i className="dot" style={{ background: sectionColor(s.section_id) }} />
+                    <i className="dot" aria-hidden="true" style={{ background: sectionColor(s.section_id) }} />
                     {s.section_name}
                   </button>
                 ))}
@@ -187,11 +199,50 @@ export default function Cemetery() {
                     type="button"
                     className={filterStatus === status ? 'chip chip--active' : 'chip'}
                     onClick={() => setFilterStatus(status)}
+                    aria-pressed={filterStatus === status}
                   >
                     {status === 'all' ? 'All Lots' : STATUS_LABELS[status]}
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="map-rail-group">
+              <p className="panel-heading" id="plots-list-heading">
+                {activeSection ? `${activeSection.section_name} plots` : 'Matching plots'}
+              </p>
+              {listedLots.length === 0 ? (
+                <p className="text-muted map-toggle-note">
+                  Choose a section or search a lot code to list its plots here.
+                </p>
+              ) : (
+                <>
+                  <ul className="plot-list" aria-labelledby="plots-list-heading">
+                    {shownLots.map((lot) => {
+                      const isSelected = String(lot.lot_id) === lotParam
+                      return (
+                        <li key={lot.lot_id}>
+                          <button
+                            type="button"
+                            className={`plot-list-item${isSelected ? ' plot-list-item--selected' : ''}`}
+                            onClick={() => selectLot(lot)}
+                            aria-current={isSelected ? 'true' : undefined}
+                          >
+                            <span className="plot-list-code">{lot.lot_code}</span>
+                            {!activeSection && <span className="plot-list-section">{lot.section_name}</span>}
+                            <span className={`mark mark--${lot.status}`}>{STATUS_LABELS[lot.status]}</span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {listedLots.length > MAX_LISTED && (
+                    <p className="text-muted map-toggle-note">
+                      Showing the first {MAX_LISTED} of {listedLots.length}. Narrow the search to see the rest.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="map-rail-group">
@@ -213,9 +264,9 @@ export default function Cemetery() {
             <div className="map-rail-group map-rail-legend">
               <p className="panel-heading">Legend</p>
               <div className="map-legend">
-                <span><i className="dot" style={{ background: STATUS_COLORS.available }} /> Available ({compositeCounts.available})</span>
-                <span><i className="dot" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({compositeCounts.reserved})</span>
-                <span><i className="dot" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({compositeCounts.occupied})</span>
+                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.available }} /> Available ({compositeCounts.available})</span>
+                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({compositeCounts.reserved})</span>
+                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({compositeCounts.occupied})</span>
                 {search && <span className="text-muted">{compositeLots.length} matching</span>}
               </div>
             </div>
@@ -235,7 +286,7 @@ export default function Cemetery() {
               onClearSearch={() => setSearch('')}
             />
 
-            <aside className="map-detail">
+            <aside className="map-detail" aria-label="Plot details">
               {selectedLot ? (
                 <>
                   {/* The plot's own entry: titled, ruled, filed. */}

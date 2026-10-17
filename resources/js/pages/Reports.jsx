@@ -33,7 +33,7 @@ export default function Reports() {
         )}
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
 
       {!report && (
         <div className="reports-grid">

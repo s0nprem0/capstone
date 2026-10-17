@@ -56,7 +56,7 @@ export default function Dashboard() {
       <h2>Dashboard</h2>
       <p className="text-muted">Welcome, {user.fullname} ({user.role}).</p>
 
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
 
       {loading && <Loading message="Loading dashboard..." />}
 
@@ -84,7 +84,7 @@ export default function Dashboard() {
                 <div className="dash-legend">
                   {STATUSES.map((s) => (
                     <span key={s}>
-                      <i className="dot" style={{ background: STATUS_COLORS[s] }} /> {STATUS_LABELS[s]} ({stats.lots[s]})
+                      <i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS[s] }} /> {STATUS_LABELS[s]} ({stats.lots[s]})
                     </span>
                   ))}
                   <span className="text-muted">{stats.lots.total} plots</span>

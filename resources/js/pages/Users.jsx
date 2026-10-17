@@ -124,8 +124,8 @@ export default function Users() {
   return (
     <div>
       <h2>User Management</h2>
-      {error && <p className="alert alert--error">{error}</p>}
-      {success && <p className="alert alert--success">{success}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {success && <p className="alert alert--success" role="status">{success}</p>}
 
       {isAdmin && (
         <form onSubmit={handleSubmit} className="form-card form-card--compact">

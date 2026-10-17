@@ -92,8 +92,8 @@ export default function Profile() {
         <h2>My Profile</h2>
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
-      {success && <p className="alert alert--success">{success}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {success && <p className="alert alert--success" role="status">{success}</p>}
 
       <div className="form-card section-block">
         <h3>Registration Info</h3>

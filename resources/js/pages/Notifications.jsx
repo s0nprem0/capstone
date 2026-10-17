@@ -56,7 +56,7 @@ export default function Notifications() {
         )}
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
 
       {!loaded && !error && <Loading message="Loading notifications..." />}
 

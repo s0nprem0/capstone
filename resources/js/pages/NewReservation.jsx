@@ -114,8 +114,8 @@ export default function NewReservation() {
   return (
     <div>
       <h2>Reserve a Lot</h2>
-      {error && <p className="alert alert--error">{error}</p>}
-      {success && <p className="alert alert--success">{success}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {success && <p className="alert alert--success" role="status">{success}</p>}
 
       {grouped.length === 0 && (
         <p className="text-muted">No available lots at the moment. Please check back later.</p>
@@ -132,6 +132,7 @@ export default function NewReservation() {
                 onChange={handleLotChange}
                 onBlur={() => blur('lot_id')}
                 aria-invalid={!!show('lot_id')}
+                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error' : undefined}
                 required
               >
                 <option value="">Select an available lot</option>
@@ -149,7 +150,7 @@ export default function NewReservation() {
             {/* Staleness shows on its own — it is a data condition, not a
                 field the visitor has just left. */}
             {(staleLot || show('lot_id')) && (
-              <span className="field-error" role="alert">{errors.lot_id}</span>
+              <span className="field-error" id="res-lot-error" role="alert">{errors.lot_id}</span>
             )}
             {/* The dropdown lists bare codes, and the map is what makes a code
                 mean anything. Point at it before the visitor has to guess. */}
@@ -167,12 +168,13 @@ export default function NewReservation() {
                 onChange={handleChange}
                 onBlur={() => blur('reservation_date')}
                 aria-invalid={!!show('reservation_date')}
+                aria-describedby={show('reservation_date') ? 'res-date-error' : undefined}
                 min={todayISO()}
                 required
               />
             </label>
             {show('reservation_date') && (
-              <span className="field-error" role="alert">{errors.reservation_date}</span>
+              <span className="field-error" id="res-date-error" role="alert">{errors.reservation_date}</span>
             )}
           </div>
           <div className="field">

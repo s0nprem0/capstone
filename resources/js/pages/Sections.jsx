@@ -130,8 +130,8 @@ export default function Sections() {
   return (
     <div>
       <h2>Section Management</h2>
-      {error && <p className="alert alert--error">{error}</p>}
-      {success && <p className="alert alert--success">{success}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {success && <p className="alert alert--success" role="status">{success}</p>}
 
       <form onSubmit={handleSubmit} className="form-card form-card--compact">
         <h3>Add Section</h3>

@@ -62,8 +62,8 @@ export default function Settings() {
         <h2>Settings — Backup &amp; Restore</h2>
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
-      {success && <p className="alert alert--success">{success}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {success && <p className="alert alert--success" role="status">{success}</p>}
 
       <div className="form-card section-block">
         <h3>Backup</h3>
@@ -78,7 +78,8 @@ export default function Settings() {
       <div className="form-card section-block">
         <h3>Restore</h3>
         <p className="text-muted">Restore from a backup file. This overwrites all current data with the backup.</p>
-        <input ref={fileRef} type="file" accept=".sql,application/sql" className="file-input" />
+        <label htmlFor="restore-file" className="label-hint">Backup file (.sql)</label>
+        <input id="restore-file" ref={fileRef} type="file" accept=".sql,application/sql" className="file-input" />
         <div className="form-actions">
           <ConfirmButton
             label="Restore Backup"

@@ -84,10 +84,10 @@ textarea {
      snapped to the nearest neighbour. The px sizes below are deliberately not
      tokens: they are SVG user units inside a scaled viewBox and must track the
      geometry, not the page. */
-  --text-2xs: 0.6875rem;
-  --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-md: 0.875rem;
+  --text-2xs: 0.75rem;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 0.9375rem;
   --text-lg: 1rem;
   --text-xl: 1.125rem;
   --text-2xl: 1.5rem;
@@ -142,10 +142,36 @@ a {
   overflow-y: auto;
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
 .sidebar-title {
   font-size: var(--text-xl);
   font-weight: 700;
-  margin-bottom: var(--space-md);
+}
+
+/* Mobile-only dismiss control. The off-canvas drawer otherwise closes only by
+   choosing a link or tapping the backdrop, neither of which is reachable by
+   keyboard, so it had no keyboard path out at all. */
+.sidebar-close {
+  display: none;
+  flex: none;
+  padding: var(--space-2xs) var(--space-sm);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: var(--text-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-close:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .sidebar nav {
@@ -225,6 +251,12 @@ a {
 .main-content {
   flex: 1;
   padding: var(--space-xl);
+}
+
+/* Focus is moved here programmatically on route change (tabindex="-1"). It is
+   not an interactive target, so it must not paint the focus ring. */
+.main-content:focus {
+  outline: none;
 }
 
 .section-block {
@@ -571,13 +603,14 @@ textarea {
 }
 
 /* Every table-row action -- Edit, Delete, Deactivate, Approve -- is this
-   size, and at 0.25rem of vertical padding it rendered 22px tall, under
-   even the WCAG 2.5.8 minimum of 24. The extra leading room keeps the
-   dense table look on a pointer. */
+   size. At 0.25rem of vertical padding it rendered 22px tall, under even the
+   WCAG 2.5.8 minimum of 24. 32px keeps the dense table look on a pointer while
+   giving the small, closely spaced row actions more to aim at, which matters
+   for an older audience. Coarse pointers still get the full 44. */
 .btn-sm {
   padding: var(--space-2xs) var(--space-xs);
   font-size: var(--text-xs);
-  min-height: 28px;
+  min-height: 32px;
 }
 
 .search-input {
@@ -884,6 +917,14 @@ textarea {
 
 .mark--scheduled { color: #92400e; }
 .mark--interred  { color: #1e5c33; }
+
+/* Lot status marks. The map fills use the bright --status-* palette, but a
+   mark is text, so it needs the darker ink that clears AA on the light
+   surface; the word itself carries the status, so the colour is not the only
+   signal. */
+.mark--available { color: #1e5c33; }
+.mark--reserved  { color: #92400e; }
+.mark--occupied  { color: #1e40af; }
 
 .badge--admin {
   background: #2c5530;
@@ -1534,6 +1575,34 @@ rect.lot--selected {
   outline-offset: 2px;
 }
 
+/* The global ring is --color-primary, which is also the sidebar's background,
+   so a focused nav link or Logout drew a green ring on green — no visible focus.
+   White clears 3:1 against it. Matches the coarse-pointer target treatment. */
+.sidebar :focus-visible {
+  outline-color: #fff;
+}
+
+/* First Tab stop on every page. Without it a keyboard user crosses the whole
+   sidebar (7–12 links) on each navigation before reaching the content. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: -9999px;
+  z-index: 100;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: var(--space-xs);
+  top: var(--space-xs);
+}
+
 /* ==== Disabled controls ====
    Every button, input and select below carries a disabled prop in at least
    one place, and until now a disabled control was pixel-identical to an
@@ -1649,6 +1718,11 @@ textarea:disabled {
   .sidebar--open {
     transform: translateX(0);
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.14);
+  }
+  .sidebar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .sidebar-backdrop {
     display: block;
@@ -2086,6 +2160,100 @@ textarea:disabled {
   line-height: 1.45;
   margin: 0;
   max-width: 34ch;
+}
+
+/* ==== Plot list ====
+   The accessible counterpart to the SVG map. The plots answer only to a
+   pointer, so this list of buttons is how a keyboard or screen-reader user
+   picks one; it mirrors the active section or the search matches. A plain
+   list of buttons is deliberate — it needs no roving tabindex, and screen
+   readers announce it as a list with a count. */
+.plot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.plot-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 34px;
+  padding: var(--space-2xs) var(--space-xs);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.plot-list-item:last-child {
+  border-bottom: 0;
+}
+
+.plot-list-item:hover {
+  background: var(--color-bg);
+}
+
+/* Ring drawn inside the item so it is not clipped by the list's own border. */
+.plot-list-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.plot-list-item--selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.plot-list-item--selected .mark {
+  color: #fff;
+  border-color: #fff;
+}
+
+.plot-list-item--selected:focus-visible {
+  outline-color: #fff;
+}
+
+.plot-list-code {
+  flex: none;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only shown when browsing across sections; inside one, every row is the same. */
+.plot-list-section {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plot-list-item--selected .plot-list-section {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.plot-list-item .mark {
+  flex: none;
+  margin-left: auto;
+}
+
+@media (pointer: coarse) {
+  .plot-list-item {
+    min-height: 44px;
+  }
 }
 
 /* The legend is a key inside the panel, not a card inside a card. */

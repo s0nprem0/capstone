@@ -56,7 +56,7 @@ export default function Reservations() {
         )}
       </div>
 
-      {error && <p className="alert alert--error">{error}</p>}
+      {error && <p className="alert alert--error" role="alert">{error}</p>}
 
       <div className="filter-bar">
         <input

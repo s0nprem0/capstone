@@ -1,6 +1,6 @@
-import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, Link, useLocation, useNavigationType } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '../lib/api'
 
 const NOTIFICATIONS = { to: '/notifications', label: 'Notifications', badge: true }
@@ -101,10 +101,12 @@ function labelFor(items, pathname) {
 export default function Layout() {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
+  const navigationType = useNavigationType()
   const groups = roleNav(user?.role)
   const items = groups.flatMap((group) => group.items)
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const mainRef = useRef(null)
 
   useEffect(() => {
     if (!user) return
@@ -118,13 +120,50 @@ export default function Layout() {
   }, [user])
 
   const closeSidebar = () => setSidebarOpen(false)
+  const pageTitle = labelFor(items, pathname) || 'St. John Memorial Garden & Parks'
+
+  // A single-page app never re-titles the document or moves focus on its own,
+  // so a screen-reader or keyboard user gets no signal that the view changed
+  // and stays parked on the link they just activated. Set the title (WCAG
+  // 2.4.2) and move focus to the content on a client-side navigation.
+  // POP is the first paint and back/forward, where focus should stay at the top
+  // of the document so the skip link is still the first Tab stop.
+  useEffect(() => {
+    document.title = `${pageTitle} · St. John Memorial Garden & Parks`
+  }, [pageTitle])
+
+  useEffect(() => {
+    if (navigationType === 'POP') return
+    mainRef.current?.focus()
+  }, [pathname, navigationType])
+
+  // Escape dismisses the off-canvas drawer without forcing a navigation.
+  useEffect(() => {
+    if (!sidebarOpen) return undefined
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setSidebarOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [sidebarOpen])
 
   return (
     <div className="app-layout">
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} />}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
-        <h1 className="sidebar-title">St. John Memorial Garden &amp; Parks</h1>
-        <nav onClick={closeSidebar}>
+      <a href="#main" className="skip-link">Skip to content</a>
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} aria-hidden="true" />}
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`} aria-label="Site">
+        <div className="sidebar-header">
+          <h1 className="sidebar-title">St. John Memorial Garden &amp; Parks</h1>
+          <button
+            type="button"
+            className="sidebar-close"
+            onClick={closeSidebar}
+            aria-label="Close navigation menu"
+          >
+            ×
+          </button>
+        </div>
+        <nav onClick={closeSidebar} aria-label="Primary">
           {groups.map((group) => (
             <div className="nav-group" key={group.heading}>
               <p className="nav-heading">{group.heading}</p>
@@ -158,7 +197,7 @@ export default function Layout() {
           )}
         </div>
       </aside>
-      <main className="main-content">
+      <main className="main-content" id="main" tabIndex={-1} ref={mainRef}>
         <div className="topbar">
           <button
             type="button"
@@ -170,7 +209,7 @@ export default function Layout() {
             ☰
           </button>
           <span className="topbar-title">
-            {labelFor(items, pathname) || 'St. John Memorial Garden & Parks'}
+            {pageTitle || 'St. John Memorial Garden & Parks'}
           </span>
         </div>
         <Outlet />
