@@ -203,7 +203,10 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── docker-compose.yml         # php / node / mysql services
 ├── Dockerfile                 # PHP 8.3-cli + composer
 ├── docker/node.Dockerfile     # Node 22 + pnpm
-├── docs/architecture.md       # layered architecture reconciled with the build
+├── docs/
+│   ├── architecture.md        # layered architecture reconciled with the build
+│   ├── user-manual.md         # end-user guide, per role
+│   └── technical-manual.md    # architecture, data model, API, deployment
 ├── DEMO.md                    # tech demo runbook + demo accounts
 ├── .htaccess                  # Apache/XAMPP: redirect into public/
 ├── .env.example               # Docker/standalone env template
