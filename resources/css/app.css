@@ -1441,6 +1441,10 @@ textarea {
    specks across the whole site. */
 .map-svg[data-detail='far'] .lot--available {
   fill: rgba(47, 158, 68, 0.62);
+  /* Stroked in the fill colour, so neighbouring plots run together into
+     solid blocks instead of a speckle of separate dots. */
+  stroke: rgba(47, 158, 68, 0.62);
+  stroke-width: 2;
 }
 
 .map-svg[data-detail='far'] .lot--reserved,
@@ -1510,8 +1514,13 @@ textarea {
   pointer-events: none;
 }
 
-.map-outline--active {
-  stroke-dasharray: none;
+/* Wide enough to merge across the line between plots, and round so the band
+   has no corners of its own. The opacity is on the group, which is composited
+   once: on each plot, the overlapping strokes would darken where they meet. */
+.section-halo {
+  opacity: 0.3;
+  stroke-width: 8;
+  stroke-linejoin: round;
 }
 
 /* A search that matched nothing used to leave the map silently blank. */

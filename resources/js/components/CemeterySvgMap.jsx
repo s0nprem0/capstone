@@ -574,44 +574,21 @@ export default function CemeterySvgMap({
 
         <PlanImage level={levelFor(pane.width > 0 ? vb[2] / pane.width : MAP_VIEWBOX[2])} />
 
-        {/* Section outlines underneath, plots over them, titles on top. The
-            survey plan already draws each row of plots, so only the open section
-            is outlined — 66 stacked band outlines over the plan read as noise. */}
-        <g className="map-sections">
-          {sections.map((section) => {
-            const [x, y, w, h] = parseViewBox(section.viewBox)
-            const points = section.points
-            const color = sectionColor(section.section_id)
-            if (section.section_id !== activeSectionId) return null
-            return points ? (
-              <polygon
-                key={section.section_id}
-                data-section-id={section.section_id}
-                className="map-outline map-outline--active"
-                points={points}
-                fill={color}
-                fillOpacity={0.08}
-                stroke={color}
-                strokeWidth={4}
-                strokeLinejoin="round"
-              />
-            ) : (
-              <rect
-                key={section.section_id}
-                data-section-id={section.section_id}
-                className="map-outline map-outline--active"
-                x={x}
-                y={y}
-                width={w}
-                height={h}
-                fill={color}
-                fillOpacity={0.08}
-                stroke={color}
-                strokeWidth={4}
-              />
-            )
-          })}
-        </g>
+        {/* The open section, marked by a halo drawn round its own plots: each is
+            stroked wide in the section's colour underneath the plot layer, so the
+            strokes merge into one band that follows the rows exactly. A traced
+            outline polygon put points on every stepped row end. */}
+        {activeSection && (
+          <g
+            className="section-halo"
+            style={{ stroke: sectionColor(activeSection.section_id), fill: sectionColor(activeSection.section_id) }}
+            pointerEvents="none"
+          >
+            {(activeSection.lots || []).map((lot) => (
+              <PlotShape key={lot.lot_id} lot={lot} vectorEffect="non-scaling-stroke" />
+            ))}
+          </g>
+        )}
 
         {/* Every section's plots at every zoom. Cropping to one section is what
             left the frame around it empty; drawing the neighbours instead fills
