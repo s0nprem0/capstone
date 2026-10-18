@@ -1519,7 +1519,8 @@ textarea {
    once: on each plot, the overlapping strokes would darken where they meet. */
 .section-halo {
   opacity: 0.3;
-  stroke-width: 8;
+  /* Half the width spills past the plots; kept under the gap to the next row. */
+  stroke-width: 4;
   stroke-linejoin: round;
 }
 

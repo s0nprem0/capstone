@@ -52,7 +52,7 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
 ## Coverage
 
-70 sections, 6,869 plots: every block the plan draws.
+70 sections, 6,748 plots: every block the plan draws.
 
 | Area | Sections | Notes |
 |---|---|---|

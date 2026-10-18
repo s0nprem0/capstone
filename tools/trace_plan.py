@@ -113,6 +113,8 @@ MAX_FILL = 4
 # A drawn line's width: what separates a plot put back by the trace from its
 # neighbours, as the line it stands in for would have.
 LINE = 2.0
+# How far a rectangular plot is grown back after tracing, in plan pixels.
+GROW = 1.0
 # Degrees off square within which a plot counts as upright.
 UPRIGHT = 4
 # A plot this many times the size of a standard one is sold as a double or a
@@ -311,8 +313,12 @@ def merge_slivers(row, width):
         if out:
             a = out[-1]
             left, right = a['cx'] - a['w'] / 2, c['cx'] + c['w'] / 2
-            narrow = min(a['w'], c['w']) < 0.7 * width
-            if narrow and abs((right - left) - width) < 0.3 * width:
+            # Both halves narrow: one plot the clean drawing's doubled path
+            # line split in two, which spans a little over a plot with the line.
+            both = max(a["w"], c["w"]) < 0.75 * width
+            one = min(a["w"], c["w"]) < 0.7 * width
+            span = (right - left) - width
+            if (both and abs(span) < 0.5 * width) or (one and abs(span) < 0.3 * width):
                 top = min(a['cy'] - a['h'] / 2, c['cy'] - c['h'] / 2)
                 bottom = max(a['cy'] + a['h'] / 2, c['cy'] + c['h'] / 2)
                 merged = make_cell((left + right) / 2, (top + bottom) / 2, right - left, bottom - top, 0, a['area'] + c['area'])
@@ -322,8 +328,9 @@ def merge_slivers(row, width):
     return out
 
 
-def regularise_row(row):
-    """Within one row: split cells a missing line merged, fill gaps a broken line opened."""
+def regularise_row(row, repair=True):
+    """Within one row: split cells a missing line merged, and (when repairing a
+    block read from the scan) fill gaps a broken line opened."""
     row = sorted(row, key=lambda c: c['cx'])
     width = float(np.median([c['w'] for c in row]))
     height = float(np.median([c['h'] for c in row]))
@@ -337,6 +344,8 @@ def regularise_row(row):
                 out.append(make_cell(left + (j + 0.5) * c['w'] / k, c['cy'], c['w'] / k - LINE, c['h'], 0))
         else:
             out.append(c)
+    if not repair:
+        return out
     filled = [out[0]]
     for a, b in zip(out, out[1:]):
         gap = (b['cx'] - b['w'] / 2) - (a['cx'] + a['w'] / 2)
@@ -451,7 +460,10 @@ def fill_columns(rows, slope):
     return out
 
 
-def rows_of(cells):
+def rows_of(cells, repair=False):
+    """Rows of a block, top to bottom. `repair` fills plots a smudged or hidden
+    line lost; only the blocks read from the scan need it. In the clean
+    drawing a gap is a gap, and filling it squeezed slivers between plots."""
     height = float(np.median([c['h'] for c in cells]))
     cells = split_tall(cells, height)
     slope = row_slope(cells)
@@ -462,8 +474,9 @@ def rows_of(cells):
     # A sliver of a row is where a walk's edge line wobbles, not plots.
     rows = [r for r in rows if np.median([c['h'] for c in r]) >= 0.6 * height]
     rows = [r for r in rows if len(r) >= 2 or r[0]['area'] > 0.6 * height * height]
-    rows = [regularise_row(r) for r in sorted(rows, key=lambda r: np.mean([c['ry'] for c in r]))]
-    rows = fill_columns(rows, slope)
+    rows = [regularise_row(r, repair) for r in sorted(rows, key=lambda r: np.mean([c['ry'] for c in r]))]
+    if repair:
+        rows = fill_columns(rows, slope)
     for index, row in enumerate(rows):
         for c in row:
             c['row'] = index
@@ -538,10 +551,10 @@ def build():
         bc = b.get('cells', [])
         if b['mode'] == 'single':
             # Blocks of large plots are drawn individually; there is no grid to repair.
-            rows = rows_of(bc) if b.get('regular', True) else [bc]
+            rows = rows_of(bc, repair=b.get('scan', False)) if b.get('regular', True) else [bc]
             groups = [(b['section'], [c for r in rows for c in r])]
         elif b['mode'] == 'rows':
-            rows = rows_of(bc)
+            rows = rows_of(bc, repair=b.get('scan', False))
             groups = assign_rows(rows, b['sections'], centres)
         else:
             groups = assign_columns(bc, b['sections'], centres)
@@ -647,8 +660,36 @@ def main():
         print('wrote', OUT_SQL, 'plots', total)
 
 
+def grow_back(sections):
+    """The lines were thickened a pixel before tracing; give it back to each
+    traced rectangle, so it fills its drawn cell instead of floating inside it.
+    Only where the grown plot still clears every other plot: a plot the tracer
+    put back has no drawn line beside it to grow into."""
+    shapes, grid = [], {}
+    for sc in sections.values():
+        for c in sc:
+            shape = cv2.convexHull(np.array(c['quad'], np.float32))
+            shapes.append((c, shape))
+            x0, y0, x1, y1 = c['bbox']
+            for gx in range(int(x0 // 100), int(x1 // 100) + 1):
+                for gy in range(int(y0 // 100), int(y1 // 100) + 1):
+                    grid.setdefault((gx, gy), []).append(len(shapes) - 1)
+    for index, (c, _) in enumerate(shapes):
+        if not c.get('traced') or c.get('polygon') or not is_upright(c):
+            continue
+        x0, y0, x1, y1 = c['bbox']
+        g = (x0 - GROW, y0 - GROW, x1 + GROW, y1 + GROW)
+        grown = np.array([[g[0], g[1]], [g[2], g[1]], [g[2], g[3]], [g[0], g[3]]], np.float32)
+        near = {j for gx in range(int(g[0] // 100), int(g[2] // 100) + 1)
+                for gy in range(int(g[1] // 100), int(g[3] // 100) + 1) for j in grid.get((gx, gy), [])}
+        if all(j == index or cv2.intersectConvexConvex(grown, shapes[j][1])[0] <= 0.5 for j in near):
+            c["grown"] = g
+            shapes[index] = (c, grown)
+
+
 def write_sql(sections, centres):
     standard = float(np.median([c['area'] for sc in sections.values() for c in sc]))
+    grow_back(sections)
     lines = [
         '-- Every plot on the survey plan, traced from public/traces/survey-lines.png',
         '-- by tools/trace_plan.py. Regenerate with `python3 tools/trace_plan.py sql`;',
@@ -695,8 +736,9 @@ def write_sql(sections, centres):
         prefix = code_prefix(s)
         values = []
         for k, c in enumerate(sc, 1):
-            x0, y0, x1, y1 = c['bbox']
-            pts = 'NULL' if is_upright(c) and not c.get('polygon') else "'" + ' '.join(f'{round(px)} {round(py)}' for px, py in c['quad']) + "'"
+            x0, y0, x1, y1 = c.get("grown", c["bbox"])
+            rect = is_upright(c) and not c.get("polygon")
+            pts = "NULL" if rect else "'" + ' '.join(f'{round(px)} {round(py)}' for px, py in c['quad']) + "'"
             values.append(
                 f"  ('{prefix}-{k:03d}', (SELECT section_id FROM cemetery_sections WHERE section_number = {s}), "
                 f"'{lot_type(c, standard)}', {PRICE:.2f}, {x0:.2f}, {y0:.2f}, {x1 - x0:.2f}, {y1 - y0:.2f}, {pts})")

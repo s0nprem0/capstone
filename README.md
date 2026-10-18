@@ -73,7 +73,7 @@ The schema (including seed data) auto-loads on first MySQL start. To reset the d
 
 ```bash
 make migrate      # drops every table and reloads database/schema.sql
-make map-data     # load the 70 surveyed sections and 6869 plots
+make map-data     # load the 70 surveyed sections and 6748 plots
 make demo         # optional: load the demo dataset for a walkthrough
 ```
 

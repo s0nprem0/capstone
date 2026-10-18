@@ -646,7 +646,9 @@ export default function CemeterySvgMap({
             // The plan has its section numbers printed on it, so a title is
             // only useful for the section actually open; 66 of them at once
             // just pile up in the middle of the site.
-            if (section.section_id !== activeSectionId) return null
+            // Not while a plot is selected: its own label sits in the same place
+            // when it is in the first row, and the record already names the section.
+            if (section.section_id !== activeSectionId || selectedLot) return null
             const [x, y, w, h] = parseViewBox(section.viewBox)
             const [minX, minY, maxX, maxY] = pointsBounds(section.points, [x, y, x + w, y + h])
             return (
