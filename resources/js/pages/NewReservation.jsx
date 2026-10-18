@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
+const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
 
 // Local date, not toISOString(): that is UTC, which rejects today's date for
 // anyone east of Greenwich during their own morning.
@@ -14,16 +15,56 @@ const todayISO = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
+// A half-filled form survives a dropped signal or a closed tab. Purpose is left
+// out: it is free text that often names the deceased, and localStorage is not
+// for personal data. Keyed per user so a shared phone does not hand one
+// family's draft to the next.
+const DRAFT_DAYS = 30
+const draftKey = (userId) => `reserve-draft:${userId}`
+
+const readDraft = (userId) => {
+  try {
+    const draft = JSON.parse(localStorage.getItem(draftKey(userId)) || 'null')
+    if (!draft || Date.now() - draft.saved_at > DRAFT_DAYS * 86400000) return null
+    return draft
+  } catch {
+    return null
+  }
+}
+
+const writeDraft = (userId, form) => {
+  try {
+    if (!form.lot_id && !form.reservation_date) {
+      localStorage.removeItem(draftKey(userId))
+      return
+    }
+    localStorage.setItem(draftKey(userId), JSON.stringify({
+      lot_id: form.lot_id,
+      reservation_date: form.reservation_date,
+      number_of_slots: form.number_of_slots,
+      saved_at: Date.now(),
+    }))
+  } catch {
+    // Storage full or blocked: the draft is a convenience, the form still works.
+  }
+}
+
 export default function NewReservation() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [sections, setSections] = useState([])
-  const [form, setForm] = useState({
-    lot_id: searchParams.get('lot') || '',
-    reservation_date: '',
-    purpose: '',
-    number_of_slots: 1,
-  })
+  // A plot chosen on the map just now outranks the one in an old draft.
+  const [draft] = useState(() => readDraft(user.user_id))
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    ...(draft && {
+      lot_id: draft.lot_id,
+      reservation_date: draft.reservation_date,
+      number_of_slots: draft.number_of_slots,
+    }),
+    ...(searchParams.get('lot') && { lot_id: searchParams.get('lot') }),
+  }))
+  const [draftRestored, setDraftRestored] = useState(!!draft)
   const [error, setError] = useState('')
   const [touched, setTouched] = useState({})
   const [success, setSuccess] = useState('')
@@ -36,6 +77,10 @@ export default function NewReservation() {
       if (ok && data?.sections) setSections(data.sections)
     })
   }, [])
+
+  useEffect(() => {
+    writeDraft(user.user_id, form)
+  }, [form, user.user_id])
 
   const grouped = sections
     .map((s) => ({
@@ -96,6 +141,15 @@ export default function NewReservation() {
     }))
   }
 
+  const startOver = () => {
+    setForm(EMPTY_FORM)
+    setTouched({})
+    setSearch('')
+    setSectionChoice(null)
+    setDraftRestored(false)
+    setError('')
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -117,10 +171,7 @@ export default function NewReservation() {
     setSubmitting(false)
     if (ok) {
       setSuccess(`Reservation #${data.reservation_id} submitted. The plot is held while it awaits approval.`)
-      setForm({ lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 })
-      setTouched({})
-      setSearch('')
-      setSectionChoice(null)
+      startOver()
     } else {
       setError(data?.error || 'Failed to create reservation')
     }
@@ -131,6 +182,12 @@ export default function NewReservation() {
       <h2>Reserve a Lot</h2>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       {success && <p className="alert alert--success" role="status">{success}</p>}
+      {draftRestored && (
+        <p className="alert alert--info draft-note" role="status">
+          We kept what you entered last time.{' '}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={startOver}>Start over</button>
+        </p>
+      )}
 
       {grouped.length === 0 && (
         <p className="text-muted">No available lots at the moment. Please check back later.</p>
