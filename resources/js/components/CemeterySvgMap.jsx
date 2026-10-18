@@ -33,6 +33,11 @@ const MAX_VIEW = 4500
 const MIN_FRAME = 300
 const MIN_ZOOM = 250
 
+// Beyond this view width (plan units) the map is in overview detail.
+const FAR_VIEW = 2000
+const MAX_LABELLED = 80
+const MIN_LABEL_PX = 16
+
 // The overview letterboxes a 1.23:1 site into a portrait pane, and a wide
 // section worse. Framing on the pane's own shape -- growing the short axis
 // until it matches -- is what stops the map floating in blank paper. Only
@@ -130,52 +135,33 @@ const frame = (bounds, aspect, within = null) => {
   return [left, top, viewWidth, viewHeight]
 }
 
-function LotRect({ lot, selected, labelScale, dimmed, faded }) {
-  const fill = STATUS_COLORS[lot.status] || 'var(--color-text-muted)'
+function LotRect({ lot, dimmed, faded }) {
   // One <rect> per plot rather than a <g> wrapper: the map draws every plot at
   // every zoom, so ~3,890 wrappers (and their <title> tooltips) were pure DOM
   // weight. The click handler targets data-lot-id via closest(), and the state
   // classes live on the rect, which the stylesheet already anticipates
   // (rect.lot--selected). Per-plot detail is on the click-through pane, not a
   // hover tooltip.
+  // Status is a tint over the survey plan, set by class in app.css, so the
+  // drawn plot and its printed number show through. Labels and the selection
+  // ring are drawn in their own layer on top (see map-callouts).
   return (
-    <>
-      <rect
-        data-lot-id={lot.lot_id}
-        className={`lot-rect lot--${lot.status}${selected ? ' lot--selected' : ''}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
-        x={lot.svg_x}
-        y={lot.svg_y}
-        width={lot.svg_w}
-        height={lot.svg_h}
-        rx={2}
-        style={{ fill }}
-        stroke="#fff"
-        strokeWidth={1}
-        // Keeps the hairline between neighbouring plots from thinning to
-        // nothing when the whole cemetery is scaled into the overview.
-        vectorEffect="non-scaling-stroke"
-        strokeDasharray={lot.status === 'reserved' ? '5 4' : undefined}
-      />
-      {labelScale > 0 && (
-        <text
-          x={lot.svg_x + lot.svg_w / 2}
-          y={lot.svg_y + lot.svg_h / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          className="lot-label"
-          // Plot labels have the same problem as section titles: SVG text is in
-          // user units, so a size that reads in a section fills the plot when
-          // the map is zoomed further. Scaling by the current viewBox keeps
-          // every label the same height on screen at every zoom.
-          style={{ fontSize: `${labelScale}px`, strokeWidth: labelScale * 0.18 }}
-          pointerEvents="none"
-        >
-          {lot.lot_code}
-        </text>
-      )}
-    </>
+    <rect
+      data-lot-id={lot.lot_id}
+      className={`lot-rect lot--${lot.status}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
+      x={lot.svg_x}
+      y={lot.svg_y}
+      width={lot.svg_w}
+      height={lot.svg_h}
+      // Keeps the outline a hairline at every zoom.
+      vectorEffect="non-scaling-stroke"
+    />
   )
 }
+
+// S42-095 -> 95: the plan prints plot numbers, not codes, and a code is wider
+// than the plot it would label.
+const plotNumber = (code) => String(Number(String(code).split('-').pop()) || code)
 
 const MemoLotRect = memo(LotRect)
 
@@ -482,7 +468,17 @@ export default function CemeterySvgMap({
   const pxPerUnit = pane.width > 0 ? pane.width / vb[2] : 0
   const fit = (targetPx) => (pxPerUnit > 0 ? targetPx / pxPerUnit : 0)
   const titleSize = fit(12)
-  const labelSize = vb[2] < 1500 ? fit(10) : 0
+  // Far out, 3,890 plots are specks: only the available ones are tinted, which
+  // is the question the overview answers. The rest appear once zoomed in.
+  const detail = vb[2] > FAR_VIEW ? 'far' : 'near'
+  const selectedLot = selectedLotId == null
+    ? null
+    : (contextLots || allLots).find((l) => l.lot_id === selectedLotId) || null
+  // Search matches get their number when there are few enough to read and each
+  // is wide enough on screen to hold it.
+  const labelledLots = query && allLots.length <= MAX_LABELLED
+    ? allLots.filter((l) => l.svg_w * pxPerUnit >= MIN_LABEL_PX)
+    : []
   const noMatches = Boolean(query) && allLots.length === 0
 
   return (
@@ -491,6 +487,7 @@ export default function CemeterySvgMap({
         ref={svgRef}
         className="map-svg"
         data-map-level={activeSection ? 'section-detail' : 'overview'}
+        data-detail={detail}
         aria-label={
           activeSection
             ? `${activeSection.section_name} detailed lot map`
@@ -552,28 +549,64 @@ export default function CemeterySvgMap({
             it, and the plot you came for grows to twice its overview size. */}
         <g className="map-lots">
           {fadedLots.map((lot) => (
-            <MemoLotRect key={lot.lot_id} lot={lot} selected={false} labelScale={0} dimmed faded />
+            <MemoLotRect key={lot.lot_id} lot={lot} dimmed faded />
           ))}
-          {/* Labels are drawn in a second pass so the active section's sit on
-              top of its neighbours' rather than being buried by them. */}
           {allLots
             .filter((lot) => activeSectionId === null || lot.section_id === activeSectionId)
             .map((lot) => (
-              <MemoLotRect
-                key={lot.lot_id}
-                lot={lot}
-                selected={lot.lot_id === selectedLotId}
-                labelScale={labelSize}
-              />
+              <MemoLotRect key={lot.lot_id} lot={lot} />
             ))}
-          {/* Neighbours are here for context only: faded, and without labels —
-              two hundred plot codes from the next section along read as noise
-              over the one you came for. */}
+          {/* Neighbours are here for context only, dimmed. */}
           {allLots
             .filter((lot) => activeSectionId !== null && lot.section_id !== activeSectionId)
             .map((lot) => (
-              <MemoLotRect key={lot.lot_id} lot={lot} selected={false} labelScale={0} dimmed />
+              <MemoLotRect key={lot.lot_id} lot={lot} dimmed />
             ))}
+        </g>
+
+        <g className="map-callouts" pointerEvents="none">
+          {labelledLots.map((lot) => (
+            <text
+              key={lot.lot_id}
+              x={lot.svg_x + lot.svg_w / 2}
+              y={lot.svg_y + lot.svg_h / 2}
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="lot-label"
+              style={{ fontSize: `${fit(11)}px`, strokeWidth: fit(3) }}
+            >
+              {plotNumber(lot.lot_code)}
+            </text>
+          ))}
+          {selectedLot && (
+            <>
+              <rect
+                className="lot-halo"
+                x={selectedLot.svg_x}
+                y={selectedLot.svg_y}
+                width={selectedLot.svg_w}
+                height={selectedLot.svg_h}
+                vectorEffect="non-scaling-stroke"
+              />
+              <rect
+                className="lot-ring"
+                x={selectedLot.svg_x}
+                y={selectedLot.svg_y}
+                width={selectedLot.svg_w}
+                height={selectedLot.svg_h}
+                vectorEffect="non-scaling-stroke"
+              />
+              <text
+                x={selectedLot.svg_x + selectedLot.svg_w / 2}
+                y={selectedLot.svg_y - fit(6)}
+                textAnchor="middle"
+                className="lot-callout"
+                style={{ fontSize: `${fit(14)}px`, strokeWidth: fit(4) }}
+              >
+                {selectedLot.lot_code}
+              </text>
+            </>
+          )}
         </g>
 
         <g className="map-sections">
@@ -587,10 +620,8 @@ export default function CemeterySvgMap({
             return (
               <text
                 key={section.section_id}
-                x={(minX + maxX) / 2}
-                y={(minY + maxY) / 2}
-                textAnchor="middle"
-                dominantBaseline="central"
+                x={minX}
+                y={minY - fit(8)}
                 className="map-section-title"
                 // SVG text is in user units, so a fixed size that survives the
                 // whole-site overview is enormous once zoomed into a section.

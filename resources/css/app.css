@@ -1087,6 +1087,27 @@ textarea {
   margin-right: var(--space-2xs);
 }
 
+/* Legend keys drawn the way the map draws each status over the plan. */
+.swatch {
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  margin-right: var(--space-2xs);
+  vertical-align: -1px;
+  background: #f6f6f4;
+  border: 1px solid var(--color-border-control);
+}
+
+.swatch--available {
+  background: rgba(47, 158, 68, 0.32);
+  border-color: var(--status-available);
+}
+
+.swatch--reserved {
+  background: rgba(234, 179, 8, 0.42);
+  border: 1px dashed #a16207;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -1384,14 +1405,72 @@ textarea {
    text has no non-scaling-size, so the map sets font-size per viewBox in JS
    and keeps the rendered size constant instead of hard-coding one here. */
 
+/* Plots are a tint over the survey plan, so the drawn plot and its printed
+   number stay readable underneath. The outline carries the status colour at
+   full strength: a pale fill alone would not reach the 3:1 a boundary needs
+   against the paper (WCAG 1.4.11). Reserved is dashed as well, so the two
+   tinted states differ by more than colour. Occupied is left as the plan
+   draws it, but stays clickable through its transparent fill. */
 .lot-rect {
   cursor: pointer;
-  transition: stroke-width 0.12s, filter 0.12s;
+  stroke-width: 1;
+}
+
+.lot--available {
+  fill: rgba(47, 158, 68, 0.32);
+  stroke: var(--status-available);
+}
+
+.lot--reserved {
+  fill: rgba(234, 179, 8, 0.42);
+  stroke: #a16207;
+  stroke-dasharray: 4 3;
+}
+
+.lot--occupied {
+  fill: transparent;
+  stroke: none;
 }
 
 .lot-rect:hover {
+  stroke: var(--color-text);
+  stroke-width: 2;
+}
+
+/* Overview: only what can still be reserved, at a strength that reads as
+   specks across the whole site. */
+.map-svg[data-detail='far'] .lot--available {
+  fill: rgba(47, 158, 68, 0.62);
+}
+
+.map-svg[data-detail='far'] .lot--reserved,
+.map-svg[data-detail='far'] .lot--occupied {
+  visibility: hidden;
+}
+
+/* The selected plot, drawn last so neighbours never cover it: a white halo
+   under a purple ring, readable over any status and over the plan's ink. */
+.lot-halo,
+.lot-ring {
+  fill: none;
+}
+
+.lot-halo {
+  stroke: #fff;
+  stroke-width: 7;
+}
+
+.lot-ring {
+  stroke: var(--status-selected);
   stroke-width: 3;
-  filter: brightness(1.1);
+}
+
+.lot-callout {
+  font-weight: 700;
+  fill: var(--status-selected);
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-linejoin: round;
 }
 
 /* Selection is marked in purple rather than by darkening, so the lot keeps
@@ -1403,10 +1482,10 @@ textarea {
 }
 
 .lot-label {
-  font-weight: 600;
-  fill: #fff;
+  font-weight: 700;
+  fill: var(--color-text);
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.55);
+  stroke: #fff;
   stroke-linejoin: round;
   pointer-events: none;
 }
@@ -1417,11 +1496,11 @@ textarea {
    opacity rather than fill so the status colour is still readable underneath,
    and not a transition: this is set once on entry, not hovered. */
 .lot-rect.lot--dimmed {
-  opacity: 0.22;
+  opacity: 0.4;
 }
 
 .lot-rect.lot--dimmed:hover {
-  opacity: 0.6;
+  opacity: 0.75;
 }
 
 /* Search context: drawn only so a close frame on the matches is not floating in

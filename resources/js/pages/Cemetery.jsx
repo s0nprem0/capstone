@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
-import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
+import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import PlotPicker, { STATUS_LABELS } from '../components/PlotPicker'
 import { nearestSection } from '../lib/sections'
@@ -227,11 +227,14 @@ export default function Cemetery() {
             <div className="map-rail-group map-rail-legend">
               <p className="panel-heading">Legend</p>
               <div className="map-legend">
-                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.available }} /> Available ({compositeCounts.available})</span>
-                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.reserved }} /> Reserved ({compositeCounts.reserved})</span>
-                <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.occupied }} /> Occupied ({compositeCounts.occupied})</span>
+                <span><i className="swatch swatch--available" aria-hidden="true" /> Available ({compositeCounts.available})</span>
+                <span><i className="swatch swatch--reserved" aria-hidden="true" /> Reserved ({compositeCounts.reserved})</span>
+                <span><i className="swatch" aria-hidden="true" /> Occupied ({compositeCounts.occupied})</span>
                 {search && <span className="text-muted">{compositeLots.length} matching</span>}
               </div>
+              <p className="text-muted map-toggle-note">
+                The whole-cemetery view shows available plots only. Zoom in to see reserved and occupied ones.
+              </p>
             </div>
           </aside>
 
