@@ -75,7 +75,7 @@ VALUES
   (13, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S45-131'),  '2026-07-20', 'Single plot',                      1, 45000.00, 'approved', '2026-07-20 10:00:00'),
   (14, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S49-008'),  '2026-08-01', 'Single plot',                      1, 45000.00, 'approved', '2026-08-01 10:00:00'),
   (15, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S52-062'),  '2026-08-14', 'Single plot',                      1, 45000.00, 'approved', '2026-08-14 10:00:00'),
-  (16, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S55-087'),  '2026-08-27', 'Single plot',                      1, 45000.00, 'approved', '2026-08-27 10:00:00'),
+  (16, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S55-080'),  '2026-08-27', 'Single plot',                      1, 45000.00, 'approved', '2026-08-27 10:00:00'),
   (17, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S58-010'),  '2026-09-05', 'Single plot',                      1, 45000.00, 'approved', '2026-09-05 10:00:00');
 
 -- Ids 18-20: still awaiting approval. These are what the dashboard queues up,
@@ -135,7 +135,7 @@ VALUES
 UPDATE `cemetery_lots` SET `status` = 'available';
 
 UPDATE `cemetery_lots` SET `status` = 'occupied'
-WHERE `lot_code` IN ('S3-025','S5-002','S8-004','S12-045','S16-005','S20-020','S26-002','S30-003','S33-006','S36-057','S38-058','S41-008','S45-131','S49-008','S52-062','S55-087','S58-010');
+WHERE `lot_code` IN ('S3-025','S5-002','S8-004','S12-045','S16-005','S20-020','S26-002','S30-003','S33-006','S36-057','S38-058','S41-008','S45-131','S49-008','S52-062','S55-080','S58-010');
 
 UPDATE `cemetery_lots` SET `status` = 'reserved'
 WHERE `lot_code` IN ('S61-015','S65-020','S65-092');
