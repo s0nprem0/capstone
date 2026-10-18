@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import PlanImage, { levelFor } from '../map/PlanImage'
+import PlotShape from '../map/PlotShape'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -152,8 +153,8 @@ const frame = (bounds, aspect, within = null) => {
 }
 
 function LotRect({ lot, dimmed, faded }) {
-  // One <rect> per plot rather than a <g> wrapper: the map draws every plot at
-  // every zoom, so ~3,890 wrappers (and their <title> tooltips) were pure DOM
+  // One element per plot rather than a <g> wrapper: the map draws every plot at
+  // every zoom, so ~6,400 wrappers (and their <title> tooltips) were pure DOM
   // weight. The click handler targets data-lot-id via closest(), and the state
   // classes live on the rect, which the stylesheet already anticipates
   // (rect.lot--selected). Per-plot detail is on the click-through pane, not a
@@ -162,13 +163,10 @@ function LotRect({ lot, dimmed, faded }) {
   // drawn plot and its printed number show through. Labels and the selection
   // ring are drawn in their own layer on top (see map-callouts).
   return (
-    <rect
+    <PlotShape
+      lot={lot}
       data-lot-id={lot.lot_id}
       className={`lot-rect lot--${lot.status}${dimmed ? ' lot--dimmed' : ''}${faded ? ' lot--faded' : ''}`}
-      x={lot.svg_x}
-      y={lot.svg_y}
-      width={lot.svg_w}
-      height={lot.svg_h}
       // Keeps the outline a hairline at every zoom.
       vectorEffect="non-scaling-stroke"
     />
@@ -532,7 +530,7 @@ export default function CemeterySvgMap({
   const pxPerUnit = pane.width > 0 ? pane.width / vb[2] : 0
   const fit = (targetPx) => (pxPerUnit > 0 ? targetPx / pxPerUnit : 0)
   const titleSize = fit(12)
-  // Far out, 3,890 plots are specks: only the available ones are tinted, which
+  // Far out, 6,400 plots are specks: only the available ones are tinted, which
   // is the question the overview answers. The rest appear once zoomed in.
   const detail = vb[2] > FAR_VIEW ? 'far' : 'near'
   const selectedLot = selectedLotId == null
@@ -647,22 +645,8 @@ export default function CemeterySvgMap({
           ))}
           {selectedLot && (
             <>
-              <rect
-                className="lot-halo"
-                x={selectedLot.svg_x}
-                y={selectedLot.svg_y}
-                width={selectedLot.svg_w}
-                height={selectedLot.svg_h}
-                vectorEffect="non-scaling-stroke"
-              />
-              <rect
-                className="lot-ring"
-                x={selectedLot.svg_x}
-                y={selectedLot.svg_y}
-                width={selectedLot.svg_w}
-                height={selectedLot.svg_h}
-                vectorEffect="non-scaling-stroke"
-              />
+              <PlotShape lot={selectedLot} className="lot-halo" vectorEffect="non-scaling-stroke" />
+              <PlotShape lot={selectedLot} className="lot-ring" vectorEffect="non-scaling-stroke" />
               <text
                 x={selectedLot.svg_x + selectedLot.svg_w / 2}
                 y={selectedLot.svg_y - fit(6)}

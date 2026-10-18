@@ -238,6 +238,11 @@ class LotController
         foreach (['svg_w', 'svg_h'] as $field) {
             if (array_key_exists($field, $data)) $data[$field] = $this->svgCoord($data[$field], 40.0);
         }
+        // The editor moves and resizes rectangles. A traced outline left behind
+        // would draw the plot where it used to be, so it gives way to the box.
+        if (array_intersect(['svg_x', 'svg_y', 'svg_w', 'svg_h'], array_keys($data)) !== []) {
+            $data['svg_points'] = null;
+        }
 
         if ($data !== []) {
             Lot::update($id, $data);

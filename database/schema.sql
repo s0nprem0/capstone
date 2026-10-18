@@ -74,6 +74,7 @@ CREATE TABLE `cemetery_lots` (
   `svg_y` DECIMAL(6,2) NOT NULL DEFAULT 0.00,
   `svg_w` DECIMAL(6,2) NOT NULL DEFAULT 40.00,
   `svg_h` DECIMAL(6,2) NOT NULL DEFAULT 40.00,
+  `svg_points` VARCHAR(512) NULL COMMENT 'Outline "x y x y ..." of a plot that is not an upright rectangle (tilted perimeter rows, plots cut by a diagonal walk); svg_x..svg_h is then its bounding box',
   `description` TEXT NULL,
   FOREIGN KEY (`section_id`) REFERENCES `cemetery_sections`(`section_id`) ON DELETE CASCADE,
   UNIQUE KEY `uq_lot_code` (`lot_code`),

@@ -101,12 +101,13 @@ class Lot extends Model
     public static function map(): array
     {
         // latitude/longitude are not selected: nothing in the SVG map reads
-        // them, and at ~3,890 rows they are dead weight on the largest payload
+        // them, and at ~6,400 rows they are dead weight on the largest payload
         // the app sends. Use find() when a single lot's coordinates are needed.
+        // Section fields beyond the name travel once, on the section.
         $stmt = self::db()->query(
             "SELECT l.lot_id, l.lot_code, l.block, l.lot_type, l.price, l.status,
-                    l.svg_x, l.svg_y, l.svg_w, l.svg_h, l.description,
-                    s.section_id, s.section_name, s.location, s.svg_viewbox
+                    l.svg_x, l.svg_y, l.svg_w, l.svg_h, l.svg_points, l.description,
+                    s.section_id, s.section_name
              FROM cemetery_lots l
              JOIN cemetery_sections s ON s.section_id = l.section_id
              ORDER BY s.section_name, l.lot_code"

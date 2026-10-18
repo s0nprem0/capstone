@@ -1,6 +1,7 @@
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { STATUS_COLORS } from './CemeterySvgMap'
 import PlanImage from '../map/PlanImage'
+import PlotShape from '../map/PlotShape'
 
 const [vbX, vbY, vbWidth, vbHeight] = MAP_VIEWBOX
 
@@ -32,13 +33,9 @@ export default function OccupancyMap({ sections }) {
 
       <g>
         {lots.map((lot) => (
-          <rect
+          <PlotShape
             key={lot.lot_id}
-            x={lot.svg_x}
-            y={lot.svg_y}
-            width={lot.svg_w}
-            height={lot.svg_h}
-            rx={1}
+            lot={lot}
             fill={STATUS_COLORS[lot.status] || 'var(--color-text-muted)'}
             stroke="#fff"
             strokeWidth={1}

@@ -27,7 +27,7 @@ class MapController
         $lots = Lot::map();
 
         // One pass over the lots into per-section buckets, rather than scanning
-        // the whole set once per section (66 x 3,890).
+        // the whole set once per section (70 x 6,440).
         $bySection = [];
         foreach ($lots as $lot) {
             $bySection[(int) $lot['section_id']][] = $lot;

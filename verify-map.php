@@ -10,7 +10,7 @@ $pdo = Database::connection();
 
 $sections = $pdo->query("SELECT section_id, section_name, svg_viewbox, svg_points FROM cemetery_sections ORDER BY section_id")
     ->fetchAll();
-$lots = $pdo->query("SELECT lot_id, lot_code, section_id, svg_x, svg_y, svg_w, svg_h FROM cemetery_lots")
+$lots = $pdo->query("SELECT lot_id, lot_code, section_id, svg_x, svg_y, svg_w, svg_h, svg_points FROM cemetery_lots")
     ->fetchAll();
 
 function parsePoints(string $s): array
@@ -35,6 +35,36 @@ function pointInPolygon(array $poly, float $x, float $y): bool
         }
     }
     return $hit;
+}
+
+/**
+ * Whether two convex outlines overlap by more than $tolerance, by the
+ * separating-axis test. Plots share drawn lines with their neighbours, so a
+ * touch along an edge is not an overlap.
+ */
+function polygonsOverlap(array $a, array $b, float $tolerance = 0.5): bool
+{
+    foreach ([$a, $b] as $poly) {
+        $n = count($poly);
+        for ($i = 0; $i < $n; $i++) {
+            [$x1, $y1] = $poly[$i];
+            [$x2, $y2] = $poly[($i + 1) % $n];
+            $len = hypot($x2 - $x1, $y2 - $y1);
+            if ($len == 0.0) continue;
+            $nx = ($y1 - $y2) / $len;
+            $ny = ($x2 - $x1) / $len;
+            $project = static fn(array $p): array => [
+                min(array_map(static fn($q) => $q[0] * $nx + $q[1] * $ny, $p)),
+                max(array_map(static fn($q) => $q[0] * $nx + $q[1] * $ny, $p)),
+            ];
+            [$amin, $amax] = $project($a);
+            [$bmin, $bmax] = $project($b);
+            if ($amax - $bmin <= $tolerance || $bmax - $amin <= $tolerance) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 $bySection = [];
@@ -63,7 +93,14 @@ foreach ($sections as $s) {
         if ($hasOutline && !pointInPolygon($poly, $cx, $cy)) {
             $outside++;
         }
-        $boxes[] = [$l['svg_x'], $l['svg_y'], $l['svg_x'] + $l['svg_w'], $l['svg_y'] + $l['svg_h'], $l['lot_code']];
+        [$x0, $y0] = [(float) $l['svg_x'], (float) $l['svg_y']];
+        [$x1, $y1] = [$x0 + (float) $l['svg_w'], $y0 + (float) $l['svg_h']];
+        // A tilted or cut plot is tested by its outline: its bounding box
+        // overlaps its neighbours' even where the plots themselves do not.
+        $shape = !empty($l['svg_points'])
+            ? parsePoints((string) $l['svg_points'])
+            : [[$x0, $y0], [$x1, $y0], [$x1, $y1], [$x0, $y1]];
+        $boxes[] = [$x0, $y0, $x1, $y1, $l['lot_code'], $shape];
     }
 
     // pairwise overlap within the section
@@ -72,7 +109,8 @@ foreach ($sections as $s) {
     for ($i = 0; $i < $n; $i++) {
         for ($j = $i + 1; $j < $n; $j++) {
             if ($boxes[$i][0] < $boxes[$j][2] && $boxes[$j][0] < $boxes[$i][2]
-                && $boxes[$i][1] < $boxes[$j][3] && $boxes[$j][1] < $boxes[$i][3]) {
+                && $boxes[$i][1] < $boxes[$j][3] && $boxes[$j][1] < $boxes[$i][3]
+                && polygonsOverlap($boxes[$i][5], $boxes[$j][5])) {
                 $overlap++;
             }
         }
