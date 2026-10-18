@@ -26,7 +26,7 @@ export default function OccupancyMap({ sections }) {
       role="img"
       aria-label={`Cemetery occupancy: ${counts.available} available, ${counts.reserved} reserved, ${counts.occupied} occupied`}
     >
-      <rect x={vbX - 200} y={vbY - 200} width={vbWidth + 400} height={vbHeight + 400} fill="#f4f1e8" />
+      <rect x={vbX - 200} y={vbY - 200} width={vbWidth + 400} height={vbHeight + 400} fill="#eeeeec" />
 
       <PlanImage />
 

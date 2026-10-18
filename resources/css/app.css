@@ -1228,7 +1228,7 @@ textarea {
   height: 100%;
   min-height: 420px;
   display: block;
-  background: #f4f1e8;
+  background: #eeeeec;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: grab;
@@ -2716,4 +2716,10 @@ textarea:disabled {
 .map-intro {
   margin: 0 0 var(--space-sm);
   max-width: 60ch;
+}
+
+/* The map is a tab stop (arrow keys pan, +/- zoom). Its frame clips outside
+   it, so the ring is drawn inside the edge. */
+.map-svg:focus-visible {
+  outline-offset: -3px;
 }
