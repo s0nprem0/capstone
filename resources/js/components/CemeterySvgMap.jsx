@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { MAP_VIEWBOX } from '../map/tracePaths'
-import { MapReferenceImage, readReference } from '../map/reference'
+import PlanImage, { levelFor } from '../map/PlanImage'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -184,7 +184,6 @@ export default function CemeterySvgMap({
   contextLots,
   activeSection,
   selectedLotId,
-  showLayout,
   query,
   onSelectLot,
   onFocusSection,
@@ -202,7 +201,6 @@ export default function CemeterySvgMap({
   const vbRef = useRef(vb)
   const [pane, setPane] = useState({ width: 0, height: 0 })
   const [fillPane, setFillPane] = useState(true)
-  const [reference] = useState(readReference)
 
   const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
 
@@ -508,13 +506,7 @@ export default function CemeterySvgMap({
       >
         <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#f4f1e8" />
 
-        {showLayout && (
-          <MapReferenceImage
-            reference={{ ...reference, visible: true }}
-            width={MAP_VIEWBOX[2]}
-            height={MAP_VIEWBOX[3]}
-          />
-        )}
+        <PlanImage level={levelFor(pane.width > 0 ? vb[2] / pane.width : MAP_VIEWBOX[2])} />
 
         {/* Section outlines underneath, plots over them, titles on top. The
             survey plan already draws each row of plots, so only the open section

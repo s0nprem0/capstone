@@ -1,5 +1,6 @@
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { STATUS_COLORS } from './CemeterySvgMap'
+import PlanImage from '../map/PlanImage'
 
 const [vbX, vbY, vbWidth, vbHeight] = MAP_VIEWBOX
 
@@ -27,16 +28,7 @@ export default function OccupancyMap({ sections }) {
     >
       <rect x={vbX - 200} y={vbY - 200} width={vbWidth + 400} height={vbHeight + 400} fill="#f4f1e8" />
 
-      <image
-        href="/traces/cemetery-base.png"
-        x="0"
-        y="0"
-        width={vbWidth}
-        height={vbHeight}
-        preserveAspectRatio="xMidYMid meet"
-        opacity={0.9}
-        aria-hidden="true"
-      />
+      <PlanImage />
 
       <g>
         {lots.map((lot) => (

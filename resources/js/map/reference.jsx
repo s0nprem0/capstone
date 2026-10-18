@@ -1,3 +1,5 @@
+import PlanImage from './PlanImage'
+
 const STORAGE_KEY = 'cemetery-map-reference-v1'
 
 export const DEFAULT_REFERENCE = {
@@ -30,20 +32,8 @@ export function MapReferenceImage({ reference, width, height }) {
       opacity={reference.opacity}
       pointerEvents="none"
     >
-      {/* The base is a render of line detailed.svg, which carries the line work
-          only - the red section-number layer was rasterised from a different
-          export and sits about 22px off this frame, so it is not composited
-          here. Keeping it would draw numbers a couple of plots away from the
-          plots they label. */}
-      <image
-        href="/traces/cemetery-base.png"
-        x="0"
-        y="0"
-        width={width}
-        height={height}
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden="true"
-      />
+      {/* Editors trace against the full-resolution sheet. */}
+      <PlanImage level={4096} />
     </g>
   )
 }

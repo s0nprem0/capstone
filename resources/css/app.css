@@ -1334,15 +1334,6 @@ textarea {
   max-width: 220px;
 }
 
-.map-toggle {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-xs);
-  font-weight: 400;
-  font-size: var(--text-sm);
-  margin-left: auto;
-}
-
 .map-zoom-controls {
   position: absolute;
   top: 0.75rem;
@@ -1797,9 +1788,6 @@ textarea:disabled {
     max-width: none;
     width: 100%;
   }
-  .map-toggle {
-    margin-left: 0;
-  }
 }
 
 /* Touch targets. The row actions, chips, tabs and zoom buttons are all sized
@@ -2176,12 +2164,7 @@ textarea:disabled {
   flex-wrap: wrap;
 }
 
-.map-rail .map-toggle {
-  margin-left: 0;
-}
-
-/* Caveat under the toggle: long enough to stop the overlay being read as a
-   plot plan, short enough not to crowd the rail. */
+/* Short notes under a rail control. */
 .map-toggle-note {
   font-size: var(--text-sm);
   line-height: 1.45;

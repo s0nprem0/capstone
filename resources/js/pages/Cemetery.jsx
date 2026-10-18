@@ -14,7 +14,6 @@ export default function Cemetery() {
   const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
   const [viewSectionId, setViewSectionId] = useState(null)
-  const [showLayout, setShowLayout] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -225,22 +224,6 @@ export default function Cemetery() {
               />
             </div>
 
-            <div className="map-rail-group">
-              <p className="panel-heading">Display</p>
-              <label className="map-toggle">
-                <input
-                  type="checkbox"
-                  checked={showLayout}
-                  onChange={(e) => setShowLayout(e.target.checked)}
-                />
-                Survey plan
-              </label>
-              <p className="text-muted map-toggle-note">
-                The scanned survey is the map base. Colored rectangles show the
-                current lot records and are being aligned to the plan.
-              </p>
-            </div>
-
             <div className="map-rail-group map-rail-legend">
               <p className="panel-heading">Legend</p>
               <div className="map-legend">
@@ -258,7 +241,6 @@ export default function Cemetery() {
               contextLots={allLots}
               activeSection={activeSection}
               selectedLotId={selectedLot?.lot_id}
-              showLayout={showLayout}
               query={query}
               onSelectLot={selectLot}
               onFocusSection={focusSection}
