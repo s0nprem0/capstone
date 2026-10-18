@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Rebuild every plot on the map from the scanned survey plan.
+"""Rebuild every plot on the map from the survey plan.
 
 The plan (public/traces/survey-lines.png, 4096x3072) is the map's coordinate
-space. Each plot on it is a patch of paper enclosed by drawn lines, so the
+space, and cemetery-base.png redraws its line work on the same sheet. Each
+plot is a patch of paper enclosed by drawn lines, so the
 plots are found as the enclosed regions of a line mask, upright or rotated.
 They are then grouped into the plan's blocks (the areas between walks), rows
 are recovered within each block, gaps a faint or smudged line left are filled
@@ -29,6 +30,10 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / 'public/traces/survey-lines.png'
+# The plan's line work redrawn cleanly on the same sheet (within a pixel of the
+# scan): no digits, circles or smudges over the plots. Its plot lines are
+# traced; the scan is read only where the clean drawing leaves a block empty.
+CLEAN = ROOT / 'public/traces/cemetery-base.png'
 CENTRES = ROOT / 'database/survey/section-centres.json'
 OUT_SQL = ROOT / 'database/survey/lots.sql'
 
@@ -61,9 +66,9 @@ EXTRA_CENTRES = {1: (379.0, 1587.0), 2: (3107.0, 2638.0)}
 #   single  - the whole block is one section.
 BLOCKS = [
     {'name': 'north-a', 'outline': sheet([(545, 135), (1000, 106), (1145, 106), (1478, 148), (1490, 218), (545, 210)]),
-     'mode': 'single', 'section': 69, 'code': 'NA'},
+     'mode': 'single', 'section': 69, 'code': 'NA', 'scan': True},
     {'name': 'north-b', 'outline': sheet([(595, 208), (1502, 224), (1534, 390), (766, 382)]),
-     'mode': 'single', 'section': 70, 'code': 'NB'},
+     'mode': 'single', 'section': 70, 'code': 'NB', 'scan': True},
     {'name': 'west', 'outline': box(236, 410, 521, 793), 'mode': 'rows', 'sections': list(range(3, 12))},
     {'name': 'west-2', 'outline': box(523, 410, 818, 793), 'mode': 'rows', 'sections': list(range(12, 21))},
     {'name': 'chapel', 'outline': box(819, 612, 992, 793), 'mode': 'columns', 'sections': [21, 22, 23, 24]},
@@ -87,7 +92,8 @@ BLOCKS = [
 PERIMETER = [
     {'section': 1, 'path': SITE[10:11] + SITE[9:10] + SITE[8:9] + SITE[7:8] + SITE[6:7], 'band': (0, 120)},
     {'section': 2, 'path': SITE[4:7], 'band': (0, 120)},
-    {'section': 64, 'path': sheet([(1583, 672), (1733, 938)]), 'band': (0, 75)},
+    # The clean drawing leaves out several of this row's dividers; read the scan.
+    {'section': 64, 'path': sheet([(1583, 672), (1733, 938)]), 'band': (0, 75), 'scan': True},
 ]
 
 PERIMETER_SECTIONS = {p['section'] for p in PERIMETER}
@@ -114,10 +120,37 @@ UPRIGHT = 4
 DOUBLE_AT, FAMILY_AT = 1.7, 3.2
 
 
-def line_mask(gray):
+def photo_lines(gray):
     # Darker than the local paper. Adaptive, because the photograph is unevenly
     # lit; the window spans a few plots.
     return cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 31, 12)
+
+
+def line_mask(gray):
+    """The clean drawing's lines, plus the scan's inside the blocks the clean
+    drawing outlines but does not divide into plots (the northern strips)."""
+    clean = cv2.imread(str(CLEAN), cv2.IMREAD_GRAYSCALE)
+    # Thin, anti-aliased strokes: a pixel of thickening closes the hairline
+    # gaps that let a block's edge plots leak into the walk outside.
+    lines = cv2.dilate((clean < 200).astype(np.uint8) * 255, np.ones((3, 3), np.uint8))
+    scan_only = np.zeros_like(gray)
+    for b in BLOCKS:
+        if b.get('scan'):
+            cv2.fillPoly(scan_only, [np.array(b['outline'], np.int32)], 255)
+    for p in PERIMETER:
+        if p.get('scan'):
+            cv2.polylines(scan_only, [np.array(p['path'], np.int32)], False, 255, 2 * p['band'][1])
+    scan_only = cv2.erode(scan_only, np.ones((7, 7), np.uint8))
+    scan = photo_lines(gray)
+    # The clean drawing is serpentine paths, which along a block's outer edge
+    # close off only every other plot. The scan's long straight strokes (block
+    # borders, row lines) close the rest; digits and circles are never long
+    # and straight enough to pass.
+    borders = cv2.bitwise_or(
+        cv2.morphologyEx(scan, cv2.MORPH_OPEN, np.ones((1, 61), np.uint8)),
+        cv2.morphologyEx(scan, cv2.MORPH_OPEN, np.ones((61, 1), np.uint8)),
+    )
+    return cv2.bitwise_or(cv2.bitwise_or(lines, borders), cv2.bitwise_and(scan, scan_only))
 
 
 def find_cells(gray):

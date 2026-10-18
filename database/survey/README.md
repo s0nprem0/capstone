@@ -1,7 +1,8 @@
 # Survey geometry
 
-Every plot on the map is traced from the scanned survey plan,
-`public/traces/survey-lines.png` (4096 x 3072), by `tools/trace_plan.py`. The
+Every plot on the map is traced by `tools/trace_plan.py` from the clean redraw of
+the plan's line work, `public/traces/cemetery-base.png`, which sits within a pixel
+of the scanned plan `public/traces/survey-lines.png` (4096 x 3072) shown on the map. The
 plan is the map's coordinate space, so a plot's stored rectangle or outline is
 in the plan's own pixels and lands on the plot as drawn.
 
@@ -26,8 +27,11 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
 ## Method
 
-1. **Lines.** An adaptive threshold separates drawn lines from paper, so the
-   unevenly lit photograph does not matter.
+1. **Lines.** The clean drawing's strokes, thickened a pixel to close hairline
+   gaps, plus the scan's long straight strokes (block borders, row lines),
+   which close the outer-edge plots the clean drawing's serpentine paths leave
+   open. Inside the two northern strips and Section 64, where the clean
+   drawing leaves out the dividers, the scan's lines are used directly.
 2. **Plots.** Each patch of paper enclosed by lines, inside the drawn site, is
    a candidate plot. Holes (a digit, a pencil box) are filled before measuring.
    Rectangular patches are plots; large convex ones are the trapezoids and
@@ -48,7 +52,7 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
 ## Coverage
 
-70 sections, 6,837 plots: every block the plan draws.
+70 sections, 6,869 plots: every block the plan draws.
 
 | Area | Sections | Notes |
 |---|---|---|
@@ -70,5 +74,5 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
   the numbers in the perimeter rows) is not read. Codes follow position.
 - **Lot type.** A plot over 1.7x the median area is a double, over 3.2x a
   family plot. The cemetery may sell them differently.
-- **North strips.** Their pencil grid is dense and smudged; a few plots there
-  may be split or missing.
+- **North strips.** Traced from the scan alone, whose pencil grid is dense and
+  smudged; a few plots there may be split or missing.
