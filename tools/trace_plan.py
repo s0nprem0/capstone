@@ -61,9 +61,9 @@ EXTRA_CENTRES = {1: (379.0, 1587.0), 2: (3107.0, 2638.0)}
 #   single  - the whole block is one section.
 BLOCKS = [
     {'name': 'north-a', 'outline': sheet([(545, 135), (1000, 106), (1145, 106), (1478, 148), (1490, 218), (545, 210)]),
-     'mode': 'single', 'section': 69, 'code': 'NA', 'regular': False},
+     'mode': 'single', 'section': 69, 'code': 'NA'},
     {'name': 'north-b', 'outline': sheet([(595, 208), (1502, 224), (1534, 390), (766, 382)]),
-     'mode': 'single', 'section': 70, 'code': 'NB', 'regular': False},
+     'mode': 'single', 'section': 70, 'code': 'NB'},
     {'name': 'west', 'outline': box(236, 410, 521, 793), 'mode': 'rows', 'sections': list(range(3, 12))},
     {'name': 'west-2', 'outline': box(523, 410, 818, 793), 'mode': 'rows', 'sections': list(range(12, 21))},
     {'name': 'chapel', 'outline': box(819, 612, 992, 793), 'mode': 'columns', 'sections': [21, 22, 23, 24]},
@@ -377,6 +377,39 @@ def row_slope(cells):
     return max(np.linspace(-0.05, 0.05, 201), key=sharpness)
 
 
+def fill_columns(rows, slope):
+    """Put back plots a row is missing where the rows either side have one.
+
+    A block's plots line up in columns, so a gap in a row with a plot above it
+    and below it at the same place is a plot the trace missed: a circled
+    number or a digit drawn over it, more often than a smudged line. Only
+    inside the row's own extent, so a block's stepped edge is left as drawn.
+    """
+    def overlaps(c, x0, x1):
+        return min(c['cx'] + c['w'] / 2, x1) - max(c['cx'] - c['w'] / 2, x0) > 0.3 * (x1 - x0)
+
+    out = []
+    for i, row in enumerate(rows):
+        left = min(c['cx'] - c['w'] / 2 for c in row)
+        right = max(c['cx'] + c['w'] / 2 for c in row)
+        ry = float(np.median([c['cy'] - slope * c['cx'] for c in row]))
+        height = float(np.median([c['h'] for c in row]))
+        above = rows[i - 1] if i > 0 else []
+        below = rows[i + 1] if i + 1 < len(rows) else []
+        added = list(row)
+        for n in above:
+            x0, x1 = n['cx'] - n['w'] / 2, n['cx'] + n['w'] / 2
+            if x0 < left - 0.2 * n['w'] or x1 > right + 0.2 * n['w']:
+                continue
+            if any(overlaps(c, x0, x1) for c in added):
+                continue
+            if not any(overlaps(m, x0, x1) for m in below):
+                continue
+            added.append(make_cell(n['cx'], ry + slope * n['cx'], n['w'], height, 0))
+        out.append(sorted(added, key=lambda c: c['cx']))
+    return out
+
+
 def rows_of(cells):
     height = float(np.median([c['h'] for c in cells]))
     cells = split_tall(cells, height)
@@ -389,6 +422,7 @@ def rows_of(cells):
     rows = [r for r in rows if np.median([c['h'] for c in r]) >= 0.6 * height]
     rows = [r for r in rows if len(r) >= 2 or r[0]['area'] > 0.6 * height * height]
     rows = [regularise_row(r) for r in sorted(rows, key=lambda r: np.mean([c['ry'] for c in r]))]
+    rows = fill_columns(rows, slope)
     for index, row in enumerate(rows):
         for c in row:
             c['row'] = index
