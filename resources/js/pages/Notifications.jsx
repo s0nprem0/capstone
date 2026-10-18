@@ -74,7 +74,7 @@ export default function Notifications() {
                   {typeLabel(n.type)}
                 </span>
                 <p className="notification-message">{n.message}</p>
-                <span className="text-muted" style={{ fontSize: '0.75rem' }}>{n.created_at}</span>
+                <span className="text-muted">{n.created_at}</span>
               </div>
               {!n.is_read && (
                 <button className="btn btn-sm btn-secondary" onClick={() => markRead(n.notification_id)}>
