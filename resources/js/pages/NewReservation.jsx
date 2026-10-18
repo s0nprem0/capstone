@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import PlotPicker from '../components/PlotPicker'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 
@@ -27,6 +28,8 @@ export default function NewReservation() {
   const [touched, setTouched] = useState({})
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+  const [sectionChoice, setSectionChoice] = useState(null)
 
   useEffect(() => {
     api('/api/map').then(({ ok, data }) => {
@@ -51,6 +54,17 @@ export default function NewReservation() {
   // loaded, otherwise every deep link reports as stale for the first frame.
   const staleLot = sections.length > 0 && form.lot_id !== '' && !selectedLot
 
+  // Until the visitor picks a section themselves, follow the selected plot, so a
+  // ?lot= deep link opens on its own section with the plot highlighted.
+  const sectionId = sectionChoice ?? (selectedLot ? String(selectedLot.section_id) : '')
+  const q = search.trim().toLowerCase()
+  const matches = sectionId || q
+    ? lots.filter((l) =>
+        (!sectionId || String(l.section_id) === sectionId) &&
+        (!q || l.lot_code.toLowerCase().includes(q) || l.section_name.toLowerCase().includes(q))
+      )
+    : []
+
   const errors = {}
   if (!form.lot_id) errors.lot_id = 'Select a lot.'
   else if (staleLot) errors.lot_id = 'That lot is no longer available.'
@@ -73,13 +87,12 @@ export default function NewReservation() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleLotChange = (e) => {
-    const lot = lots.find((l) => String(l.lot_id) === e.target.value)
-    const max = lot ? SLOT_CAPACITY[lot.lot_type] || 1 : null
+  const selectLot = (lot) => {
+    const max = SLOT_CAPACITY[lot.lot_type] || 1
     setForm((prev) => ({
       ...prev,
-      lot_id: e.target.value,
-      number_of_slots: max ? Math.min(Number(prev.number_of_slots) || 1, max) : prev.number_of_slots,
+      lot_id: String(lot.lot_id),
+      number_of_slots: Math.min(Number(prev.number_of_slots) || 1, max),
     }))
   }
 
@@ -106,6 +119,8 @@ export default function NewReservation() {
       setSuccess(`Reservation #${data.reservation_id} submitted. The plot is held while it awaits approval.`)
       setForm({ lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 })
       setTouched({})
+      setSearch('')
+      setSectionChoice(null)
     } else {
       setError(data?.error || 'Failed to create reservation')
     }
@@ -122,43 +137,66 @@ export default function NewReservation() {
       )}
 
       <form onSubmit={handleSubmit} className="form-card" noValidate>
-        <div className="form-grid">
-          <div className="field">
+        <fieldset className="plot-picker" aria-describedby="res-lot-hint">
+          <legend>Cemetery Lot</legend>
+          <span className="label-hint" id="res-lot-hint">
+            Choose a section, or type a plot code, then tap the plot you would like to hold.
+            Not sure which one? <Link to="/">Browse the cemetery map</Link> to see where each plot lies.
+          </span>
+          <div className="plot-picker-filters">
             <label>
-              Cemetery Lot
+              Section
               <select
-                name="lot_id"
-                value={form.lot_id}
-                onChange={handleLotChange}
-                onBlur={() => blur('lot_id')}
+                value={sectionId}
+                onChange={(e) => setSectionChoice(e.target.value)}
                 aria-invalid={!!show('lot_id')}
-                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error res-lot-hint' : 'res-lot-hint'}
-                required
+                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error' : undefined}
               >
-                <option value="">Select an available lot</option>
+                <option value="">All sections</option>
                 {grouped.map((g) => (
-                  <optgroup key={g.section.section_id} label={g.section.section_name}>
-                    {g.lots.map((lot) => (
-                      <option key={lot.lot_id} value={lot.lot_id}>
-                        {lot.lot_code} — ₱{Number(lot.price).toLocaleString()}
-                      </option>
-                    ))}
-                  </optgroup>
+                  <option key={g.section.section_id} value={g.section.section_id}>
+                    {g.section.section_name} ({g.lots.length} available)
+                  </option>
                 ))}
               </select>
             </label>
-            {/* Staleness shows on its own — it is a data condition, not a
-                field the visitor has just left. */}
-            {(staleLot || show('lot_id')) && (
-              <span className="field-error" id="res-lot-error" role="alert">{errors.lot_id}</span>
-            )}
-            {/* The dropdown lists bare codes, and the map is what makes a code
-                mean anything. Point at it before the visitor has to guess. */}
-            <span className="label-hint" id="res-lot-hint">
-              The plot you would like to hold. Not sure which one?{' '}
-              <Link to="/">Browse the cemetery map</Link> to see where each plot lies.
-            </span>
+            <label>
+              Plot code
+              <input
+                type="search"
+                className="search-input"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="e.g. S3-025"
+                autoComplete="off"
+              />
+            </label>
           </div>
+          {/* Staleness shows on its own — it is a data condition, not a
+              field the visitor has just left. */}
+          {(staleLot || show('lot_id')) && (
+            <span className="field-error" id="res-lot-error" role="alert">{errors.lot_id}</span>
+          )}
+          <p className="panel-heading" id="res-lot-list-heading">
+            {sectionId || q ? `Available plots (${matches.length})` : 'Available plots'}
+          </p>
+          <PlotPicker
+            lots={matches}
+            selectedId={form.lot_id}
+            onSelect={selectLot}
+            labelledBy="res-lot-list-heading"
+            emptyMessage={
+              sectionId || q
+                ? 'No available plot matches that. Try another section or a shorter code.'
+                : 'Choose a section or type a plot code to see the plots you can reserve.'
+            }
+            showSection={!sectionId}
+            showStatus={false}
+            showPrice
+          />
+        </fieldset>
+
+        <div className="form-grid">
           <div className="field">
             <label>
               Reservation Date

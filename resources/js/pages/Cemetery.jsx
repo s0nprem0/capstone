@@ -5,13 +5,8 @@ import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
+import PlotPicker, { STATUS_LABELS } from '../components/PlotPicker'
 import { BURIAL_TYPES, INTERMENT_STATUS, LOT_TYPES, label, lifespan, longDate } from '../lib/terms'
-
-const STATUS_LABELS = {
-  available: 'Available',
-  reserved: 'Reserved',
-  occupied: 'Occupied',
-}
 
 export default function Cemetery() {
   const { user } = useAuth()
@@ -114,11 +109,8 @@ export default function Cemetery() {
   // plots answer only to a pointer (click handled on the map root), so a list of
   // buttons is how a keyboard or screen-reader user selects one. It mirrors the
   // active section, or the search matches when browsing across sections, so the
-  // two never disagree. Capped so a one-letter search cannot mount thousands of
-  // nodes; the search box is right above it to narrow.
-  const MAX_LISTED = 300
+  // two never disagree. PlotPicker caps the rows; the search box above narrows.
   const listedLots = activeSection ? activeSection.lots || [] : query ? compositeLots : []
-  const shownLots = listedLots.slice(0, MAX_LISTED)
 
   const selectLot = (lot) => {
     const next = lot ? String(lot.lot_id) : null
@@ -211,38 +203,14 @@ export default function Cemetery() {
               <p className="panel-heading" id="plots-list-heading">
                 {activeSection ? `${activeSection.section_name} plots` : 'Matching plots'}
               </p>
-              {listedLots.length === 0 ? (
-                <p className="text-muted map-toggle-note">
-                  Choose a section or search a lot code to list its plots here.
-                </p>
-              ) : (
-                <>
-                  <ul className="plot-list" aria-labelledby="plots-list-heading">
-                    {shownLots.map((lot) => {
-                      const isSelected = String(lot.lot_id) === lotParam
-                      return (
-                        <li key={lot.lot_id}>
-                          <button
-                            type="button"
-                            className={`plot-list-item${isSelected ? ' plot-list-item--selected' : ''}`}
-                            onClick={() => selectLot(lot)}
-                            aria-current={isSelected ? 'true' : undefined}
-                          >
-                            <span className="plot-list-code">{lot.lot_code}</span>
-                            {!activeSection && <span className="plot-list-section">{lot.section_name}</span>}
-                            <span className={`mark mark--${lot.status}`}>{STATUS_LABELS[lot.status]}</span>
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                  {listedLots.length > MAX_LISTED && (
-                    <p className="text-muted map-toggle-note">
-                      Showing the first {MAX_LISTED} of {listedLots.length}. Narrow the search to see the rest.
-                    </p>
-                  )}
-                </>
-              )}
+              <PlotPicker
+                lots={listedLots}
+                selectedId={lotParam}
+                onSelect={selectLot}
+                labelledBy="plots-list-heading"
+                emptyMessage="Choose a section or search a lot code to list its plots here."
+                showSection={!activeSection}
+              />
             </div>
 
             <div className="map-rail-group">

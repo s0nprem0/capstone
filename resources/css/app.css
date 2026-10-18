@@ -1824,6 +1824,11 @@ textarea:disabled {
     min-height: 44px;
   }
 
+  input:not([type='checkbox']):not([type='radio']),
+  select {
+    min-height: 44px;
+  }
+
   .map-zoom-controls .btn {
     min-height: 44px;
     min-width: 44px;
@@ -2270,6 +2275,42 @@ textarea:disabled {
 .plot-list-item .mark {
   flex: none;
   margin-left: auto;
+}
+
+.plot-list-price {
+  flex: none;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The reserve form's lot field: a section filter and a code search over the
+   same keyboard-operable list the map rail uses, in place of a native select
+   that held every available plot in the cemetery. */
+.plot-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+  border: 0;
+}
+
+.plot-picker legend {
+  padding: 0;
+  margin-bottom: var(--space-2xs);
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+.plot-picker-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.plot-picker .panel-heading {
+  margin-top: var(--space-xs);
 }
 
 @media (pointer: coarse) {
