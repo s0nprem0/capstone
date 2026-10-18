@@ -179,18 +179,26 @@ def find_cells(gray):
         if filled_px / ((rw + 1) * (rh + 1)) >= 0.75:
             cell = make_cell(cx, cy, rw, rh, ang, filled_px) | {'traced': True}
             if not is_upright(cell):
-                # A tilted plot is kept as traced: a rectangle fitted to it
-                # bulges past its corners into the next plot.
-                cell['quad'] = (cv2.approxPolyDP(contour, 1.5, True).reshape(-1, 2) + (x, y)).astype(float).tolist()
+                # A tilted plot is kept as traced (a rectangle fitted to it bulges
+                # past its corners into the next plot), by its convex outline.
+                cell['quad'] = plot_outline(contour, (x, y), 1.5)
             cells.append(cell)
             continue
         # The plots cut by a diagonal walk are trapezoids and triangles, which no
         # rectangle fits. A large, convex region is still a plot: keep its outline.
         hull_area = cv2.contourArea(cv2.convexHull(contour)) or 1
         if filled_px >= 1500 and cv2.contourArea(contour) / hull_area >= 0.9:
-            outline = cv2.approxPolyDP(contour, 2.5, True).reshape(-1, 2) + (x, y)
+            outline = np.array(plot_outline(contour, (x, y), 2.5))
             cells.append(make_polygon(outline, filled_px) | {'traced': True})
     return drop_nested(cells)
+
+
+def plot_outline(contour, offset, tolerance):
+    """A plot's outline as its convex hull, simplified. Plots are convex; a dent
+    in the traced edge is a circled number or a digit touching the line (the
+    circle printed on S64-005 bit a notch out of it), not the plot's shape."""
+    hull = cv2.convexHull(contour)
+    return (cv2.approxPolyDP(hull, tolerance, True).reshape(-1, 2) + offset).astype(float).tolist()
 
 
 def make_polygon(outline, area):
