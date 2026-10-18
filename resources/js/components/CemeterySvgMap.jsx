@@ -189,6 +189,7 @@ export default function CemeterySvgMap({
   onFocusSection,
   onExitSection,
   onClearSearch,
+  coverBottom = 0,
 }) {
   const svgRef = useRef(null)
   const rafRef = useRef(null)
@@ -332,20 +333,23 @@ export default function CemeterySvgMap({
       : (contextLots || allLots).find((l) => l.lot_id === selectedLotId)
     if (!lot || pane.width === 0) return
     const [x, y, w, h] = targetRef.current
+    // On a phone the plot's record slides up over the bottom of the map; only
+    // the part above it counts as in view.
+    const shown = 1 - coverBottom
     const inset = Math.min(w, h) * 0.08
     const right = x + w - inset - (CONTROLS_PX * w) / pane.width
     const inView =
       lot.svg_x >= x + inset &&
       lot.svg_x + lot.svg_w <= right &&
       lot.svg_y >= y + inset &&
-      lot.svg_y + lot.svg_h <= y + h - inset
+      lot.svg_y + lot.svg_h <= y + h * shown - inset
     if (inView) return
     const nw = Math.min(w, NEAR_VIEW)
     const nh = (nw / w) * h
     const cx = lot.svg_x + lot.svg_w / 2
     const cy = lot.svg_y + lot.svg_h / 2
-    flyTo([cx - nw / 2, cy - nh / 2, nw, nh])
-  }, [selectedLotId, pane.width > 0]) // eslint-disable-line react-hooks/exhaustive-deps
+    flyTo([cx - nw / 2, cy - (nh * shown) / 2, nw, nh])
+  }, [selectedLotId, coverBottom, pane.width > 0]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -726,7 +730,8 @@ export default function CemeterySvgMap({
       )}
 
       <div className="map-drag-hint">
-        Drag to pan · scroll to zoom{activeSection && ' · Esc for overview'}
+        <span className="hint-pointer">Drag to pan · scroll to zoom{activeSection && ' · Esc for overview'}</span>
+        <span className="hint-touch">Drag to move · pinch to zoom</span>
       </div>
     </div>
   )

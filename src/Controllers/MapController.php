@@ -21,7 +21,9 @@ class MapController
     public function map(): void
     {
         $stmt = Database::connection()->query(
-            "SELECT * FROM cemetery_sections ORDER BY section_id ASC"
+            // In the plan's own order, so sections added later (the perimeter
+            // rows, the northern strips) do not trail the list.
+            "SELECT * FROM cemetery_sections ORDER BY section_number IS NULL, section_number, section_id"
         );
         $sections = $stmt->fetchAll();
         $lots = Lot::map();

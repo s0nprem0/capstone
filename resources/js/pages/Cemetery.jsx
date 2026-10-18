@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
+import useMediaQuery from '../lib/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import PlotPicker, { STATUS_LABELS } from '../components/PlotPicker'
 import { nearestSection } from '../lib/sections'
 import { BURIAL_TYPES, INTERMENT_STATUS, LOT_TYPES, label, lifespan, longDate } from '../lib/terms'
+
+// Share of the map a phone's plot sheet can cover once the map is scrolled to
+// the top of the screen: the sheet is at most 48% of the screen, the map 70%.
+// A chosen plot is brought into the part still showing.
+const SHEET_COVER = 0.3
 
 export default function Cemetery() {
   const { user } = useAuth()
@@ -18,6 +24,10 @@ export default function Cemetery() {
   const [search, setSearch] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const lotParam = searchParams.get('lot')
+  // Phones get a dropdown for sections, a folded plot list and a sheet for the
+  // plot's record: three stacked panes left the map a 270px strip.
+  const phone = useMediaQuery('(max-width: 768px)')
+  const layoutRef = useRef(null)
   // The map reframes itself on whatever a search matched, so it follows the
   // settled query rather than every keystroke.
   const query = useDebounced(search.trim())
@@ -126,6 +136,16 @@ export default function Cemetery() {
     setSearchParams(next ? { lot: next } : {}, { replace: true })
   }
 
+  // On a phone the map is taller than what is left of the screen once its
+  // record slides up, so bring the map to the top: the plot then shows above
+  // the sheet rather than under it.
+  const selectedId = selectedLot?.lot_id
+  useEffect(() => {
+    if (!phone || selectedId == null) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    layoutRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
+  }, [phone, selectedId])
+
   const focusSection = (section) => {
     setViewSectionId(section.section_id)
     selectLot(null)
@@ -159,8 +179,23 @@ export default function Cemetery() {
       {mapData && (
         <div className="map-panes">
           <aside className="map-rail" aria-label="Map controls">
-            <div className="map-rail-group">
-              <p className="panel-heading">Sections</p>
+            <div className="map-rail-group map-rail-sections">
+              <p className="panel-heading" id="sections-heading">Sections</p>
+              <select
+                className="map-section-select"
+                aria-labelledby="sections-heading"
+                value={activeSection ? String(activeSection.section_id) : ''}
+                onChange={(e) => {
+                  const section = sections.find((s) => String(s.section_id) === e.target.value)
+                  if (section) focusSection(section)
+                  else showAll()
+                }}
+              >
+                <option value="">Whole cemetery</option>
+                {sections.map((s) => (
+                  <option key={s.section_id} value={s.section_id}>{s.section_name}</option>
+                ))}
+              </select>
               <div className="map-tabs">
                 <button
                   type="button"
@@ -185,7 +220,7 @@ export default function Cemetery() {
               </div>
             </div>
 
-            <div className="map-rail-group">
+            <div className="map-rail-group map-rail-filter">
               <p className="panel-heading">Filter</p>
               <input
                 className="search-input map-search"
@@ -210,10 +245,12 @@ export default function Cemetery() {
               </div>
             </div>
 
-            <div className="map-rail-group">
-              <p className="panel-heading" id="plots-list-heading">
+            {/* Folded on a phone, where it would push the map off screen; it stays
+                the way to pick a plot by keyboard or screen reader. */}
+            <details className="map-rail-group map-plots" open={!phone || undefined}>
+              <summary className="panel-heading" id="plots-list-heading">
                 {activeSection ? `${activeSection.section_name} plots` : 'Matching plots'}
-              </p>
+              </summary>
               <PlotPicker
                 lots={listedLots}
                 selectedId={lotParam}
@@ -222,7 +259,7 @@ export default function Cemetery() {
                 emptyMessage="Choose a section or search a lot code to list its plots here."
                 showSection={!activeSection}
               />
-            </div>
+            </details>
 
             <div className="map-rail-group map-rail-legend">
               <p className="panel-heading">Legend</p>
@@ -238,7 +275,7 @@ export default function Cemetery() {
             </div>
           </aside>
 
-          <div className="map-layout">
+          <div className="map-layout" ref={layoutRef}>
             <CemeterySvgMap
               sections={sections}
               contextLots={allLots}
@@ -249,9 +286,15 @@ export default function Cemetery() {
               onFocusSection={focusSection}
               onExitSection={showAll}
               onClearSearch={() => setSearch('')}
+              coverBottom={phone && selectedLot ? SHEET_COVER : 0}
             />
 
-            <aside className="map-detail" aria-label="Plot details">
+            <aside className={`map-detail${selectedLot ? ' map-detail--open' : ''}`} aria-label="Plot details">
+              {selectedLot && (
+                <button type="button" className="sheet-close" onClick={() => selectLot(null)} aria-label="Close plot details">
+                  ×
+                </button>
+              )}
               {selectedLot ? (
                 <>
                   {/* The plot's own entry: titled, ruled, filed. */}

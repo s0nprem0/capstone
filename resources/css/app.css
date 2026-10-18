@@ -2723,3 +2723,145 @@ textarea:disabled {
 .map-svg:focus-visible {
   outline-offset: -3px;
 }
+
+/* ==== Phone map ====
+   Three stacked panes left the map a 270px strip under 70 section chips, with
+   the plot's record below the fold. On a phone the sections become a dropdown,
+   the plot list folds away (it stays the keyboard and screen-reader path), the
+   map takes most of the screen and the record slides up over it as a sheet. */
+.map-section-select,
+.sheet-close,
+.hint-touch {
+  display: none;
+}
+
+.map-plots > summary {
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .hint-pointer {
+    display: none;
+  }
+
+  /* Padded rather than flexed: a flex summary loses its disclosure marker. */
+  .map-plots > summary {
+    padding-block: 11px;
+  }
+
+  .hint-touch {
+    display: inline;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-page .map-tabs {
+    display: none;
+  }
+
+  .map-section-select {
+    display: block;
+    width: 100%;
+  }
+
+  /* Not a container here: containment would make the panes, not the screen,
+     the box the sheet is fixed to. */
+  .map-page .map-panes {
+    container-type: normal;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  /* The rail's groups are laid out around the map: where to look above it,
+     the list and the key below. */
+  .map-page .map-rail {
+    display: contents;
+  }
+
+  .map-page .map-rail-sections {
+    order: 1;
+  }
+
+  .map-page .map-rail-filter {
+    order: 2;
+  }
+
+  .map-page .map-layout {
+    order: 3;
+    flex: none;
+  }
+
+  .map-page .map-plots {
+    order: 4;
+  }
+
+  .map-page .map-rail-legend {
+    order: 5;
+    margin-top: 0;
+  }
+
+  /* An explicit height: in the column, flex: 1 would size it from zero. */
+  .map-page .map-svg-wrap {
+    flex: none;
+    height: 70vh;
+    height: 70dvh;
+  }
+
+  .map-page .map-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .map-page .map-svg {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .map-page .map-detail:not(.map-detail--open) {
+    display: none;
+  }
+
+  .map-page .map-detail--open {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: auto;
+    max-height: 48vh;
+    max-height: 48dvh;
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--space-md) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+    background: var(--color-surface);
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -8px 24px rgba(35, 38, 31, 0.18);
+  }
+
+  .sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius);
+    font-size: var(--text-xl);
+    line-height: 1;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  /* Clear of the close button. */
+  .map-page .map-detail--open .plot-doc-head {
+    padding-right: 52px;
+  }
+}
