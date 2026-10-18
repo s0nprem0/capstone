@@ -2620,6 +2620,30 @@ textarea:disabled {
   }
 }
 
+/* After a reservation is sent. The form is gone, so this is the whole page:
+   what was held, and the three things that happen from here. */
+.next-steps {
+  max-width: 60ch;
+}
+
+.next-steps h3 {
+  margin-top: 0;
+}
+
+.next-steps h3:focus {
+  outline: none;
+}
+
+.next-steps-list {
+  margin: var(--space-xs) 0 var(--space-lg);
+  padding-left: var(--space-lg);
+  line-height: 1.55;
+}
+
+.next-steps-list li + li {
+  margin-top: var(--space-xs);
+}
+
 .draft-note {
   display: flex;
   flex-wrap: wrap;

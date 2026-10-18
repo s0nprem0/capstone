@@ -68,10 +68,11 @@ export default function NewReservation() {
   const [draftRestored, setDraftRestored] = useState(!!draft)
   const [error, setError] = useState('')
   const [touched, setTouched] = useState({})
-  const [success, setSuccess] = useState('')
+  const [submitted, setSubmitted] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
   const [sectionChoice, setSectionChoice] = useState(null)
+  const nextStepsRef = useRef(null)
   const sectionRef = useRef(null)
 
   const loadMap = () =>
@@ -84,8 +85,12 @@ export default function NewReservation() {
   }, [])
 
   useEffect(() => {
-    writeDraft(user.user_id, form)
-  }, [form, user.user_id])
+    if (!submitted) writeDraft(user.user_id, form)
+  }, [form, submitted, user.user_id])
+
+  useEffect(() => {
+    if (submitted) nextStepsRef.current?.focus()
+  }, [submitted])
 
   const grouped = sections
     .map((s) => ({
@@ -158,7 +163,6 @@ export default function NewReservation() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setSuccess('')
     setTouched({ lot_id: true, reservation_date: true })
     if (errors.lot_id || errors.reservation_date) return
     setSubmitting(true)
@@ -175,7 +179,8 @@ export default function NewReservation() {
     })
     setSubmitting(false)
     if (ok) {
-      setSuccess(`Reservation #${data.reservation_id} submitted. The plot is held while it awaits approval.`)
+      setSubmitted({ id: data.reservation_id, lot: selectedLot })
+      writeDraft(user.user_id, EMPTY_FORM)
       startOver()
     } else if (status === 422 && data?.error === 'Lot is not available') {
       // The cached map still lists the plot as free. Reload it so the plot
@@ -190,11 +195,46 @@ export default function NewReservation() {
     }
   }
 
+  if (submitted) {
+    const { id, lot } = submitted
+    return (
+      <div>
+        <h2>Reserve a Lot</h2>
+        <section className="form-card next-steps" aria-labelledby="next-steps-heading">
+          <h3 id="next-steps-heading" ref={nextStepsRef} tabIndex={-1}>
+            Reservation #{id} received
+          </h3>
+          <p>
+            Plot <strong>{lot.lot_code}</strong> in {lot.section_name} is now held for you while
+            the cemetery office reviews your request.
+          </p>
+          <p className="panel-heading">What happens next</p>
+          <ol className="next-steps-list">
+            <li>The office reviews your reservation. Approval is a separate step and can take some time.</li>
+            <li>
+              You will get a <Link to="/notifications">notification</Link> when it is approved or
+              declined. You can also follow it under <Link to="/visitor/reservations">My Reservations</Link>.
+            </li>
+            <li>
+              Payment is arranged with the cemetery office by cash, GCash, bank transfer or cheque.
+              Mention reservation #{id} so it is recorded against this plot.
+            </li>
+          </ol>
+          <div className="form-actions">
+            <Link to="/visitor/reservations" className="btn btn-primary">View my reservations</Link>
+            <button type="button" className="btn btn-secondary" onClick={() => setSubmitted(null)}>
+              Reserve another plot
+            </button>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h2>Reserve a Lot</h2>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {success && <p className="alert alert--success" role="status">{success}</p>}
       {draftRestored && (
         <p className="alert alert--info draft-note" role="status">
           We kept what you entered last time.{' '}
