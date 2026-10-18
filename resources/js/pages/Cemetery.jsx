@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { STATUS_COLORS, sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import PlotPicker, { STATUS_LABELS } from '../components/PlotPicker'
+import { nearestSection } from '../lib/sections'
 import { BURIAL_TYPES, INTERMENT_STATUS, LOT_TYPES, label, lifespan, longDate } from '../lib/terms'
 
 export default function Cemetery() {
@@ -81,6 +82,14 @@ export default function Cemetery() {
     return () => { current = false }
   }, [canSeeInterments, selectedLot])
 
+  // Sections in words: a first-time visitor cannot be expected to find
+  // "Section 42" on the plan unaided.
+  const nearSection = useMemo(() => {
+    if (!selectedLot || !mapData) return null
+    const own = mapData.sections.find((s) => String(s.section_id) === String(selectedLot.section_id))
+    return nearestSection(own, mapData.sections)
+  }, [selectedLot, mapData])
+
   const compositeLots = useMemo(() => (sections || []).flatMap((s) => s.lots || []), [sections])
   const compositeCounts = useMemo(() => {
     const counts = { available: 0, reserved: 0, occupied: 0 }
@@ -142,6 +151,9 @@ export default function Cemetery() {
   return (
     <div className="map-page">
       <h2>Cemetery Map</h2>
+      <p className="text-muted map-intro">
+        Choose a section to zoom in, then tap a plot to see its details. Plots marked Available can be reserved.
+      </p>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       {!mapData && !error && <Loading message="Loading map..." />}
 
@@ -266,7 +278,10 @@ export default function Cemetery() {
                       </span>
                     </div>
                     <dl className="figure-list">
-                      <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
+                      <div>
+                        <dt>Section</dt>
+                        <dd>{selectedLot.section_name}{nearSection && `, near ${nearSection.section_name}`}</dd>
+                      </div>
                       <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
                       <div><dt>Type</dt><dd>{label(LOT_TYPES, selectedLot.lot_type)}</dd></div>
                       <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>

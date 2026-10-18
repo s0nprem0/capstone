@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api, forget } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
+import { nearestSection } from '../lib/sections'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
@@ -108,6 +109,9 @@ export default function NewReservation() {
   // A ?lot= deep link can outlive the lot it points at. Gated on the map having
   // loaded, otherwise every deep link reports as stale for the first frame.
   const staleLot = sections.length > 0 && form.lot_id !== '' && !selectedLot
+  const nearSection = selectedLot
+    ? nearestSection(sections.find((s) => String(s.section_id) === String(selectedLot.section_id)), sections)
+    : null
 
   // Until the visitor picks a section themselves, follow the selected plot, so a
   // ?lot= deep link opens on its own section with the plot highlighted.
@@ -179,7 +183,7 @@ export default function NewReservation() {
     })
     setSubmitting(false)
     if (ok) {
-      setSubmitted({ id: data.reservation_id, lot: selectedLot })
+      setSubmitted({ id: data.reservation_id, lot: selectedLot, near: nearSection })
       writeDraft(user.user_id, EMPTY_FORM)
       startOver()
     } else if (status === 422 && data?.error === 'Lot is not available') {
@@ -196,7 +200,7 @@ export default function NewReservation() {
   }
 
   if (submitted) {
-    const { id, lot } = submitted
+    const { id, lot, near } = submitted
     return (
       <div>
         <h2>Reserve a Lot</h2>
@@ -205,8 +209,9 @@ export default function NewReservation() {
             Reservation #{id} received
           </h3>
           <p>
-            Plot <strong>{lot.lot_code}</strong> in {lot.section_name} is now held for you while
-            the cemetery office reviews your request.
+            Plot <strong>{lot.lot_code}</strong> in {lot.section_name}
+            {near && <>, near {near.section_name}</>}, is now held for you while the
+            cemetery office reviews your request.
           </p>
           <p className="panel-heading">What happens next</p>
           <ol className="next-steps-list">
@@ -370,7 +375,10 @@ export default function NewReservation() {
         {selectedLot && (
           <dl className="figure-list reserve-summary">
             <div><dt>Plot</dt><dd>{selectedLot.lot_code}</dd></div>
-            <div><dt>Section</dt><dd>{selectedLot.section_name}</dd></div>
+            <div>
+              <dt>Section</dt>
+              <dd>{selectedLot.section_name}{nearSection && `, near ${nearSection.section_name}`}</dd>
+            </div>
             <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
             <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
             <div><dt>Capacity</dt><dd>{slotMax} {slotMax === 1 ? 'slot' : 'slots'}</dd></div>
