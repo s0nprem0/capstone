@@ -29,11 +29,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    proxy: {
-      '/api': {
-        target: apiTarget,
-        changeOrigin: true,
-      },
-    },
+    // publicDir is off (see above), so the dev server has no static files of
+    // its own. Without these the map's plan image and the serif font came back
+    // as index.html and the map drew a broken-image icon at full size.
+    proxy: Object.fromEntries(
+      ['/api', '/traces', '/fonts', '/favicon.svg'].map((path) => [path, { target: apiTarget, changeOrigin: true }])
+    ),
   },
 })
