@@ -63,7 +63,7 @@ VALUES
   (1,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S3-025'),   '2026-02-14', 'Family plot for my parents',      2, 90000.00, 'approved', '2026-02-14 09:15:00'),
   (2,  5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S5-002'),   '2026-02-28', 'Single plot for my grandmother',  1, 45000.00, 'approved', '2026-02-28 10:20:00'),
   (3,  6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S8-004'),   '2026-03-10', 'Single plot',                      1, 45000.00, 'approved', '2026-03-10 14:05:00'),
-  (4,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S12-085'),  '2026-03-22', 'Single plot for my mother',         1, 45000.00, 'approved', '2026-03-22 08:45:00'),
+  (4,  7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S12-045'),  '2026-03-22', 'Single plot for my mother',         1, 45000.00, 'approved', '2026-03-22 08:45:00'),
   (5,  8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S16-005'),  '2026-04-05', 'Single plot',                      1, 45000.00, 'approved', '2026-04-05 11:30:00'),
   (6,  4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S20-020'),  '2026-04-18', 'Family plot, four members',         4, 180000.00,'approved', '2026-04-18 09:10:00'),
   (7,  5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S26-002'),  '2026-05-02', 'Single plot',                      1, 45000.00, 'approved', '2026-05-02 13:25:00'),
@@ -72,7 +72,7 @@ VALUES
   (10, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S36-057'),  '2026-06-12', 'Single plot',                      1, 45000.00, 'approved', '2026-06-12 09:35:00'),
   (11, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S38-058'),  '2026-06-25', 'Single plot',                      1, 45000.00, 'approved', '2026-06-25 11:15:00'),
   (12, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S41-008'),  '2026-07-08', 'Single plot',                      1, 45000.00, 'approved', '2026-07-08 08:20:00'),
-  (13, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S45-231'),  '2026-07-20', 'Single plot',                      1, 45000.00, 'approved', '2026-07-20 10:00:00'),
+  (13, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S45-131'),  '2026-07-20', 'Single plot',                      1, 45000.00, 'approved', '2026-07-20 10:00:00'),
   (14, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S49-008'),  '2026-08-01', 'Single plot',                      1, 45000.00, 'approved', '2026-08-01 10:00:00'),
   (15, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S52-062'),  '2026-08-14', 'Single plot',                      1, 45000.00, 'approved', '2026-08-14 10:00:00'),
   (16, 5, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S55-087'),  '2026-08-27', 'Single plot',                      1, 45000.00, 'approved', '2026-08-27 10:00:00'),
@@ -135,7 +135,7 @@ VALUES
 UPDATE `cemetery_lots` SET `status` = 'available';
 
 UPDATE `cemetery_lots` SET `status` = 'occupied'
-WHERE `lot_code` IN ('S3-025','S5-002','S8-004','S12-085','S16-005','S20-020','S26-002','S30-003','S33-006','S36-057','S38-058','S41-008','S45-231','S49-008','S52-062','S55-087','S58-010');
+WHERE `lot_code` IN ('S3-025','S5-002','S8-004','S12-045','S16-005','S20-020','S26-002','S30-003','S33-006','S36-057','S38-058','S41-008','S45-131','S49-008','S52-062','S55-087','S58-010');
 
 UPDATE `cemetery_lots` SET `status` = 'reserved'
 WHERE `lot_code` IN ('S61-015','S65-020','S65-092');

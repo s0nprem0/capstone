@@ -1,71 +1,74 @@
 # Survey geometry
 
-Geometry recovered from the traced cave at `line detailed.psd`, exported as one
-PNG per layer at full canvas (4096 x 3072).
+Every plot on the map is traced from the scanned survey plan,
+`public/traces/survey-lines.png` (4096 x 3072), by `tools/trace_plan.py`. The
+plan is the map's coordinate space, so a plot's stored rectangle or outline is
+in the plan's own pixels and lands on the plot as drawn.
 
-## Inputs
+## Files
 
 | File | Role |
 |---|---|
-| `lines_v2.png` | The traced plot strokes. Source of all lot geometry. |
-| `sections_v2.png` | The circled numbers, red. One per row of lots. |
-| `map.jpg` | The scanned survey plan (2048 x 1536). Reference only. |
-
-`sections_v2.png` is named for the section numbers and `labels_v2.png` is
-effectively blank (0.07% dark pixels), so it carries no usable data.
-
-## Method
-
-`tools/trace_lots.py` floods the paper in the lines layer. Each enclosed region
-of paper is a lot, because the strokes are the lot walls. Regions are then
-grouped into rows and joined back across the horizontal division that splits
-most rows into two halves.
-
-The 977 cells recovered are near-perfect rectangles: the median region fills
-97.5% of its bounding box, which is what makes the flood-fill approach sound
-here and the projection approach unnecessary.
-
-## What is and is not reliable
-
-**Reliable.** The lot geometry for the blocks that are traced: the left block
-and the crypts. Cells align with the drawn grid, and the extracted overlay
-(`check-crypt-lots.png`) matches the plan.
-
-**Not reliable.** The section a row belongs to. Section centres are roughly
-88px apart while rows are roughly 40px apart, so a row is often as close to a
-neighbouring circle as to its own. The script's section assignment is a
-proposal, not a result. It must be confirmed against the plan in the UI.
-
-**Absent.** The right-hand and middle blocks are not traced. Only faint grid
-shows in the scan there, which is not enough to reconstruct the lots, so no
-geometry exists for them yet.
-
-## Coverage
-
-| Area | Sections | State |
-|---|---|---|
-| Left block | 3-11 | traced |
-| Crypts | 25-31 | traced |
-| Middle block | 12-24 | untraced |
-| Right blocks | 32-41 | untraced |
-| Right south | 42-68 | untraced |
+| `lots.sql` | Generated. Every section outline and every plot. Loaded by `make map-data`. |
+| `section-centres.json` | The circled section numbers, in plan pixels. Decides which rows belong to which section. |
+| `sections-traced.json`, `check-crypt-lots.png` | Output of the earlier tracer that covered only the left block and crypts. Kept for reference; not used. |
 
 ## Regenerating
 
 ```bash
-python3 tools/trace_lots.py lines_v2.png section-centres.json -o sections-traced.json
+python3 tools/trace_plan.py report            # counts per block and section
+python3 tools/trace_plan.py preview out.png   # every plot over the plan, coloured by section
+python3 tools/trace_plan.py sql               # rewrites lots.sql
+make migrate && make map-data && make demo && make verify-map
 ```
 
-`section-centres.json` holds the circled-number positions in canvas pixels. It
-was read from `sections_v2.png` by OCR, with the eleven numbers OCR could not
-read placed by fitting the survey photo to the traced canvas. The fit used the
-55 readable circles as correspondences and has a median residual of 8px;
-circle 16 is the worst at 57px and should be checked by eye.
+The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
-## Open questions
+## Method
 
-- **Is a merged lot the right unit?** Each row is drawn divided in two, and the
-  plan labels one letter per column. If the two halves are separate lots rather
-  than one, the counts double.
-- **Do the circled numbers carry lot ranges?** The numbers under each letter in
-  the plan may be the per-lot numbering, which would give each lot a code.
+1. **Lines.** An adaptive threshold separates drawn lines from paper, so the
+   unevenly lit photograph does not matter.
+2. **Plots.** Each patch of paper enclosed by lines, inside the drawn site, is
+   a candidate plot. Holes (a digit, a pencil box) are filled before measuring.
+   Rectangular patches are plots; large convex ones are the trapezoids and
+   triangles a diagonal walk cuts, kept as outlines.
+3. **Blocks.** Plots are grouped into the plan's blocks by outlines read off the
+   plan by eye (they only need to fall in the walks between blocks). Tilted
+   plots are the perimeter rows and are placed by the site edge they follow.
+4. **Rows.** Within a block, rows are recovered after straightening the
+   block's slight tilt. Slivers a pencil stroke cut from a plot are merged,
+   pairs a missing line merged are split, and gaps of up to four plots a faint
+   line left are filled. Perimeter rows get the same gap filling along the edge.
+5. **Sections.** A block's rows are shared out between its circled numbers in
+   order, as evenly as the count allows (most sections are two rows). The
+   circles only decide where a shorter section falls: their positions are not
+   precise enough to say which row each starts on.
+6. **Numbering.** Codes are `S<section>-<nnn>`, row by row, top to bottom then
+   left to right, or along the row for the perimeter sections.
+
+## Coverage
+
+70 sections, 6,440 plots: every block the plan draws.
+
+| Area | Sections | Notes |
+|---|---|---|
+| Left blocks | 3-20 | |
+| Chapel block | 21-24 | Split by column; the circles sit side by side. |
+| Lettered blocks | 25-41 | |
+| East blocks | 42-63, 65 | |
+| South blocks | 66-68 | Large plots, kept as drawn, end plots as outlines. |
+| Inner east row | 64 | |
+| Perimeter | 1 (west and south), 2 (east) | Circled on the plan, missing from the old seed. |
+| Northern strips | 69, 70 | No circled number on the plan. Named North Strip A and B and coded `NA-`, `NB-`; the section numbers are internal. |
+
+## What to check against the plan
+
+- **Section boundaries within a block.** Rows are shared out evenly; where a
+  block's row count does not divide by its sections, which section gets the
+  odd row is the tracer's best fit, not something the plan states.
+- **Lot numbers.** The plan's own numbering (the small figures in the plots and
+  the numbers in the perimeter rows) is not read. Codes follow position.
+- **Lot type.** A plot over 1.7x the median area is a double, over 3.2x a
+  family plot. The cemetery may sell them differently.
+- **North strips.** Their pencil grid is dense and smudged; a few plots there
+  may be split or missing.
