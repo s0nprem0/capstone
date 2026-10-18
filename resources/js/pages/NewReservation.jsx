@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { api } from '../lib/api'
+import { api, forget } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
+const TAKEN = 'That plot is no longer available. Someone may have reserved it while this page was open. Please choose another.'
 
 // Local date, not toISOString(): that is UTC, which rejects today's date for
 // anyone east of Greenwich during their own morning.
@@ -71,11 +72,15 @@ export default function NewReservation() {
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
   const [sectionChoice, setSectionChoice] = useState(null)
+  const sectionRef = useRef(null)
 
-  useEffect(() => {
+  const loadMap = () =>
     api('/api/map').then(({ ok, data }) => {
       if (ok && data?.sections) setSections(data.sections)
     })
+
+  useEffect(() => {
+    loadMap()
   }, [])
 
   useEffect(() => {
@@ -112,7 +117,7 @@ export default function NewReservation() {
 
   const errors = {}
   if (!form.lot_id) errors.lot_id = 'Select a lot.'
-  else if (staleLot) errors.lot_id = 'That lot is no longer available.'
+  else if (staleLot) errors.lot_id = TAKEN
   if (!form.reservation_date) errors.reservation_date = 'Pick a reservation date.'
   else if (form.reservation_date < todayISO()) errors.reservation_date = 'The date cannot be in the past.'
 
@@ -158,7 +163,7 @@ export default function NewReservation() {
     if (errors.lot_id || errors.reservation_date) return
     setSubmitting(true)
 
-    const { ok, data } = await api('/api/reservations', {
+    const { ok, status, data } = await api('/api/reservations', {
       method: 'POST',
       body: {
         user_id: user.user_id,
@@ -172,6 +177,14 @@ export default function NewReservation() {
     if (ok) {
       setSuccess(`Reservation #${data.reservation_id} submitted. The plot is held while it awaits approval.`)
       startOver()
+    } else if (status === 422 && data?.error === 'Lot is not available') {
+      // The cached map still lists the plot as free. Reload it so the plot
+      // drops out of the list and the field reports it as taken.
+      setSectionChoice(String(selectedLot.section_id))
+      forget('/api/map')
+      await loadMap()
+      setTouched({ lot_id: true, reservation_date: true })
+      sectionRef.current?.focus()
     } else {
       setError(data?.error || 'Failed to create reservation')
     }
@@ -204,6 +217,7 @@ export default function NewReservation() {
             <label>
               Section
               <select
+                ref={sectionRef}
                 value={sectionId}
                 onChange={(e) => setSectionChoice(e.target.value)}
                 aria-invalid={!!show('lot_id')}

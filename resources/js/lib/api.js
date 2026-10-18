@@ -79,3 +79,9 @@ export async function api(path, options = {}) {
   }
   return result
 }
+
+// For a failed write that still proves the cache stale, such as a 422 because
+// the plot was claimed by someone else after the map was loaded.
+export function forget(path) {
+  getCache.delete(path)
+}
