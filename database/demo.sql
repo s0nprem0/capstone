@@ -29,6 +29,7 @@ TRUNCATE TABLE `login_attempts`;
 TRUNCATE TABLE `audit_logs`;
 TRUNCATE TABLE `notifications`;
 TRUNCATE TABLE `burial_records`;
+TRUNCATE TABLE `payments`;
 TRUNCATE TABLE `reservations`;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -93,6 +94,29 @@ INSERT INTO `reservations`
 VALUES
   (21, 8, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S34-002'),  '2026-03-02', 'Single plot', 1, 45000.00, 'rejected', '2026-03-02 10:00:00'),
   (22, 9, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S43-008'),  '2026-06-05', 'Single plot', 1, 45000.00, 'rejected', '2026-06-05 10:00:00');
+
+-- ===== Payments =====
+-- Recorded against the reservations above so the payments report and the
+-- reservation payment_status show every state: paid in full, partial, and
+-- unpaid. Amounts never exceed the reservation's total_amount.
+INSERT INTO `payments`
+  (`payment_id`, `reservation_id`, `amount`, `method`, `reference_no`, `payment_date`, `notes`, `recorded_by`, `created_at`)
+VALUES
+  (1, 1,  45000.00, 'cash',          NULL,           '2026-02-14', 'Initial payment',       2, '2026-02-14 09:30:00'),
+  (2, 1,  45000.00, 'gcash',         'GC-8821301',   '2026-03-01', 'Final payment',         2, '2026-03-01 10:05:00'),
+  (3, 2,  45000.00, 'cash',          NULL,           '2026-02-28', 'Paid in full',          2, '2026-02-28 10:40:00'),
+  (4, 3,  20000.00, 'bank_transfer', 'BPI-4471200',  '2026-03-12', 'Downpayment',           3, '2026-03-12 09:15:00'),
+  (5, 6,  180000.00,'cheque',        'CHK-000341',   '2026-04-20', 'Paid in full by cheque',3, '2026-04-20 11:00:00'),
+  (6, 9,  45000.00, 'gcash',         'GC-9004512',   '2026-06-02', 'First half',            2, '2026-06-02 14:10:00');
+
+-- ===== Reservation payment status =====
+-- Derived from the payments above in one place, so it can be checked by eye
+-- against them rather than being a separate set of hand-picked values.
+UPDATE `reservations` r SET `payment_status` = CASE
+  WHEN COALESCE((SELECT SUM(p.`amount`) FROM `payments` p WHERE p.`reservation_id` = r.`reservation_id`), 0) <= 0 THEN 'unpaid'
+  WHEN (SELECT SUM(p.`amount`) FROM `payments` p WHERE p.`reservation_id` = r.`reservation_id`) >= r.`total_amount` THEN 'paid'
+  ELSE 'partial'
+END;
 
 -- ===== Burial records =====
 -- S41-003 is still scheduled, which is the third item the dashboard queues up.

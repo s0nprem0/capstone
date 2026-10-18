@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Config\Database;
+use App\Models\Payment;
 
 class StatsController
 {
@@ -39,6 +40,8 @@ class StatsController
 
         $totalUsers = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
+        $payments = Payment::summary();
+
         $recentReservations = $db->query(
             "SELECT r.reservation_id, l.lot_code, u.fullname, r.reservation_date, r.approved_status, r.created_at
              FROM reservations r
@@ -66,6 +69,11 @@ class StatsController
                 'interred' => (int) $interredBurials,
             ],
             'users' => (int) $totalUsers,
+            'payments' => [
+                'total' => $payments['total'],
+                'this_month' => $payments['this_month'],
+                'count' => $payments['count'],
+            ],
             'recent_reservations' => $recentReservations,
         ]);
     }

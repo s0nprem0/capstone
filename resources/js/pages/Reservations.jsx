@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import { PAYMENT_STATUS, label } from '../lib/terms'
 
 export default function Reservations() {
   const { user } = useAuth()
@@ -97,6 +98,7 @@ export default function Reservations() {
                 <th className="num">Slots</th>
                 <th className="num">Amount</th>
                 <th>Approval</th>
+                <th>Payment</th>
                 {isStaffView && <th>Actions</th>}
               </tr>
             </thead>
@@ -115,6 +117,10 @@ export default function Reservations() {
                   <td className="num">{r.number_of_slots}</td>
                   <td className="num">₱{Number(r.total_amount).toLocaleString()}</td>
                   <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
+                  <td>
+                    <span className={`badge badge--${r.payment_status}`}>{label(PAYMENT_STATUS, r.payment_status)}</span>
+                    <span className="text-muted"> ₱{Number(r.amount_paid).toLocaleString()} / ₱{Number(r.total_amount).toLocaleString()}</span>
+                  </td>
                   {isStaffView && (
                     <td>
                       {r.approved_status === 'pending' ? (

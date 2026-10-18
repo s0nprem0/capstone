@@ -993,6 +993,23 @@ textarea {
   color: #92400e;
 }
 
+/* Payment status: settled reuses the completion green, partial the pending
+   amber, unpaid a muted ink. */
+.badge--paid {
+  background: #e6f4ea;
+  color: #1e5c33;
+}
+
+.badge--partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge--unpaid {
+  background: #f0efea;
+  color: #666b60;
+}
+
 .alert {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius);

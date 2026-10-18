@@ -91,6 +91,10 @@ CREATE TABLE `reservations` (
   `number_of_slots` INT UNSIGNED NOT NULL DEFAULT 1,
   `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `approved_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  -- Derived from the payments recorded against the reservation (see
+  -- Payment::recomputeStatus). Stored rather than computed on read so the
+  -- reservations list and reports do not each add a subquery.
+  `payment_status` ENUM('unpaid', 'partial', 'paid') NOT NULL DEFAULT 'unpaid',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
   FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE CASCADE,
@@ -99,7 +103,27 @@ CREATE TABLE `reservations` (
   KEY `idx_reservations_date` (`reservation_date`)
 ) ENGINE=InnoDB;
 
--- 5. BURIAL_RECORDS
+-- 5. PAYMENTS
+-- Money recorded against a reservation. Recording a payment does not gate
+-- approval; it only tracks what has been paid against total_amount. Method is a
+-- manual record of how it was taken (no online gateway).
+CREATE TABLE `payments` (
+  `payment_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `reservation_id` INT UNSIGNED NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `method` ENUM('cash', 'gcash', 'bank_transfer', 'cheque', 'other') NOT NULL DEFAULT 'cash',
+  `reference_no` VARCHAR(50) NULL,
+  `payment_date` DATE NOT NULL,
+  `notes` VARCHAR(255) NULL,
+  `recorded_by` INT UNSIGNED NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`recorded_by`) REFERENCES `users`(`user_id`) ON DELETE SET NULL,
+  KEY `idx_payments_reservation` (`reservation_id`),
+  KEY `idx_payments_date` (`payment_date`)
+) ENGINE=InnoDB;
+
+-- 6. BURIAL_RECORDS
 CREATE TABLE `burial_records` (
   `burial_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `deceased_fullname` VARCHAR(255) NOT NULL,
@@ -117,7 +141,7 @@ CREATE TABLE `burial_records` (
   KEY `idx_burials_date` (`burial_date`)
 ) ENGINE=InnoDB;
 
--- 6. NOTIFICATIONS
+-- 7. NOTIFICATIONS
 CREATE TABLE `notifications` (
   `notification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT UNSIGNED NOT NULL,
@@ -129,7 +153,7 @@ CREATE TABLE `notifications` (
   KEY `idx_notifications_user` (`user_id`)
 ) ENGINE=InnoDB;
 
--- 7. AUDIT_LOGS
+-- 8. AUDIT_LOGS
 CREATE TABLE `audit_logs` (
   `log_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT UNSIGNED NULL,
@@ -142,7 +166,7 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_action` (`action`)
 ) ENGINE=InnoDB;
 
--- 8. LOGIN_ATTEMPTS (brute-force rate limiting)
+-- 9. LOGIN_ATTEMPTS (brute-force rate limiting)
 CREATE TABLE `login_attempts` (
   `attempt_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `ip_address` VARCHAR(45) NOT NULL,

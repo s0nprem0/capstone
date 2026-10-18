@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Config\Database;
+use App\Models\Payment;
 
 class ReportController
 {
@@ -99,6 +100,36 @@ class ReportController
             'available' => (int) $available,
             'reserved' => (int) $reserved,
             'occupied' => (int) $occupied,
+            'items' => $items,
+        ]);
+    }
+
+    public function payments(): void
+    {
+        Auth::requireRole(['admin', 'staff']);
+        $db = Database::connection();
+
+        $summary = Payment::summary();
+
+        $items = $db->query(
+            "SELECT p.payment_id, p.amount, p.method, p.reference_no, p.payment_date,
+                    r.reservation_id, l.lot_code, s.section_name, u.fullname AS user_name,
+                    rec.fullname AS recorded_by_name
+             FROM payments p
+             JOIN reservations r ON r.reservation_id = p.reservation_id
+             JOIN cemetery_lots l ON l.lot_id = r.lot_id
+             JOIN cemetery_sections s ON s.section_id = l.section_id
+             JOIN users u ON u.user_id = r.user_id
+             LEFT JOIN users rec ON rec.user_id = p.recorded_by
+             ORDER BY p.payment_date DESC, p.payment_id DESC
+             LIMIT 1000"
+        )->fetchAll();
+
+        Response::json([
+            'total' => $summary['total'],
+            'count' => $summary['count'],
+            'this_month' => $summary['this_month'],
+            'by_method' => $summary['by_method'],
             'items' => $items,
         ]);
     }

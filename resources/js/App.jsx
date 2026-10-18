@@ -11,6 +11,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Reservations = lazy(() => import('./pages/Reservations'))
+const Payments = lazy(() => import('./pages/Payments'))
 const NewReservation = lazy(() => import('./pages/NewReservation'))
 const BurialRecords = lazy(() => import('./pages/BurialRecords'))
 const Notifications = lazy(() => import('./pages/Notifications'))
@@ -48,6 +49,7 @@ export default function App() {
               <Route element={<RequireRole roles={['staff']} />}>
                 <Route path="/staff" element={<Dashboard />} />
                 <Route path="/staff/reservations" element={<Reservations />} />
+                <Route path="/staff/payments" element={<Payments />} />
                 <Route path="/staff/burial-records" element={<BurialRecords />} />
                 <Route path="/staff/users" element={<Users />} />
                 <Route path="/staff/reports" element={<Reports />} />
@@ -56,6 +58,7 @@ export default function App() {
               <Route element={<RequireRole roles={['admin']} />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/admin/reservations" element={<Reservations />} />
+                <Route path="/admin/payments" element={<Payments />} />
                 <Route path="/admin/burial-records" element={<BurialRecords />} />
                 <Route path="/admin/users" element={<Users />} />
                 <Route path="/admin/sections" element={<Sections />} />

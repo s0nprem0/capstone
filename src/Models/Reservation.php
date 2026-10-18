@@ -12,7 +12,8 @@ class Reservation extends Model
     public static function forUser(int $userId): array
     {
         $stmt = self::db()->prepare(
-            "SELECT r.*, l.lot_code, s.section_name
+            "SELECT r.*, l.lot_code, s.section_name,
+                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
@@ -26,7 +27,8 @@ class Reservation extends Model
     public static function withLot(int $id): ?array
     {
         $stmt = self::db()->prepare(
-            "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email
+            "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email,
+                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
@@ -70,7 +72,8 @@ class Reservation extends Model
             }
         }
 
-        $sql = "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email
+        $sql = "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email,
+                       COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
                 FROM reservations r
                 JOIN cemetery_lots l ON l.lot_id = r.lot_id
                 JOIN cemetery_sections s ON s.section_id = l.section_id

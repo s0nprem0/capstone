@@ -18,10 +18,11 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per IP per 15 minutes (HTTP 429)
 - **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
 - **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved on submission, reserved → occupied on approval), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot. Rejecting or deleting a reservation returns its plot to the available pool unless a burial record already claims it
+- **Payments** — staff/admin record manual payments (cash, GCash, bank transfer, cheque, other) against a reservation; the reservation's derived `payment_status` (`unpaid` / `partial` / `paid`) and paid/balance figures update automatically. Recording a payment does not gate approval. Visitors see the payment status on their own reservations; revenue appears on the dashboard and in a payments report. No online gateway
 - **Burial records** — deceased details, lot assignment, burial type, interment status; creation requires a reserved or occupied lot (a free lot cannot host a burial)
-- **Notifications** — per-user messages on reservation events, unread badge and mark-read
-- **Search & filters** — debounced search and status/type/date filters across users, reservations, burial records, and lots
-- **Reports** — reservations, burial records, availability, audit logs (printable)
+- **Notifications** — per-user messages on reservation and payment events, unread badge and mark-read
+- **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
+- **Reports** — reservations, burial records, availability, payments, audit logs (printable)
 - **Dashboards** — stats cards + recent activity for staff/admin
 - **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles; visitors manage their own profile and password
 - **Backup & restore** — admin-only SQL export/import, audit-logged
@@ -37,11 +38,9 @@ A layered client–server system: React 18 SPA → REST API (`/api`, custom PHP 
 in `public/index.php`) → MySQL 8, with PDO-only Models behind the Controllers.
 
 The study's layered architecture diagram, reconciled with the code, is in
-[docs/architecture.md](docs/architecture.md). Two things to know when comparing
-it to the study: the **Payment Monitoring module and Payment Records datastore
-are not part of this build** (payments were removed by request), and the
-**Administrator actor** is added to the user access layer (the system's RBAC has
-`admin` / `staff` / `user`).
+[docs/architecture.md](docs/architecture.md). It matches the diagram's Payment
+Monitoring module and Payment Records datastore, and adds the **Administrator
+actor** the diagram omits (the system's RBAC has `admin` / `staff` / `user`).
 
 ## Getting started
 
@@ -242,12 +241,16 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/reservations` | POST | Auth |
 | `/api/reservations/{id}`, `/api/reservations/{id}/delete` | POST | admin, staff |
 | `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject` | POST | admin, staff |
+| `/api/payments` | GET/POST | admin, staff |
+| `/api/payments/mine` | GET | Auth (own) |
+| `/api/payments/{id}` | POST | admin, staff |
+| `/api/payments/{id}/delete` | POST | admin |
 | `/api/burial-records` | GET/POST | admin, staff |
 | `/api/burial-records/{id}`, `/api/burial-records/{id}/delete` | POST | admin, staff |
 | `/api/notifications` | GET | Auth |
 | `/api/notifications/{id}/read`, `/api/notifications/read-all` | POST | Auth |
 | `/api/stats/dashboard` | GET | admin, staff |
-| `/api/reports/{reservations,burial-records,availability,audit-logs}` | GET | admin, staff |
+| `/api/reports/{reservations,burial-records,availability,payments,audit-logs}` | GET | admin, staff |
 | `/api/backup/export` | GET | admin |
 | `/api/backup/import` | POST | admin |
 

@@ -20,7 +20,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 ## Architecture
 - Client-Server + MVC: Models = data layer, Views = React pages, Controllers = request logic.
 - Single front controller `public/index.php`: serves JSON API under `/api`; serves the built Vite bundle (or dev server) for all other routes.
-- The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor the diagram omits, and records that the Payment Monitoring module and Payment Records datastore are deliberately not part of this build.
+- The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor the diagram omits, and matches the diagram's Payment Monitoring module (now implemented).
 
 ## Project structure
 ```
@@ -63,10 +63,11 @@ Implemented end-to-end (API + React page + server-side RBAC on every route):
 - Sections & lots — CRUD, SVG grid import, and a lot map editor
 - SVG cemetery map — traced layout, pan/zoom/fly-to, status colouring, reserve-from-map
 - Reservations — submission, admin/staff approval restricted to pending rows, transactional lot claim; approval is what moves a lot from `reserved` to `occupied`, and rejecting or deleting one returns the plot unless a burial record already claims it
+- Payments — manual recording (cash / GCash / bank transfer / cheque / other) against a reservation, with a derived `reservations.payment_status` (`unpaid` / `partial` / `paid`); recording a payment does not gate approval; staff/admin record, a visitor sees their own payments; revenue stat on the dashboard and a payments report. No online gateway
 - Burial records, notifications, debounced search/filters, reports, dashboards, audit trail
 - Backup/restore — admin-only SQL export/import, audit-logged
 
-The payments module was removed on request, so the system deviates from the study's ERD here: there is no `payments` table, no `reservations.payment_status`, and no payments UI, API, report or revenue stat. `reservations.total_amount` and `cemetery_lots.price` remain as the reservation's stated value. Do not reintroduce payment endpoints or query a `payments` table — `database/schema.sql` drops the table so a pre-removal database migrates cleanly.
+Payments were re-added on request (they had been cut after the early sprints). `reservations.payment_status` is derived from the `payments` rows via `Payment::recomputeStatus` and stored, so it must be recomputed whenever a payment changes or a reservation's `total_amount` changes.
 
 Still open: Documents, concession/ownership records, record-level notes and expiration tracking, responsive layout polish. Extend `database/schema.sql` per the "Data model" section below before building them; it stays authoritative, so a fresh `make migrate` must reproduce the whole database.
 
@@ -79,21 +80,23 @@ Still open: Documents, concession/ownership records, record-level notes and expi
 `users.role` must become `ENUM('admin','staff','user')` (client).
 
 ## Data model (extend `database/schema.sql` consistently)
-The current schema uses `users` / `cemetery_sections` / `cemetery_lots` / `reservations` / `burial_records` / `notifications` / `audit_logs` / `login_attempts`, aligned to the study's ERD minus payments:
+The current schema uses `users` / `cemetery_sections` / `cemetery_lots` / `reservations` / `payments` / `burial_records` / `notifications` / `audit_logs` / `login_attempts`, aligned to the study's ERD:
 - `users.role` → `ENUM('admin','staff','user')`; `users.password` → `VARCHAR(255)` (for `password_hash()`).
-- ERD tables/columns as designed: `users` (fullname, email, phone, role, status), `cemetery_sections`, `cemetery_lots` (lot_code, section_id, block, lot_type, price, status), `reservations` (user_id, lot_id, reservation_date, purpose, number_of_slots, total_amount, approved_status), `audit_logs` (user_id, action, table_name, record_id).
+- ERD tables/columns as designed: `users` (fullname, email, phone, role, status), `cemetery_sections`, `cemetery_lots` (lot_code, section_id, block, lot_type, price, status), `reservations` (user_id, lot_id, reservation_date, purpose, number_of_slots, total_amount, approved_status, payment_status), `audit_logs` (user_id, action, table_name, record_id).
+- `payments` table: `reservation_id` FK, `amount`, `method` (`cash` | `gcash` | `bank_transfer` | `cheque` | `other`), `reference_no`, `payment_date`, `notes`, `recorded_by` FK, `created_at`.
 - `burial_records` table: deceased full name, DOB, DOD, burial date, `lot_id` FK, burial type, owner/next-of-kin contact, interment status, `created_at`.
 - `notifications` table: `user_id` FK, message, type (`reservation` | `system`), `is_read`, `created_at`.
 - Indexes on searchable columns (fullname/name, dates, lot_code).
-- `reservations` carries only `approved_status`; `total_amount` and `cemetery_lots.price` record the stated value of the booking, not a settlement.
+- `reservations.total_amount` and `cemetery_lots.price` record the stated value of the booking; `reservations.payment_status` summarises the payments recorded against it.
 
 ## API design
 RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{id}`, POST create, POST `{id}` update, POST `{id}/delete`). To add:
 - `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
 - `/api/burial-records` CRUD
 - `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject`
+- `/api/payments` CRUD (`mine` for a visitor's own), staff/admin records
 - `/api/notifications` (mine, mark read)
-- `/api/reports/*` (reservations, burial-records, audit-logs, availability)
+- `/api/reports/*` (reservations, burial-records, availability, payments, audit-logs)
 - `/api/backup/export`, `/api/backup/import`
 - `/api/stats/dashboard`
 - `/api/map` (sections + lots with SVG grid coordinates and status)
@@ -103,8 +106,8 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 ## Frontend pages/routes (match the study's interface figures)
 - Public: `/` (cemetery map, available/occupied plots, no login), `/login`, `/register`.
 - Visitor (auth, role `user`): `/visitor/reserve`, `/visitor/reservations` (My Reservations), `/visitor/profile` (Registration Info).
-- Staff: `/staff` (Dashboard), `/staff/reservations`, `/staff/burial-records`, `/staff/users`, `/staff/reports`.
-- Admin: `/admin` (Dashboard), `/admin/reservations`, `/admin/burial-records`, `/admin/users`, `/admin/reports`, `/admin/settings` (backup/restore).
+- Staff: `/staff` (Dashboard), `/staff/reservations`, `/staff/payments`, `/staff/burial-records`, `/staff/users`, `/staff/reports`.
+- Admin: `/admin` (Dashboard), `/admin/reservations`, `/admin/payments`, `/admin/burial-records`, `/admin/users`, `/admin/reports`, `/admin/sections`, `/admin/lots`, `/admin/settings` (backup/restore).
 - Guard routes by role; redirect unauthorized users; extend the existing `Layout.jsx` sidebar with role-aware navigation.
 
 ## Security (study + Data Privacy Act 2012)
@@ -139,6 +142,6 @@ The project follows an iterative Agile (Scrum) process:
 5. **Verifiable:** runs in the dev environment (`make up`), demoable in the sprint review.
 
 ### Prioritized backlog order (build smallest vertical slices first)
-Auth/RBAC → Sections/Lots → Cemetery Map → Reservations → Burial Records → Notifications → Search → Reports → Dashboards → Backup/Restore. Priorities may shift between sprints based on feedback; each story ships as a complete vertical slice rather than a full layer. Payments were cut from this order after the early sprints.
+Auth/RBAC → Sections/Lots → Cemetery Map → Reservations → Burial Records → Notifications → Search → Reports → Dashboards → Backup/Restore. Payments were cut after the early sprints and re-added later on request (see "Current state"). Priorities may shift between sprints based on feedback; each story ships as a complete vertical slice rather than a full layer.
 
 When finished, summarize what was built per module and sprint, how to run it, and what remains for the study's actual deployment phase.

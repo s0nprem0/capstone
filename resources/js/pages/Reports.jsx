@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../lib/api'
+import { PAYMENT_METHODS, label } from '../lib/terms'
 
 export default function Reports() {
   const [report, setReport] = useState(null)
@@ -48,6 +49,10 @@ export default function Reports() {
           <button className="report-card" onClick={() => generate('availability')} disabled={loading}>
             <h3>Lot Availability Report</h3>
             <p>Lots by section with availability status</p>
+          </button>
+          <button className="report-card" onClick={() => generate('payments')} disabled={loading}>
+            <h3>Payments Report</h3>
+            <p>Recorded payments and totals by method</p>
           </button>
           <button className="report-card" onClick={() => generate('audit-logs')} disabled={loading}>
             <h3>Audit Log Report</h3>
@@ -151,6 +156,46 @@ export default function Reports() {
                     <td>{l.block || '—'}</td>
                     <td className="num">{formatCurrency(l.price)}</td>
                     <td><span className={`badge badge--${l.status}`}>{l.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="btn btn-secondary no-print" style={{ marginTop: '1rem' }} onClick={() => setReport(null)}>Back</button>
+        </div>
+      )}
+
+      {report && type === 'payments' && (
+        <div className="report-output">
+          <h3>Payments Report</h3>
+          <p className="text-muted">Generated: {new Date().toLocaleString()}</p>
+          <div className="report-stats">
+            <span>Total: {formatCurrency(report.total)}</span>
+            <span>Payments: {report.count}</span>
+            <span>This month: {formatCurrency(report.this_month)}</span>
+          </div>
+          {report.by_method.length > 0 && (
+            <div className="report-stats">
+              {report.by_method.map((m) => (
+                <span key={m.method}>{label(PAYMENT_METHODS, m.method)}: {formatCurrency(m.total)} ({m.count})</span>
+              ))}
+            </div>
+          )}
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr><th>Date</th><th>Reservation</th><th>Client</th><th className="num">Amount</th><th>Method</th><th>Reference</th><th>Recorded by</th></tr>
+              </thead>
+              <tbody>
+                {report.items.map((p) => (
+                  <tr key={p.payment_id}>
+                    <td>{p.payment_date}</td>
+                    <td>{p.lot_code} <span className="text-muted">#{p.reservation_id}</span></td>
+                    <td>{p.user_name}</td>
+                    <td className="num">{formatCurrency(p.amount)}</td>
+                    <td>{label(PAYMENT_METHODS, p.method)}</td>
+                    <td>{p.reference_no || '—'}</td>
+                    <td>{p.recorded_by_name || '—'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -163,6 +163,21 @@ reproduces the whole database.
 | `number_of_slots` | INT UNSIGNED | ≤ lot capacity |
 | `total_amount` | DECIMAL(10,2) | stated value |
 | `approved_status` | ENUM(pending, approved, rejected) | default `pending` |
+| `payment_status` | ENUM(unpaid, partial, paid) | derived from payments; default `unpaid` |
+| `created_at` | DATETIME | |
+
+**payments** — money recorded against a reservation.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `payment_id` | INT UNSIGNED PK | |
+| `reservation_id` | INT UNSIGNED | FK → reservations (cascade delete) |
+| `amount` | DECIMAL(10,2) | must be > 0 |
+| `method` | ENUM(cash, gcash, bank_transfer, cheque, other) | default `cash` |
+| `reference_no` | VARCHAR(50) | nullable |
+| `payment_date` | DATE | indexed |
+| `notes` | VARCHAR(255) | nullable |
+| `recorded_by` | INT UNSIGNED | FK → users (set null on delete) |
 | `created_at` | DATETIME | |
 
 **burial_records** — interments.
@@ -201,6 +216,9 @@ reproduces the whole database.
 - `number_of_slots` cannot exceed the plot type's capacity (single 1 / double 2 /
   family 4).
 - A burial record requires a `reserved` or `occupied` plot.
+- A payment's `amount` must be positive; `reservations.payment_status` is derived
+  from the sum of its payments (`unpaid` / `partial` / `paid`) and recomputed on
+  every payment change and every reservation `total_amount` change.
 
 ## 7. API reference
 
@@ -226,6 +244,12 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/reservations/{id}` | admin, staff | Update date/purpose/slots/amount |
 | `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only |
 | `POST /api/reservations/{id}/delete` | admin, staff | Releases the plot |
+| `GET /api/payments` | admin, staff | List; filter by `reservation_id`, `q`, `method`, `from`, `to` |
+| `GET /api/payments/mine` | Auth | A visitor's own payments |
+| `GET /api/payments/{id}` | admin, staff | |
+| `POST /api/payments` | admin, staff | Record a payment; recomputes `payment_status` |
+| `POST /api/payments/{id}` | admin, staff | Update; recomputes `payment_status` |
+| `POST /api/payments/{id}/delete` | admin | Recomputes `payment_status` |
 | `GET /api/burial-records`, `GET /api/burial-records/{id}` | admin, staff | |
 | `POST /api/burial-records` | admin, staff | Requires reserved/occupied plot |
 | `POST /api/burial-records/{id}` | admin, staff | Update |
@@ -234,7 +258,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/notifications/unread-count` | Auth | `{ unread_count }` (lightweight badge poll) |
 | `POST /api/notifications/{id}/read` \| `/read-all` | Auth | |
 | `GET /api/stats/dashboard` | admin, staff | Dashboard figures |
-| `GET /api/reports/{reservations,burial-records,availability,audit-logs}` | admin, staff | See §9 |
+| `GET /api/reports/{reservations,burial-records,availability,payments,audit-logs}` | admin, staff | See §9 |
 | `GET /api/lots` | Public | Paginated (`limit` ≤ 1000, default 200; `offset`) |
 | `GET /api/lots/available` | Public | Paginated as above |
 | `GET /api/lots/{id}` | Public | Single lot |
@@ -288,6 +312,8 @@ validation error · `429` rate-limited · `500` server error.
 - **burial-records** — counts by interment status + up to 1000 rows.
 - **availability** — counts by lot status + up to 2000 rows (only the rendered
   columns); the page discloses "showing the first N of M" when capped.
+- **payments** — total, count, this-month total, totals by method, + up to 1000
+  rows.
 - **audit-logs** — up to 200 most recent entries.
 
 Reports are not stored; the front end offers **Print** for a hard copy.
@@ -348,11 +374,12 @@ Recommended before a demo/release:
 
 ## 14. Known deviations and maintenance notes
 
-- **Payments are not part of this build.** There is no `payments` table and no
-  payment API/UI/report; `schema.sql` drops a leftover table if present. Do not
-  reintroduce payment endpoints.
-- **External services: none.** Fonts are vendored and the map uses no tiles, so
-  the app makes no outbound requests.
+- **Payment is recorded manually.** There is no online gateway; `payments` rows
+  are entered by staff/admin. `reservations.payment_status` is derived and
+  stored via `Payment::recomputeStatus`, so recompute it whenever a payment
+  changes or a reservation's `total_amount` changes.
+- **External services: none.** Fonts are vendored, the map uses no tiles, and
+  payment is manual, so the app makes no outbound requests.
 - `users.role` is the three-value enum `admin/staff/user`; keep it aligned with
   the guards in the controllers.
 - `database/schema.sql` stays authoritative; extend it before adding features so

@@ -15,9 +15,10 @@ The system lets you:
 - view the cemetery map and see which plots are **available**, **reserved**, or
   **occupied**;
 - reserve a plot online and track whether it has been approved;
+- record payments against a reservation (staff and administrator);
 - keep burial (interment) records;
 - send and receive notifications;
-- generate printable reports; and
+- generate printable reports, including a payments report; and
 - export or restore a full backup of the data (administrator only).
 
 The map is drawn from the cemetery's actual survey plan, so the plots you see
@@ -63,7 +64,7 @@ The left-hand menu changes with your role:
 | --- | --- |
 | Not signed in | Cemetery Map, Sign In |
 | Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, Profile, Notifications |
-| Staff | Dashboard, Cemetery Map, Notifications, Reservations, Burial Records, Users, Reports |
+| Staff | Dashboard, Cemetery Map, Notifications, Reservations, Payments, Burial Records, Users, Reports |
 | Administrator | everything Staff has, plus Sections, Lots, and Settings |
 
 On a phone or narrow window, the menu is hidden behind the **☰** button at the
@@ -116,9 +117,10 @@ waits for approval. You will be notified when it is approved or rejected.
 ### My Reservations
 
 Open **My Reservations** to see your own reservations only. Each row shows the
-ID, plot, section, date, number of slots, amount, and approval status. Choose the
-plot code to see it on the map. Use the search box or the **All approvals**
-dropdown to narrow the list.
+ID, plot, section, date, number of slots, amount, approval status, and **payment
+status** (with how much has been paid of the total). Choose the plot code to see
+it on the map. Use the search box or the **All approvals** dropdown to narrow the
+list.
 
 ### Profile
 
@@ -155,6 +157,28 @@ or status, or filter by approval. For each **pending** reservation you can:
   notified. You will be asked to confirm.
 
 Only pending reservations can be approved or rejected.
+
+### Payments
+
+Open **Payments** to record and review payments taken at the office. Choose
+**Record Payment** and fill in the form:
+
+- **Reservation** — pick the reservation the payment is for. Each option shows the
+  client, the reservation's payment status, and the remaining balance.
+- **Amount (₱)** — how much was received.
+- **Method** — Cash, GCash, Bank transfer, Cheque, or Other.
+- **Payment Date** — when it was received.
+- **Reference No.** — the GCash/bank/cheque reference, if any.
+- **Notes** — optional.
+
+The table lists every recorded payment (date, reservation, client, amount,
+method, reference, who recorded it). Use the search box or the method filter to
+narrow it. Choose **Edit** to correct a payment; **Delete** (administrators only)
+removes one.
+
+Recording a payment updates the reservation's **payment status** automatically —
+**Unpaid**, **Partial**, or **Paid** — and the client is notified. Approving a
+reservation is a separate step and is not blocked by payment.
 
 ### Burial Records
 
@@ -245,6 +269,7 @@ Backups and restores are recorded in the audit log.
 | Check my reservation | My Reservations | read the Approval column |
 | Approve a reservation | Reservations (staff) | **Approve** on a pending row |
 | File a burial | Burial Records (staff) | **New Entry** |
+| Record a payment | Payments (staff) | **Record Payment**, pick the reservation and amount |
 | Generate a report | Reports (staff) | choose a report, **Print Report** |
 | Add a staff account | Users (admin) | **Add User** |
 | Back up the data | Settings (admin) | **Download Backup (.sql)** |
@@ -271,5 +296,6 @@ Backups and restores are recorded in the audit log.
 | **Reserved** | Held by a reservation that is awaiting approval. |
 | **Occupied** | Approved reservation, or a burial has been filed against the plot. |
 | **Pending / Approved / Rejected** | The state of a reservation. |
+| **Unpaid / Partial / Paid** | How much of a reservation's total has been recorded as paid. |
 | **Interment** | The burial itself; **Scheduled** or **Interred**. |
 | **Block** | An optional sub-label within a section. |

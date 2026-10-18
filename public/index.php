@@ -12,6 +12,7 @@ use App\Controllers\AuthController;
 use App\Controllers\UserController;
 use App\Controllers\MapController;
 use App\Controllers\ReservationController;
+use App\Controllers\PaymentController;
 use App\Controllers\BurialRecordController;
 use App\Controllers\NotificationController;
 use App\Controllers\StatsController;
@@ -27,6 +28,7 @@ $auth = new AuthController($router);
 $users = new UserController($router);
 $map = new MapController($router);
 $reservations = new ReservationController($router);
+$payments = new PaymentController($router);
 $burialRecords = new BurialRecordController($router);
 $notifications = new NotificationController($router);
 $stats = new StatsController($router);
@@ -58,6 +60,13 @@ $router->post('/api/reservations/{id}/approve', [$reservations, 'approve']);
 $router->post('/api/reservations/{id}/reject', [$reservations, 'reject']);
 $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
 
+$router->get('/api/payments', [$payments, 'index']);
+$router->get('/api/payments/mine', [$payments, 'mine']);
+$router->get('/api/payments/{id}', [$payments, 'show']);
+$router->post('/api/payments', [$payments, 'store']);
+$router->post('/api/payments/{id}', [$payments, 'update']);
+$router->post('/api/payments/{id}/delete', [$payments, 'destroy']);
+
 $router->get('/api/burial-records', [$burialRecords, 'index']);
 $router->get('/api/burial-records/{id}', [$burialRecords, 'show']);
 $router->post('/api/burial-records', [$burialRecords, 'store']);
@@ -74,6 +83,7 @@ $router->get('/api/stats/dashboard', [$stats, 'dashboard']);
 $router->get('/api/reports/reservations', [$reports, 'reservations']);
 $router->get('/api/reports/burial-records', [$reports, 'burialRecords']);
 $router->get('/api/reports/availability', [$reports, 'availability']);
+$router->get('/api/reports/payments', [$reports, 'payments']);
 $router->get('/api/reports/audit-logs', [$reports, 'auditLogs']);
 
 $router->get('/api/lots', [$lots, 'index']);

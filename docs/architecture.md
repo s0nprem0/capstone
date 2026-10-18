@@ -20,6 +20,7 @@ flowchart TB
     direction LR
     M1["Authentication Module<br/>AuthController · Core/Auth · Csrf · RateLimiter"]
     M2["Reservation Management<br/>ReservationController"]
+    M2b["Payment Monitoring<br/>PaymentController"]
     M3["Burial Records Management<br/>BurialRecordController"]
     M4["Cemetery Plot and Mapping<br/>Map / Lot / Section controllers · SVG map"]
     M5["Notification Module<br/>NotificationController"]
@@ -37,6 +38,7 @@ flowchart TB
     D4["Plot Status Data<br/>cemetery_sections · cemetery_lots"]
     D5["Notification Data<br/>notifications"]
     D6["Activity Logs<br/>audit_logs · login_attempts"]
+    D7["Payment Records<br/>payments"]
   end
 
   subgraph L4["4 · External Services"]
@@ -59,6 +61,7 @@ flowchart TB
   A4 --> M8
   M1 --> M8
   M2 --> M8
+  M2b --> M8
   M3 --> M8
   M4 --> M8
   M5 --> M8
@@ -71,6 +74,7 @@ flowchart TB
   D0 --- D4
   D0 --- D5
   D0 --- D6
+  D0 --- D7
   I1 --> I2
   I2 --> I3
   I3 --> I5
@@ -83,6 +87,7 @@ flowchart TB
 | --- | --- |
 | Client data | `users` |
 | Reservation data | `reservations` |
+| Payment records | `payments` |
 | Burial records | `burial_records` |
 | Plot status data | `cemetery_sections`, `cemetery_lots` |
 | Notification data | `notifications` |
@@ -91,18 +96,14 @@ flowchart TB
 
 ## Deviations from the study diagram
 
-- **Payment Monitoring module and Payment Records datastore are not built.**
-  The payments module was removed by request; there is no `payments` table,
-  no payment API, report, or UI. `reservations.total_amount` and
-  `cemetery_lots.price` remain as the reservation's stated value only.
-  `database/schema.sql` drops the table so a pre-removal database still migrates.
 - **The Administrator actor is added to the user access layer.** The study
   diagram lists only Client/Visitor and Cemetery Staff; the system's RBAC has
   three roles — `admin`, `staff`, `user` — with the administrator managing
   users, sections, lots, reports, and backup/restore.
 - **External Services is empty.** There is no external integration: the map is
   pure SVG (no tiles), the only font is vendored under `public/fonts`, and
-  notifications are in-app. The layer exists but holds nothing.
+  notifications are in-app. Payment is recorded manually, not through a gateway,
+  so it needs no external service either. The layer exists but holds nothing.
 - **File Storage is static assets only.** `public/traces` (map plan) and
   `public/fonts`; there is no user document store. Restore accepts an uploaded
   `.sql` file transiently and does not retain it.

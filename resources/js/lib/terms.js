@@ -35,6 +35,20 @@ export const APPROVAL_STATUS = {
   rejected: 'Rejected',
 }
 
+export const PAYMENT_METHODS = {
+  cash: 'Cash',
+  gcash: 'GCash',
+  bank_transfer: 'Bank transfer',
+  cheque: 'Cheque',
+  other: 'Other',
+}
+
+export const PAYMENT_STATUS = {
+  unpaid: 'Unpaid',
+  partial: 'Partial',
+  paid: 'Paid',
+}
+
 export const label = (map, value) => (value == null ? '' : map[value] || value)
 
 // A register prints a lifespan, not two loose dates. Handles a birth or death

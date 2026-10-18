@@ -102,6 +102,8 @@ export default function Dashboard() {
                   <div><dt>Reservations</dt><dd>{stats.reservations.total}</dd></div>
                   <div><dt>Reservations approved</dt><dd>{stats.reservations.approved}</dd></div>
                   <div><dt>Burial records</dt><dd>{stats.burials.total}</dd></div>
+                  <div><dt>Payments recorded</dt><dd>₱{Number(stats.payments?.total || 0).toLocaleString()}</dd></div>
+                  <div><dt>Collected this month</dt><dd>₱{Number(stats.payments?.this_month || 0).toLocaleString()}</dd></div>
                   <div><dt>Users</dt><dd>{stats.users}</dd></div>
                 </dl>
               ) : (

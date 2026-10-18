@@ -11,6 +11,7 @@ use App\Core\Router;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Notification;
+use App\Models\Payment;
 use App\Models\Reservation;
 
 class ReservationController
@@ -169,6 +170,8 @@ class ReservationController
 
         if ($data !== []) {
             Reservation::update($id, $data);
+            // total_amount may have moved, so the stored payment_status is stale.
+            Payment::recomputeStatus($id);
             AuditLog::record(Auth::id(), 'update', 'reservations', $id);
         }
 
