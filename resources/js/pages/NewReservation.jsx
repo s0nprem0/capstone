@@ -132,7 +132,7 @@ export default function NewReservation() {
                 onChange={handleLotChange}
                 onBlur={() => blur('lot_id')}
                 aria-invalid={!!show('lot_id')}
-                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error' : undefined}
+                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error res-lot-hint' : 'res-lot-hint'}
                 required
               >
                 <option value="">Select an available lot</option>
@@ -154,8 +154,9 @@ export default function NewReservation() {
             )}
             {/* The dropdown lists bare codes, and the map is what makes a code
                 mean anything. Point at it before the visitor has to guess. */}
-            <span className="label-hint">
-              <Link to="/">Browse the cemetery map</Link> to pick a plot by section.
+            <span className="label-hint" id="res-lot-hint">
+              The plot you would like to hold. Not sure which one?{' '}
+              <Link to="/">Browse the cemetery map</Link> to see where each plot lies.
             </span>
           </div>
           <div className="field">
@@ -168,7 +169,7 @@ export default function NewReservation() {
                 onChange={handleChange}
                 onBlur={() => blur('reservation_date')}
                 aria-invalid={!!show('reservation_date')}
-                aria-describedby={show('reservation_date') ? 'res-date-error' : undefined}
+                aria-describedby={show('reservation_date') ? 'res-date-error res-date-hint' : 'res-date-hint'}
                 min={todayISO()}
                 required
               />
@@ -176,12 +177,24 @@ export default function NewReservation() {
             {show('reservation_date') && (
               <span className="field-error" id="res-date-error" role="alert">{errors.reservation_date}</span>
             )}
+            <span className="label-hint" id="res-date-hint">
+              The date the reservation is for. Today or any later day.
+            </span>
           </div>
           <div className="field">
             <label>
               Purpose
-              <input name="purpose" value={form.purpose} onChange={handleChange} maxLength={100} />
+              <input
+                name="purpose"
+                value={form.purpose}
+                onChange={handleChange}
+                maxLength={100}
+                aria-describedby="res-purpose-hint"
+              />
             </label>
+            <span className="label-hint" id="res-purpose-hint">
+              Optional. A few words for the office, such as who the plot is for.
+            </span>
           </div>
           <div className="field">
             <label>
@@ -193,9 +206,13 @@ export default function NewReservation() {
                 name="number_of_slots"
                 value={form.number_of_slots}
                 onChange={handleChange}
+                aria-describedby="res-slots-hint"
                 required
               />
             </label>
+            <span className="label-hint" id="res-slots-hint">
+              How many people this plot will hold. A single plot holds 1, a double 2, a family plot 4.
+            </span>
           </div>
         </div>
 
