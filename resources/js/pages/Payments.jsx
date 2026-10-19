@@ -11,7 +11,9 @@ import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
 import StatusBadge from '../components/StatusBadge'
 import ExportActions from '../components/ExportActions'
-import { PAYMENT_METHODS, PAYMENT_STATUS, label, localISO, longDate, money } from '../lib/terms'
+import Select from '../components/Select'
+import Combobox from '../components/Combobox'
+import { PAYMENT_METHODS, PAYMENT_STATUS, label, localISO, longDate, money, optionsOf } from '../lib/terms'
 
 const emptyForm = () => ({
   reservation_id: '',
@@ -68,10 +70,37 @@ export default function Payments() {
   }
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const setField = (name) => (value) => setForm((prev) => ({ ...prev, [name]: value }))
+
+  const balanceOf = (r) => Number(r.total_amount) - Number(r.amount_paid)
+
+  // Only what can still take a payment: owing a balance and not rejected.
+  // The one being edited stays listed whatever its state, so it can show.
+  const reservationOptions = reservations
+    .filter((r) => String(r.reservation_id) === form.reservation_id || (balanceOf(r) > 0 && r.approved_status !== 'rejected'))
+    .map((r) => ({
+      value: String(r.reservation_id),
+      label: `#${r.reservation_id} · ${r.lot_code} · ${r.user_name}`,
+      description: `${label(PAYMENT_STATUS, r.payment_status)} · balance ${money(balanceOf(r))}`,
+    }))
+
+  // Choosing a reservation offers its balance as the amount, the usual case.
+  const chooseReservation = (value) => {
+    const r = reservations.find((x) => String(x.reservation_id) === value)
+    setForm((prev) => ({
+      ...prev,
+      reservation_id: value,
+      amount: prev.amount || (r ? String(balanceOf(r)) : ''),
+    }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     clear()
+    if (!form.reservation_id) {
+      fail('Choose the reservation this payment is for.')
+      return
+    }
     setSaving(true)
     const body = {
       reservation_id: Number(form.reservation_id),
@@ -138,38 +167,20 @@ export default function Payments() {
           <form onSubmit={handleSubmit}>
             <h3>{editId ? 'Edit Payment' : 'Record Payment'}</h3>
             <div className="form-grid">
-              <label>
-                Reservation
-                <select
-                  name="reservation_id"
-                  value={form.reservation_id}
-                  onChange={handleChange}
-                  disabled={Boolean(editId)}
-                  required
-                >
-                  <option value="">Select a reservation</option>
-                  {reservations.map((r) => {
-                    const balance = Number(r.total_amount) - Number(r.amount_paid)
-                    return (
-                      <option key={r.reservation_id} value={r.reservation_id}>
-                        #{r.reservation_id} · {r.lot_code} · {r.user_name} · {label(PAYMENT_STATUS, r.payment_status)} · balance {money(balance)}
-                      </option>
-                    )
-                  })}
-                </select>
-              </label>
+              <Combobox
+                label="Reservation"
+                value={form.reservation_id}
+                onChange={chooseReservation}
+                options={reservationOptions}
+                disabled={Boolean(editId)}
+                placeholder="Search by number, plot or client"
+                emptyText="No reservation with a balance matches that."
+              />
               <label>
                 Amount (₱)
                 <input type="number" name="amount" min="0.01" step="0.01" value={form.amount} onChange={handleChange} required />
               </label>
-              <label>
-                Method
-                <select name="method" value={form.method} onChange={handleChange}>
-                  {Object.entries(PAYMENT_METHODS).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </label>
+              <Select label="Method" value={form.method} onChange={setField('method')} options={optionsOf(PAYMENT_METHODS)} />
               <label>
                 Payment Date
                 <input type="date" name="payment_date" value={form.payment_date} onChange={handleChange} required />
@@ -201,12 +212,7 @@ export default function Payments() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select aria-label="Filter by payment method" value={method} onChange={(e) => setMethod(e.target.value)}>
-          <option value="">All methods</option>
-          {Object.entries(PAYMENT_METHODS).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
+        <Select ariaLabel="Filter by payment method" value={method} onChange={setMethod} options={optionsOf(PAYMENT_METHODS, 'All methods')} />
       </div>
 
       {!loaded && !error && <Loading message="Loading payments..." />}

@@ -69,6 +69,12 @@ export const NOTIFICATION_TYPES = {
   system: 'System',
 }
 
+// A vocabulary map as Select options, optionally led by an "all" choice.
+export const optionsOf = (map, all) => [
+  ...(all ? [{ value: '', label: all }] : []),
+  ...Object.entries(map).map(([value, text]) => ({ value, label: text })),
+]
+
 export const label = (map, value) => (value == null ? '' : map[value] || value)
 
 // A register prints a lifespan, not two loose dates. Handles a birth or death
