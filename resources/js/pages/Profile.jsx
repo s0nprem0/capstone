@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import StatusBadge from '../components/StatusBadge'
+import PageHeader from '../components/PageHeader'
+import PasswordInput from '../components/PasswordInput'
+import Notice, { useNotice } from '../components/Notice'
 import { longDate } from '../lib/terms'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMPTY_PWD = { current_password: '', password: '', password_confirmation: '' }
 
 export default function Profile() {
   const { user, loadUser } = useAuth()
   const [form, setForm] = useState({ fullname: '', email: '', phone: '' })
-  const [pwd, setPwd] = useState({ current_password: '', password: '', password_confirmation: '' })
+  const [pwd, setPwd] = useState(EMPTY_PWD)
   const [touched, setTouched] = useState({})
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [saving, setSaving] = useState(false)
+  // Each form has its own outcome and busy state: saving one used to lock the
+  // other, and reported at the top of the page, away from both.
+  const info = useNotice()
+  const pass = useNotice()
+  const [savingInfo, setSavingInfo] = useState(false)
+  const [savingPwd, setSavingPwd] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -43,26 +49,23 @@ export default function Profile() {
 
   const saveInfo = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    info.clear()
     setTouched((t) => ({ ...t, fullname: true, email: true }))
     if (errors.fullname || errors.email) return
-    setSaving(true)
-
+    setSavingInfo(true)
     const { ok, data } = await api(`/api/users/${user.user_id}`, { method: 'POST', body: form })
-    setSaving(false)
+    setSavingInfo(false)
     if (ok) {
-      setSuccess('Registration info updated.')
+      info.succeed('Registration info updated.')
       await loadUser()
     } else {
-      setError(data?.error || 'Failed to update profile')
+      info.fail(data?.error || 'Failed to update profile')
     }
   }
 
   const changePassword = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    pass.clear()
     setTouched((t) => ({
       ...t,
       current_password: true,
@@ -70,35 +73,28 @@ export default function Profile() {
       password_confirmation: true,
     }))
     if (errors.current_password || errors.password || errors.password_confirmation) return
-    setSaving(true)
-
+    setSavingPwd(true)
     const { ok, data } = await api(`/api/users/${user.user_id}`, {
       method: 'POST',
       body: { current_password: pwd.current_password, password: pwd.password },
     })
-    setSaving(false)
+    setSavingPwd(false)
     if (ok) {
-      setSuccess('Password changed.')
-      setPwd({ current_password: '', password: '', password_confirmation: '' })
+      pass.succeed('Password changed.')
+      setPwd(EMPTY_PWD)
       setTouched({})
     } else {
-      setError(data?.error || 'Failed to change password')
+      pass.fail(data?.error || 'Failed to change password')
     }
   }
 
-  const memberSince = longDate(user?.created_at)
-
   return (
     <div>
-      <div className="page-header">
-        <h2>My Profile</h2>
-      </div>
-
-      {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {success && <p className="alert alert--success" role="status">{success}</p>}
+      <PageHeader title="My Profile" />
 
       <div className="form-card section-block">
         <h3>Registration Info</h3>
+        <Notice notice={info.notice} />
         <form onSubmit={saveInfo} noValidate>
           <div className="form-grid">
             <div className="field">
@@ -133,17 +129,14 @@ export default function Profile() {
             <div className="field">
               <label>
                 Phone
-                <input name="phone" value={form.phone} onChange={handleChange} />
+                <input type="tel" name="phone" value={form.phone} onChange={handleChange} />
               </label>
             </div>
           </div>
-          <p className="text-muted">
-            Role: <StatusBadge kind="role" value={user?.role} /> — Status:{' '}
-            <StatusBadge kind="account" value={user?.status} /> — Member since {memberSince}
-          </p>
+          <p className="text-muted">Member since {longDate(user?.created_at)}</p>
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+            <button type="submit" className="btn btn-primary" disabled={savingInfo}>
+              {savingInfo ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -151,69 +144,72 @@ export default function Profile() {
 
       <div className="form-card section-block">
         <h3>Change Password</h3>
+        <Notice notice={pass.notice} />
         <form onSubmit={changePassword} noValidate>
           <div className="form-grid">
             <div className="field">
-              <label>
-                Current Password
-                <input
-                  type="password"
-                  name="current_password"
-                  value={pwd.current_password}
-                  onChange={handlePwdChange}
-                  onBlur={() => blur('current_password')}
-                  aria-invalid={!!show('current_password')}
-                  required
-                />
-              </label>
+              <label htmlFor="profile-current-password">Current Password</label>
+              <PasswordInput
+                id="profile-current-password"
+                name="current_password"
+                value={pwd.current_password}
+                onChange={handlePwdChange}
+                onBlur={() => blur('current_password')}
+                aria-invalid={!!show('current_password')}
+                aria-describedby={show('current_password') ? 'profile-current-password-error' : undefined}
+                autoComplete="current-password"
+                required
+              />
               {show('current_password') && (
-                <span className="field-error" role="alert">{errors.current_password}</span>
+                <span className="field-error" id="profile-current-password-error" role="alert">
+                  {errors.current_password}
+                </span>
               )}
             </div>
             <div className="field">
-              <label>
-                New Password
-                <input
-                  type="password"
-                  name="password"
-                  value={pwd.password}
-                  onChange={handlePwdChange}
-                  onBlur={() => blur('password')}
-                  aria-invalid={!!show('password')}
-                  minLength={8}
-                  autoComplete="new-password"
-                  required
-                />
-              </label>
+              <label htmlFor="profile-new-password">New Password</label>
+              <PasswordInput
+                id="profile-new-password"
+                name="password"
+                value={pwd.password}
+                onChange={handlePwdChange}
+                onBlur={() => blur('password')}
+                aria-invalid={!!show('password')}
+                aria-describedby={show('password') ? 'profile-new-password-error' : 'profile-new-password-hint'}
+                minLength={8}
+                autoComplete="new-password"
+                required
+              />
               {show('password') ? (
-                <span className="field-error" role="alert">{errors.password}</span>
+                <span className="field-error" id="profile-new-password-error" role="alert">{errors.password}</span>
               ) : (
-                <span className="label-hint">At least 8 characters.</span>
+                <span className="label-hint" id="profile-new-password-hint">At least 8 characters.</span>
               )}
             </div>
             <div className="field">
-              <label>
-                Confirm New Password
-                <input
-                  type="password"
-                  name="password_confirmation"
-                  value={pwd.password_confirmation}
-                  onChange={handlePwdChange}
-                  onBlur={() => blur('password_confirmation')}
-                  aria-invalid={!!show('password_confirmation')}
-                  minLength={8}
-                  autoComplete="new-password"
-                  required
-                />
-              </label>
+              <label htmlFor="profile-confirm-password">Confirm New Password</label>
+              <PasswordInput
+                id="profile-confirm-password"
+                name="password_confirmation"
+                value={pwd.password_confirmation}
+                onChange={handlePwdChange}
+                onBlur={() => blur('password_confirmation')}
+                aria-invalid={!!show('password_confirmation')}
+                aria-describedby={show('password_confirmation') ? 'profile-confirm-password-error' : undefined}
+                minLength={8}
+                autoComplete="new-password"
+                required
+              />
               {show('password_confirmation') && (
-                <span className="field-error" role="alert">{errors.password_confirmation}</span>
+                <span className="field-error" id="profile-confirm-password-error" role="alert">
+                  {errors.password_confirmation}
+                </span>
               )}
             </div>
           </div>
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Change Password'}
+            <button type="submit" className="btn btn-primary" disabled={savingPwd}>
+              {savingPwd ? 'Saving...' : 'Change Password'}
             </button>
           </div>
         </form>
