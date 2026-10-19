@@ -85,6 +85,7 @@ $router->get('/api/reports/burial-records', [$reports, 'burialRecords']);
 $router->get('/api/reports/availability', [$reports, 'availability']);
 $router->get('/api/reports/payments', [$reports, 'payments']);
 $router->get('/api/reports/audit-logs', [$reports, 'auditLogs']);
+$router->get('/api/reports/summary', [$reports, 'summary']);
 
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
