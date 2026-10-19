@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import PlotPicker from '../components/PlotPicker'
+import Select from '../components/Select'
 import { nearestSection } from '../lib/sections'
 import { BURIAL_TYPES, INTERMENT_STATUS, LOT_STATUS, LOT_TYPES, label, lifespan, longDate, money } from '../lib/terms'
 
@@ -199,21 +200,25 @@ export default function Cemetery() {
               <p className="panel-heading section-list-heading" id="sections-heading">
                 Sections <span aria-hidden="true">Available</span>
               </p>
-              <select
-                className="map-section-select"
-                aria-labelledby="sections-heading"
-                value={activeSection ? String(activeSection.section_id) : ''}
-                onChange={(e) => {
-                  const section = sections.find((s) => String(s.section_id) === e.target.value)
-                  if (section) focusSection(section)
-                  else showAll()
-                }}
-              >
-                <option value="">Whole cemetery</option>
-                {sections.map((s) => (
-                  <option key={s.section_id} value={s.section_id}>{s.section_name}</option>
-                ))}
-              </select>
+              <div className="map-section-select">
+                <Select
+                  ariaLabel="Section"
+                  value={activeSection ? String(activeSection.section_id) : ''}
+                  onChange={(value) => {
+                    const section = sections.find((s) => String(s.section_id) === value)
+                    if (section) focusSection(section)
+                    else showAll()
+                  }}
+                  options={[
+                    { value: '', label: 'Whole cemetery' },
+                    ...sections.map((s) => ({
+                      value: String(s.section_id),
+                      label: s.section_name,
+                      description: s.counts ? `${s.counts.available} available` : undefined,
+                    })),
+                  ]}
+                />
+              </div>
               <input
                 className="search-input section-find"
                 type="search"

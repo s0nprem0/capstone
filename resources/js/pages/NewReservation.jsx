@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api, forget } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
+import Select from '../components/Select'
 import { nearestSection } from '../lib/sections'
 import { LOT_TYPES, label, localISO, money } from '../lib/terms'
 
@@ -252,23 +253,22 @@ export default function NewReservation() {
             Not sure which one? <Link to="/">Browse the cemetery map</Link> to see where each plot lies.
           </span>
           <div className="plot-picker-filters">
-            <label>
-              Section
-              <select
-                ref={sectionRef}
-                value={sectionId}
-                onChange={(e) => setSectionChoice(e.target.value)}
-                aria-invalid={!!show('lot_id')}
-                aria-describedby={staleLot || show('lot_id') ? 'res-lot-error' : undefined}
-              >
-                <option value="">All sections</option>
-                {grouped.map((g) => (
-                  <option key={g.section.section_id} value={g.section.section_id}>
-                    {g.section.section_name} ({g.lots.length} available)
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              ref={sectionRef}
+              label="Section"
+              value={sectionId}
+              onChange={(v) => setSectionChoice(String(v))}
+              invalid={!!show('lot_id')}
+              describedBy={staleLot || show('lot_id') ? 'res-lot-error' : undefined}
+              options={[
+                { value: '', label: 'All sections' },
+                ...grouped.map((g) => ({
+                  value: String(g.section.section_id),
+                  label: g.section.section_name,
+                  description: `${g.lots.length} available`,
+                })),
+              ]}
+            />
             <label>
               Plot code
               <input

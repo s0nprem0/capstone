@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
+import Select from '../components/Select'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { DEFAULT_REFERENCE, MapReferenceImage, readReference, saveReference } from '../map/reference'
-import { LOT_STATUS, PLOT_STATUSES, money } from '../lib/terms'
+import { LOT_STATUS, LOT_TYPES as LOT_TYPE_LABELS, PLOT_STATUSES, money } from '../lib/terms'
 
 const STATUS_LABELS = Object.fromEntries(PLOT_STATUSES.map((s) => [s, LOT_STATUS[s]]))
 const LOT_TYPES = ['single', 'double', 'family']
@@ -629,13 +630,15 @@ export default function LotEditor() {
 
       {sectionRow && (
         <div className="lot-reference-tools">
-          <label className="lot-reference-find">
-            Find a lot
-            <select value={selectedId ?? ''} onChange={(e) => focusLot(e.target.value)}>
-              <option value="">Choose a lot in {sectionRow.section_name}</option>
-              {lots.map((lot) => <option key={lot.lot_id} value={lot.lot_id}>{lot.lot_code}</option>)}
-            </select>
-          </label>
+          <div className="lot-reference-find">
+            <Select
+              label="Find a lot"
+              value={selectedId ?? ''}
+              onChange={(v) => focusLot(String(v))}
+              placeholder={`Choose a lot in ${sectionRow.section_name}`}
+              options={lots.map((lot) => ({ value: String(lot.lot_id), label: lot.lot_code }))}
+            />
+          </div>
           <label className="lot-reference-toggle">
             <input
               type="checkbox"
@@ -842,30 +845,20 @@ export default function LotEditor() {
                     Block
                     <input name="block" value={form.block} onChange={(e) => setForm({ ...form, block: e.target.value })} maxLength="20" placeholder="e.g. A-1" />
                   </label>
-                  <label>
-                    Type
-                    <select name="lot_type" value={form.lot_type} onChange={(e) => setForm({ ...form, lot_type: e.target.value })}>
-                      {LOT_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <Select
+                    label="Type"
+                    value={form.lot_type}
+                    onChange={(v) => setForm((f) => ({ ...f, lot_type: v }))}
+                    options={LOT_TYPES.map((t) => ({ value: t, label: LOT_TYPE_LABELS[t] }))}
+                  />
                   <label>
                     Price (₱)
                     <input name="price" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
                   </label>
                 </div>
 
-                <label className="editor-block-label">
-                  Status
-                  <select name="status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                    {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="editor-status-chips">
+                <p className="editor-block-label" id="lot-status-label">Status</p>
+                <div className="editor-status-chips" role="group" aria-labelledby="lot-status-label">
                   {Object.entries(STATUS_LABELS).map(([k, v]) => {
                     const isActive = form.status === k
                     return (

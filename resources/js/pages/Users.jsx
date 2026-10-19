@@ -8,8 +8,9 @@ import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
 import PageHeader from '../components/PageHeader'
+import Select from '../components/Select'
 import StatusBadge from '../components/StatusBadge'
-import { ACCOUNT_STATUS, ROLES } from '../lib/terms'
+import { ACCOUNT_STATUS, ROLES, optionsOf } from '../lib/terms'
 
 const EMPTY_FORM = { fullname: '', email: '', phone: '', password: '', role: 'user', status: 'active' }
 
@@ -129,18 +130,8 @@ export default function Users() {
               Password
               <input type="password" name="password" value={form.password} onChange={handleChange} required minLength="8" />
             </label>
-            <label>
-              Role
-              <select name="role" value={form.role} onChange={handleChange}>
-                {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </label>
-            <label>
-              Status
-              <select name="status" value={form.status} onChange={handleChange}>
-                {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </label>
+            <Select label="Role" value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v }))} options={optionsOf(ROLES)} />
+            <Select label="Status" value={form.status} onChange={(v) => setForm((f) => ({ ...f, status: v }))} options={optionsOf(ACCOUNT_STATUS)} />
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => setAdding(false)}>Cancel</button>
@@ -168,30 +159,22 @@ export default function Users() {
               <input name="phone" value={editForm.phone} onChange={handleEditChange} />
             </label>
             {isAdmin && (
-              <label>
-                Role
-                <select
-                  name="role"
-                  value={editForm.role}
-                  onChange={handleEditChange}
-                  disabled={editing.user_id === me.user_id}
-                >
-                  {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </label>
-            )}
-            <label>
-              Status
-              <select
-                name="status"
-                value={editForm.status}
-                onChange={handleEditChange}
+              <Select
+                label="Role"
+                value={editForm.role}
+                onChange={(v) => setEditForm((f) => ({ ...f, role: v }))}
+                options={optionsOf(ROLES)}
                 disabled={editing.user_id === me.user_id}
-              >
-                {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-              <small className="label-hint">An inactive account cannot sign in.</small>
-            </label>
+              />
+            )}
+            <Select
+              label="Status"
+              value={editForm.status}
+              onChange={(v) => setEditForm((f) => ({ ...f, status: v }))}
+              options={optionsOf(ACCOUNT_STATUS)}
+              disabled={editing.user_id === me.user_id}
+              hint="An inactive account cannot sign in."
+            />
             <label>
               New Password
               <input
@@ -227,14 +210,8 @@ export default function Users() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select aria-label="Filter by role" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="">All roles</option>
-          {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <select aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
+        <Select ariaLabel="Filter by role" value={role} onChange={setRole} options={optionsOf(ROLES, 'All roles')} />
+        <Select ariaLabel="Filter by status" value={status} onChange={setStatus} options={optionsOf(ACCOUNT_STATUS, 'All statuses')} />
       </div>
 
       {!loaded && !error ? (

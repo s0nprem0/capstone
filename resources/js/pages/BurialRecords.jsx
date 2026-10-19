@@ -9,7 +9,8 @@ import EmptyState from '../components/EmptyState'
 import PlotPicker from '../components/PlotPicker'
 import Notice, { useNotice } from '../components/Notice'
 import ExportActions from '../components/ExportActions'
-import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate } from '../lib/terms'
+import Select from '../components/Select'
+import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate, optionsOf } from '../lib/terms'
 
 const EMPTY_FORM = {
   deceased_fullname: '', date_of_birth: '', date_of_death: '',
@@ -226,22 +227,18 @@ export default function BurialRecords() {
                 Date of Death
                 <input type="date" name="date_of_death" value={form.date_of_death} onChange={handleChange} />
               </label>
-              <label>
-                Burial Type
-                <select name="burial_type" value={form.burial_type} onChange={handleChange}>
-                  {Object.entries(BURIAL_TYPES).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Interment Status
-                <select name="interment_status" value={form.interment_status} onChange={handleChange}>
-                  {Object.entries(INTERMENT_STATUS).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </label>
+              <Select
+                label="Burial Type"
+                value={form.burial_type}
+                onChange={(v) => setForm((f) => ({ ...f, burial_type: v }))}
+                options={optionsOf(BURIAL_TYPES)}
+              />
+              <Select
+                label="Interment Status"
+                value={form.interment_status}
+                onChange={(v) => setForm((f) => ({ ...f, interment_status: v }))}
+                options={optionsOf(INTERMENT_STATUS)}
+              />
               <label>
                 Next of Kin Name
                 <input type="text" name="next_of_kin_name" value={form.next_of_kin_name} onChange={handleChange} />
@@ -269,18 +266,18 @@ export default function BurialRecords() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
-            <option value="">All interment statuses</option>
-            {Object.entries(INTERMENT_STATUS).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
-          <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">All burial types</option>
-            {Object.entries(BURIAL_TYPES).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
+          <Select
+            ariaLabel="Filter by interment status"
+            value={interment}
+            onChange={setInterment}
+            options={optionsOf(INTERMENT_STATUS, 'All interment statuses')}
+          />
+          <Select
+            ariaLabel="Filter by burial type"
+            value={type}
+            onChange={setType}
+            options={optionsOf(BURIAL_TYPES, 'All burial types')}
+          />
         </div>
 
         {!loaded && !error && <Loading message="Loading the register..." />}
