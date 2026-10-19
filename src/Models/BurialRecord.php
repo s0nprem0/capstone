@@ -59,6 +59,37 @@ class BurialRecord extends Model
         return $stmt->fetchAll();
     }
 
+    /**
+     * The public memorial search: what a headstone says and where it stands.
+     * Next-of-kin details and scheduled burials stay in the register. Every
+     * word of the name must match, so "santos lourdes" finds "Lourdes P. Santos".
+     */
+    public static function memorials(array $words = [], ?int $lotId = null, int $limit = 50): array
+    {
+        $where = ["b.interment_status = 'interred'"];
+        $params = [];
+        foreach (array_values($words) as $i => $word) {
+            $where[] = "b.deceased_fullname LIKE :w{$i}";
+            $params["w{$i}"] = '%' . addcslashes($word, '%_\\') . '%';
+        }
+        if ($lotId !== null) {
+            $where[] = 'b.lot_id = :lot_id';
+            $params['lot_id'] = $lotId;
+        }
+
+        $stmt = self::db()->prepare(
+            "SELECT b.deceased_fullname, b.date_of_death, b.lot_id, l.lot_code, s.section_name
+             FROM burial_records b
+             JOIN cemetery_lots l ON l.lot_id = b.lot_id
+             JOIN cemetery_sections s ON s.section_id = l.section_id
+             WHERE " . implode(' AND ', $where) . "
+             ORDER BY b.deceased_fullname, b.burial_id
+             LIMIT " . $limit
+        );
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public static function withDetails(int $id): ?array
     {
         $stmt = self::db()->prepare(

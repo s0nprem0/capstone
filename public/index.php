@@ -67,6 +67,8 @@ $router->post('/api/payments', [$payments, 'store']);
 $router->post('/api/payments/{id}', [$payments, 'update']);
 $router->post('/api/payments/{id}/delete', [$payments, 'destroy']);
 
+$router->get('/api/memorials', [$burialRecords, 'memorials']);
+
 $router->get('/api/burial-records', [$burialRecords, 'index']);
 $router->get('/api/burial-records/{id}', [$burialRecords, 'show']);
 $router->post('/api/burial-records', [$burialRecords, 'store']);
@@ -90,6 +92,7 @@ $router->get('/api/reports/summary', [$reports, 'summary']);
 $router->get('/api/lots', [$lots, 'index']);
 $router->get('/api/lots/available', [$lots, 'available']);
 $router->get('/api/lots/{id}', [$lots, 'show']);
+$router->get('/api/lots/{id}/memorials', [$burialRecords, 'lotMemorials']);
 $router->post('/api/lots', [$lots, 'store']);
 $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
 $router->post('/api/lots/regrid', [$lots, 'regrid']);

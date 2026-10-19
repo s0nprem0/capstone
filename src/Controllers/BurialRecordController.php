@@ -26,6 +26,31 @@ class BurialRecordController
         Response::json(BurialRecord::search($_GET));
     }
 
+    /**
+     * Public: a visitor searching for a loved one by name. Only the name, the
+     * date of death and the plot are shown -- never the next of kin.
+     */
+    public function memorials(): void
+    {
+        $q = trim((string) ($_GET['q'] ?? ''));
+        if (mb_strlen($q) < 3) {
+            Response::json(['error' => 'Type at least 3 letters of the name'], 422);
+            return;
+        }
+        $words = array_slice(preg_split('/\s+/', $q), 0, 5);
+        Response::json(BurialRecord::memorials($words));
+    }
+
+    /** Public: who rests in the plot chosen on the map. */
+    public function lotMemorials(int $id): void
+    {
+        if (!Lot::find($id)) {
+            Response::json(['error' => 'Not found'], 404);
+            return;
+        }
+        Response::json(BurialRecord::memorials([], $id));
+    }
+
     public function show(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
