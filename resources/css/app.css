@@ -1108,6 +1108,11 @@ textarea {
   border: 1px dashed #a16207;
 }
 
+.swatch--occupied {
+  background: rgba(30, 64, 175, 0.22);
+  border-color: rgba(30, 64, 175, 0.7);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -1309,26 +1314,92 @@ textarea {
   text-align: left;
 }
 
-.map-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
+/* 70 sections as one row each, with what is still free in them: a list can be
+   scanned and filtered, where 70 wrapped pills could only be scrolled past. */
+.section-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 38vh;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
-.map-tab {
-  padding: var(--space-xs) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  font: inherit;
   font-size: var(--text-sm);
-  font-weight: 500;
+  text-align: left;
+  color: var(--color-text);
   cursor: pointer;
 }
 
-.map-tab--active {
+.section-list li:last-child .section-row {
+  border-bottom: 0;
+}
+
+.section-row:hover {
+  background: var(--color-bg);
+}
+
+.section-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.section-row .dot {
+  flex: none;
+  margin: 0;
+}
+
+.section-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.section-row-count {
+  flex: none;
+  color: var(--status-available);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-row-count--full {
+  color: var(--color-text-muted);
+}
+
+.section-row--active,
+.section-row--active:hover {
   background: var(--color-primary);
-  border-color: var(--color-primary);
   color: #fff;
+}
+
+.section-row--active .section-row-count {
+  color: #fff;
+}
+
+.section-list-heading {
+  display: flex;
+  justify-content: space-between;
+}
+
+.section-list-heading span {
+  font-weight: 400;
+}
+
+.section-list-empty {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
 }
 
 .map-filters {
@@ -1361,21 +1432,78 @@ textarea {
   right: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
   z-index: 5;
 }
 
-.map-zoom-controls .btn {
+/* Joined pairs, as on any web map: zoom in/out, then re-centre/whole sheet. */
+.map-zoom-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.map-zoom-group button {
   width: 2rem;
   height: 2rem;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.map-zoom-group button + button {
+  border-top: 1px solid var(--color-border);
+}
+
+.map-zoom-group button:hover,
+.map-zoom-group button[aria-pressed='true'] {
+  background: var(--color-bg);
+}
+
+.map-zoom-group button:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Follows the pointer, so it never takes it: hover would flicker as the box
+   slid under the cursor. */
+.map-tooltip {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-width: 140px;
+  padding: var(--space-xs) var(--space-sm);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  font-size: var(--text-lg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(35, 38, 31, 0.18);
+  font-size: var(--text-sm);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.map-tooltip .mark {
+  align-self: flex-start;
+}
+
+.map-tooltip-meta {
+  color: var(--color-text-muted);
+}
+
+@media (pointer: coarse) {
+  .map-tooltip {
+    display: none;
+  }
 }
 
 .map-drag-hint {
@@ -1394,6 +1522,26 @@ textarea {
   cursor: pointer;
 }
 
+/* The overview's section numbers. Sized in JS per zoom, like the titles. */
+.map-section-label {
+  cursor: pointer;
+}
+
+.map-section-label rect {
+  fill: rgba(255, 255, 255, 0.92);
+}
+
+.map-section-label text {
+  font-weight: 700;
+  fill: var(--color-text);
+  pointer-events: none;
+}
+
+.map-section-label:hover rect {
+  fill: #fff;
+  stroke-width: 2.5px;
+}
+
 .map-section-title {
   font-size: 20px;
   font-weight: 700;
@@ -1408,9 +1556,9 @@ textarea {
 /* Plots are a tint over the survey plan, so the drawn plot and its printed
    number stay readable underneath. The outline carries the status colour at
    full strength: a pale fill alone would not reach the 3:1 a boundary needs
-   against the paper (WCAG 1.4.11). Reserved is dashed as well, so the two
-   tinted states differ by more than colour. Occupied is left as the plan
-   draws it, but stays clickable through its transparent fill. */
+   against the paper (WCAG 1.4.11). Reserved is dashed as well, so the
+   statuses differ by more than colour. Occupied is the lightest tint, so the
+   plan's own ink stays legible where most of the plots are taken. */
 .lot-rect {
   cursor: pointer;
   stroke-width: 1;
@@ -1428,8 +1576,8 @@ textarea {
 }
 
 .lot--occupied {
-  fill: transparent;
-  stroke: none;
+  fill: rgba(30, 64, 175, 0.2);
+  stroke: rgba(30, 64, 175, 0.7);
 }
 
 .lot-rect:hover {
@@ -1437,19 +1585,28 @@ textarea {
   stroke-width: 2;
 }
 
-/* Overview: only what can still be reserved, at a strength that reads as
-   specks across the whole site. */
-.map-svg[data-detail='far'] .lot--available {
-  fill: rgba(47, 158, 68, 0.62);
-  /* Stroked in the fill colour, so neighbouring plots run together into
-     solid blocks instead of a speckle of separate dots. */
-  stroke: rgba(47, 158, 68, 0.62);
+/* Overview: every status at a strength that reads across the whole site, so
+   it shows where plots are still free and where the cemetery is filling up.
+   Stroked in the fill colour, so neighbouring plots run together into solid
+   blocks instead of a speckle of separate dots. */
+.map-svg[data-detail='far'] .lot-rect {
   stroke-width: 2;
+  stroke-dasharray: none;
 }
 
-.map-svg[data-detail='far'] .lot--reserved,
+.map-svg[data-detail='far'] .lot--available {
+  fill: rgba(47, 158, 68, 0.62);
+  stroke: rgba(47, 158, 68, 0.62);
+}
+
+.map-svg[data-detail='far'] .lot--reserved {
+  fill: rgba(234, 179, 8, 0.85);
+  stroke: rgba(234, 179, 8, 0.85);
+}
+
 .map-svg[data-detail='far'] .lot--occupied {
-  visibility: hidden;
+  fill: rgba(30, 64, 175, 0.7);
+  stroke: rgba(30, 64, 175, 0.7);
 }
 
 /* The selected plot, drawn last so neighbours never cover it: a white halo
@@ -1891,7 +2048,7 @@ textarea:disabled {
   .btn-ghost,
   .chip,
   .editor-chip,
-  .map-tab {
+  .section-row {
     min-height: 44px;
   }
 
@@ -1906,9 +2063,9 @@ textarea:disabled {
     min-height: 44px;
   }
 
-  .map-zoom-controls .btn {
-    min-height: 44px;
-    min-width: 44px;
+  .map-zoom-group button {
+    width: 44px;
+    height: 44px;
   }
 
   /* Buttons this close together are hard to hit without a miss. */
@@ -2740,9 +2897,42 @@ textarea:disabled {
    the plot list folds away (it stays the keyboard and screen-reader path), the
    map takes most of the screen and the record slides up over it as a sheet. */
 .map-section-select,
-.sheet-close,
 .hint-touch {
   display: none;
+}
+
+/* The record pane appears with a plot, so with none selected the map has the
+   width to itself. */
+.map-page .map-detail:not(.map-detail--open) {
+  display: none;
+}
+
+.sheet-close {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.sheet-close:hover {
+  border-color: var(--color-border-control);
+  color: var(--color-text);
+}
+
+.map-page .map-detail--open .plot-doc-head {
+  padding-right: 2.25rem;
 }
 
 .map-plots > summary {
@@ -2765,7 +2955,9 @@ textarea:disabled {
 }
 
 @media (max-width: 768px) {
-  .map-page .map-tabs {
+  .map-page .section-list,
+  .map-page .section-find,
+  .map-page .section-list-heading span {
     display: none;
   }
 
@@ -2825,10 +3017,6 @@ textarea:disabled {
   .map-page .map-svg {
     height: 100%;
     min-height: 0;
-  }
-
-  .map-page .map-detail:not(.map-detail--open) {
-    display: none;
   }
 
   .map-page .map-detail--open {

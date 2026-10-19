@@ -30,8 +30,12 @@ export const sectionColor = (sectionId) =>
 // never produce a view the user cannot zoom back out of. The floor is looser
 // than the zoom floor on purpose: framing a handful of matches wants to sit
 // closer than framing the whole site, without inflating one plot to fill a pane.
-const MAX_VIEW = 4500
-const MIN_FRAME = 300
+const MAX_VIEW = 6500
+const MIN_FRAME = 640
+// A frame never brings the plan closer than this many screen pixels per plan
+// unit. A two-row section is otherwise stretched across a wide pane until the
+// scan blurs and nothing around it is left to say where it is.
+const FRAME_PX_PER_UNIT = 1
 
 // One plan unit is one pixel of the full-resolution survey sheet. Zooming past
 // about 2.5 screen pixels per sheet pixel only enlarges the blur, so that is
@@ -54,6 +58,9 @@ const NEAR_VIEW = 1200
 const CONTROLS_PX = 56
 const MAX_LABELLED = 80
 const MIN_LABEL_PX = 16
+// On-screen size of an overview section label, in CSS pixels.
+const SECTION_LABEL_PX = 11
+const SECTION_LABEL_GAP_PX = 3
 
 // The overview letterboxes a 1.23:1 site into a portrait pane, and a wide
 // section worse. Framing on the pane's own shape -- growing the short axis
@@ -119,13 +126,13 @@ const sectionBounds = (section) => {
  * @param {[number, number, number, number]} bounds minX, minY, maxX, maxY
  * @param {[number, number, number, number]} [within] the area to stay inside
  */
-const frame = (bounds, aspect, within = null) => {
+const frame = (bounds, aspect, within = null, minWidth = MIN_FRAME) => {
   const [x0, y0, x1, y1] = bounds
   const padding = Math.max(x1 - x0, y1 - y0) * 0.04
   const width = Math.max(x1 - x0, 1) + padding * 2
   const height = Math.max(y1 - y0, 1) + padding * 2
 
-  const viewWidth = Math.min(MAX_VIEW, Math.max(MIN_FRAME, Math.max(width, height * aspect)))
+  const viewWidth = Math.min(MAX_VIEW, Math.max(minWidth, Math.max(width, height * aspect)))
   const viewHeight = viewWidth / aspect
 
   const centreX = (x0 + x1) / 2
@@ -179,6 +186,97 @@ const plotNumber = (code) => String(Number(String(code).split('-').pop()) || cod
 
 const MemoLotRect = memo(LotRect)
 
+// "Section 42" -> "42": the overview has room for the number, not the word.
+const shortSectionName = (name) => String(name).replace(/^section\s+/i, '')
+
+/**
+ * Where each section's overview label goes: on the plot nearest the middle of
+ * its plots. The middle of the outline will not do -- the perimeter strips wrap
+ * the whole site, so theirs lands in someone else's section.
+ */
+const sectionAnchors = (sections, lots) => {
+  const bySection = new Map()
+  for (const lot of lots) {
+    const list = bySection.get(lot.section_id)
+    if (list) list.push(lot)
+    else bySection.set(lot.section_id, [lot])
+  }
+  return sections.flatMap((section) => {
+    const own = bySection.get(section.section_id)
+    if (!own) return []
+    const centre = (l) => [l.svg_x + l.svg_w / 2, l.svg_y + l.svg_h / 2]
+    const mx = own.reduce((sum, l) => sum + centre(l)[0], 0) / own.length
+    const my = own.reduce((sum, l) => sum + centre(l)[1], 0) / own.length
+    let best = own[0]
+    let bestDist = Infinity
+    for (const lot of own) {
+      const [cx, cy] = centre(lot)
+      const dist = (cx - mx) ** 2 + (cy - my) ** 2
+      if (dist < bestDist) {
+        bestDist = dist
+        best = lot
+      }
+    }
+    const [x, y] = centre(best)
+    return [{ section, x, y, text: shortSectionName(section.section_name), weight: own.length }]
+  }).sort((a, b) => b.weight - a.weight)
+}
+
+/**
+ * The labels that fit at this zoom. Larger sections claim their place first,
+ * and a label that would overlap one already placed is left off rather than
+ * piling the 70 numbers on top of each other.
+ */
+const placeLabels = (anchors, pxPerUnit) => {
+  if (pxPerUnit <= 0) return []
+  const placed = []
+  const boxes = []
+  const halfHeight = SECTION_LABEL_PX * 0.8 + SECTION_LABEL_GAP_PX
+  for (const anchor of anchors) {
+    const halfWidth = (anchor.text.length * SECTION_LABEL_PX * 0.62) / 2 + SECTION_LABEL_PX * 0.5 + SECTION_LABEL_GAP_PX
+    const sx = anchor.x * pxPerUnit
+    const sy = anchor.y * pxPerUnit
+    const box = [sx - halfWidth, sy - halfHeight, sx + halfWidth, sy + halfHeight]
+    if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue
+    boxes.push(box)
+    placed.push(anchor)
+  }
+  return placed
+}
+
+const STATUS_NAMES = { available: 'Available', reserved: 'Reserved', occupied: 'Occupied' }
+
+// Hover state lives here rather than in the map, so moving the pointer across
+// the site re-renders one small box instead of the 6,700 plot elements.
+function HoverTip({ bindRef }) {
+  const [tip, setTip] = useState(null)
+  useEffect(() => {
+    bindRef.current = setTip
+    return () => {
+      bindRef.current = null
+    }
+  }, [bindRef])
+  if (!tip) return null
+  const { lot, x, y, flipX, flipY } = tip
+  return (
+    <div
+      className="map-tooltip"
+      role="presentation"
+      style={{
+        left: x,
+        top: y,
+        transform: `translate(${flipX ? 'calc(-100% - 14px)' : '14px'}, ${flipY ? 'calc(-100% - 14px)' : '14px'})`,
+      }}
+    >
+      <strong>{lot.lot_code}</strong>
+      <span className={`mark mark--${lot.status}`}>{STATUS_NAMES[lot.status] || lot.status}</span>
+      <span className="map-tooltip-meta">
+        {lot.section_name} · ₱{Number(lot.price).toLocaleString()}
+      </span>
+    </div>
+  )
+}
+
 export default function CemeterySvgMap({
   sections,
   contextLots,
@@ -202,8 +300,12 @@ export default function CemeterySvgMap({
   const vbRef = useRef(vb)
   const [pane, setPane] = useState({ width: 0, height: 0 })
   const [fillPane, setFillPane] = useState(true)
+  const tipRef = useRef(null)
+  const hoveredRef = useRef(null)
 
   const allLots = useMemo(() => sections.flatMap((s) => s.lots || []), [sections])
+  const lotsById = useMemo(() => new Map((contextLots || allLots).map((l) => [l.lot_id, l])), [contextLots, allLots])
+  const anchors = useMemo(() => sectionAnchors(sections, contextLots || allLots), [sections, contextLots, allLots])
 
   // A search frames its matches closely enough that whatever the frame opens up
   // has to be there — otherwise ten plots float in an empty box with no way to
@@ -297,13 +399,18 @@ export default function CemeterySvgMap({
   const frameTo = useCallback(
     (animate) => {
       const target = fillPane
-        ? frame(focusBounds || siteBounds, aspect || DEFAULT_ASPECT, siteBounds)
+        ? frame(
+            focusBounds || siteBounds,
+            aspect || DEFAULT_ASPECT,
+            siteBounds,
+            Math.max(MIN_FRAME, pane.width / FRAME_PX_PER_UNIT)
+          )
         : [...MAP_VIEWBOX]
       userAdjustedRef.current = false
       if (!animate || aspect === 0 || prefersReducedMotion()) setVbBoth(target)
       else flyTo(target)
     },
-    [fillPane, focusBounds, siteBounds, aspect, setVbBoth, flyTo]
+    [fillPane, focusBounds, siteBounds, aspect, pane.width, setVbBoth, flyTo]
   )
 
   useEffect(() => {
@@ -349,7 +456,7 @@ export default function CemeterySvgMap({
     const cx = lot.svg_x + lot.svg_w / 2
     const cy = lot.svg_y + lot.svg_h / 2
     flyTo([cx - nw / 2, cy - (nh * shown) / 2, nw, nh])
-  }, [selectedLotId, coverBottom, pane.width > 0]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedLotId, coverBottom, pane.width]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -408,10 +515,34 @@ export default function CemeterySvgMap({
     }
   }
 
+  const hideTip = () => {
+    hoveredRef.current = null
+    tipRef.current?.(null)
+  }
+
+  // Mouse and pen only: a finger has no hover, and its tap selects the plot.
+  const updateTip = (e, rect) => {
+    if (e.pointerType === 'touch' || dragRef.current || pinchRef.current) {
+      if (hoveredRef.current !== null) hideTip()
+      return
+    }
+    const lotEl = e.target.closest?.('[data-lot-id]')
+    const lot = lotEl ? lotsById.get(Number(lotEl.getAttribute('data-lot-id'))) : null
+    if (!lot) {
+      if (hoveredRef.current !== null) hideTip()
+      return
+    }
+    hoveredRef.current = lot.lot_id
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    tipRef.current?.({ lot, x, y, flipX: x > rect.width - 220, flipY: y > rect.height - 90 })
+  }
+
   const onPointerMove = (e) => {
     const el = svgRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
+    updateTip(e, rect)
 
     if (pointersRef.current.has(e.pointerId)) {
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -505,6 +636,8 @@ export default function CemeterySvgMap({
 
   const fitView = () => frameTo(true)
 
+  const labels = !activeSection && !query ? placeLabels(anchors, pane.width > 0 ? pane.width / vb[2] : 0) : []
+
   // Double-click or double-tap zooms in on the point, as on any web map.
   const onDoubleClick = (e) => {
     const rect = svgRef.current?.getBoundingClientRect()
@@ -565,6 +698,7 @@ export default function CemeterySvgMap({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onPointerLeave={hideTip}
         onClick={onSvgClick}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
@@ -641,6 +775,31 @@ export default function CemeterySvgMap({
           )}
         </g>
 
+        {labels.length > 0 && (
+          <g className="map-section-labels">
+            {labels.map(({ section, x, y, text }) => {
+              const height = fit(SECTION_LABEL_PX * 1.6)
+              const width = fit(text.length * SECTION_LABEL_PX * 0.62 + SECTION_LABEL_PX)
+              return (
+                <g key={section.section_id} className="map-section-label" data-section-id={section.section_id}>
+                  <title>{`${section.section_name} — ${section.counts?.available ?? 0} available`}</title>
+                  <rect
+                    x={x - width / 2}
+                    y={y - height / 2}
+                    width={width}
+                    height={height}
+                    rx={height / 2}
+                    style={{ stroke: sectionColor(section.section_id), strokeWidth: fit(1.5) }}
+                  />
+                  <text x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{ fontSize: `${fit(SECTION_LABEL_PX)}px` }}>
+                    {text}
+                  </text>
+                </g>
+              )
+            })}
+          </g>
+        )}
+
         <g className="map-sections">
           {sections.map((section) => {
             // The plan has its section numbers printed on it, so a title is
@@ -673,28 +832,36 @@ export default function CemeterySvgMap({
         </g>
       </svg>
 
+      <HoverTip bindRef={tipRef} />
+
       <div className="map-zoom-controls">
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in" aria-label="Zoom in">+</button>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out" aria-label="Zoom out">−</button>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={fitView}
-          title="Fit view"
-          aria-label="Fit view"
-        >
-          ⌂
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={() => setFillPane((v) => !v)}
-          aria-pressed={fillPane}
-          aria-label="Fill pane with the plan"
-          title={fillPane ? 'Showing the pane filled — click for the whole sheet' : 'Showing the whole sheet — click to fill the pane'}
-        >
-          {fillPane ? 'Fill' : 'Fit'}
-        </button>
+        <div className="map-zoom-group">
+          <button type="button" onClick={() => zoomCenter(1.5)} title="Zoom in (+)" aria-label="Zoom in">
+            <ControlIcon d="M8 3v10M3 8h10" />
+          </button>
+          <button type="button" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out (−)" aria-label="Zoom out">
+            <ControlIcon d="M3 8h10" />
+          </button>
+        </div>
+        <div className="map-zoom-group">
+          <button
+            type="button"
+            onClick={fitView}
+            title={activeSection ? 'Re-centre on this section (0)' : 'Re-centre on the cemetery (0)'}
+            aria-label="Re-centre the map"
+          >
+            <ControlIcon d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setFillPane((v) => !v)}
+            aria-pressed={!fillPane}
+            aria-label="Show the whole survey sheet"
+            title={fillPane ? 'Show the whole survey sheet, margins included' : 'Back to the cemetery, filling the pane'}
+          >
+            <ControlIcon d={fillPane ? 'M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4' : 'M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4'} />
+          </button>
+        </div>
       </div>
 
       {noMatches && (
@@ -709,9 +876,19 @@ export default function CemeterySvgMap({
       )}
 
       <div className="map-drag-hint">
-        <span className="hint-pointer">Drag to pan · scroll to zoom{activeSection && ' · Esc for overview'}</span>
+        <span className="hint-pointer">
+          {activeSection ? 'Drag to pan · scroll to zoom · Esc for overview' : 'Click a section number to open it · scroll to zoom'}
+        </span>
         <span className="hint-touch">Drag to move · pinch to zoom</span>
       </div>
     </div>
+  )
+}
+
+function ControlIcon({ d }) {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }

@@ -22,6 +22,7 @@ export default function Cemetery() {
   const [viewSectionId, setViewSectionId] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
+  const [sectionFind, setSectionFind] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const lotParam = searchParams.get('lot')
   // Phones get a dropdown for sections, a folded plot list and a sheet for the
@@ -98,6 +99,21 @@ export default function Cemetery() {
     const own = mapData.sections.find((s) => String(s.section_id) === String(selectedLot.section_id))
     return nearestSection(own, mapData.sections)
   }, [selectedLot, mapData])
+
+  // Matched on the name or its bare number, so "4" finds Section 4 before the
+  // ten other sections that merely contain a 4.
+  const shownSections = useMemo(() => {
+    const q = sectionFind.trim().toLowerCase()
+    if (!q) return sections
+    const matches = sections.filter((s) => s.section_name.toLowerCase().includes(q))
+    const exact = (s) => s.section_name.toLowerCase().replace(/^section\s+/, '') === q
+    return [...matches.filter(exact), ...matches.filter((s) => !exact(s))]
+  }, [sections, sectionFind])
+
+  const totalAvailable = useMemo(
+    () => (mapData?.sections || []).reduce((sum, s) => sum + (s.counts?.available || 0), 0),
+    [mapData]
+  )
 
   const compositeLots = useMemo(() => (sections || []).flatMap((s) => s.lots || []), [sections])
   const compositeCounts = useMemo(() => {
@@ -180,7 +196,9 @@ export default function Cemetery() {
         <div className="map-panes">
           <aside className="map-rail" aria-label="Map controls">
             <div className="map-rail-group map-rail-sections">
-              <p className="panel-heading" id="sections-heading">Sections</p>
+              <p className="panel-heading section-list-heading" id="sections-heading">
+                Sections <span aria-hidden="true">Available</span>
+              </p>
               <select
                 className="map-section-select"
                 aria-labelledby="sections-heading"
@@ -196,28 +214,55 @@ export default function Cemetery() {
                   <option key={s.section_id} value={s.section_id}>{s.section_name}</option>
                 ))}
               </select>
-              <div className="map-tabs">
-                <button
-                  type="button"
-                  className={!activeSection ? 'map-tab map-tab--active' : 'map-tab'}
-                  onClick={showAll}
-                  aria-pressed={!activeSection}
-                >
-                  Overview
-                </button>
-                {sections.map((s) => (
-                  <button
-                    key={s.section_id}
-                    type="button"
-                    className={activeSection?.section_id === s.section_id ? 'map-tab map-tab--active' : 'map-tab'}
-                    onClick={() => focusSection(s)}
-                    aria-pressed={activeSection?.section_id === s.section_id}
-                  >
-                    <i className="dot" aria-hidden="true" style={{ background: sectionColor(s.section_id) }} />
-                    {s.section_name}
-                  </button>
-                ))}
-              </div>
+              <input
+                className="search-input section-find"
+                type="search"
+                aria-label="Find a section"
+                placeholder="Find section…"
+                value={sectionFind}
+                onChange={(e) => setSectionFind(e.target.value)}
+              />
+              <ul className="section-list" aria-labelledby="sections-heading">
+                {!sectionFind.trim() && (
+                  <li>
+                    <button
+                      type="button"
+                      className={!activeSection ? 'section-row section-row--active' : 'section-row'}
+                      onClick={showAll}
+                      aria-pressed={!activeSection}
+                    >
+                      <span className="section-row-name">All sections</span>
+                      <span className="section-row-count" title="Plots available">{totalAvailable.toLocaleString()}</span>
+                    </button>
+                  </li>
+                )}
+                {shownSections.map((s) => {
+                  const active = activeSection?.section_id === s.section_id
+                  const free = s.counts?.available || 0
+                  const total = free + (s.counts?.reserved || 0) + (s.counts?.occupied || 0)
+                  return (
+                    <li key={s.section_id}>
+                      <button
+                        type="button"
+                        className={active ? 'section-row section-row--active' : 'section-row'}
+                        onClick={() => focusSection(s)}
+                        aria-pressed={active}
+                        aria-label={`${s.section_name}, ${free} of ${total} plots available`}
+                      >
+                        <i className="dot" aria-hidden="true" style={{ background: sectionColor(s.section_id) }} />
+                        <span className="section-row-name">{s.section_name}</span>
+                        <span
+                          className={free ? 'section-row-count' : 'section-row-count section-row-count--full'}
+                          title="Plots available"
+                        >
+                          {free || 'Full'}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+                {shownSections.length === 0 && <li className="text-muted section-list-empty">No section matches.</li>}
+              </ul>
             </div>
 
             <div className="map-rail-group map-rail-filter">
@@ -266,11 +311,11 @@ export default function Cemetery() {
               <div className="map-legend">
                 <span><i className="swatch swatch--available" aria-hidden="true" /> Available ({compositeCounts.available})</span>
                 <span><i className="swatch swatch--reserved" aria-hidden="true" /> Reserved ({compositeCounts.reserved})</span>
-                <span><i className="swatch" aria-hidden="true" /> Occupied ({compositeCounts.occupied})</span>
+                <span><i className="swatch swatch--occupied" aria-hidden="true" /> Occupied ({compositeCounts.occupied})</span>
                 {search && <span className="text-muted">{compositeLots.length} matching</span>}
               </div>
               <p className="text-muted map-toggle-note">
-                The whole-cemetery view shows available plots only. Zoom in to see reserved and occupied ones.
+                Hover a plot for its code and price; click it for the full record.
               </p>
             </div>
           </aside>
@@ -291,12 +336,10 @@ export default function Cemetery() {
 
             <aside className={`map-detail${selectedLot ? ' map-detail--open' : ''}`} aria-label="Plot details">
               {selectedLot && (
-                <button type="button" className="sheet-close" onClick={() => selectLot(null)} aria-label="Close plot details">
-                  ×
-                </button>
-              )}
-              {selectedLot ? (
                 <>
+                  <button type="button" className="sheet-close" onClick={() => selectLot(null)} aria-label="Close plot details">
+                    ×
+                  </button>
                   {/* The plot's own entry: titled, ruled, filed. */}
                   <div className="plot-doc">
                     <div className="plot-doc-head">
@@ -385,18 +428,6 @@ export default function Cemetery() {
                         <p className="text-muted">No interment is filed against this plot.</p>
                       )}
                     </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <h3>Plot details</h3>
-                  <p className="text-muted map-hint">
-                    Select a plot on the map to see its record.
-                  </p>
-                  {!user && (
-                    <p className="text-muted map-hint">
-                      <Link to="/login">Sign in</Link> to reserve an available plot.
-                    </p>
                   )}
                 </>
               )}
