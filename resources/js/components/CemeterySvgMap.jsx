@@ -703,7 +703,7 @@ export default function CemeterySvgMap({
         onKeyDown={onKeyDown}
         tabIndex={0}
       >
-        <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#eeeeec" />
+        <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} className="map-paper" />
 
         <PlanImage level={levelFor(pane.width > 0 ? vb[2] / pane.width : MAP_VIEWBOX[2])} />
 

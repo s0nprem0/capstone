@@ -114,9 +114,45 @@ textarea {
   --status-available-ink: var(--color-text);
   /* Available as text on the light surfaces. The fill green is only 3.27:1
      there, too faint for small type; this is 7.58:1. */
-  --status-available-text: #1e5c33;
+  --status-available-text: var(--color-success-text);
   --status-reserved-ink: var(--color-text);
   --status-occupied-ink: #ffffff;
+
+  /* ---- Semantic colour roles. Everything outside :root reads these rather
+     than a raw value, so a theme (or dark mode) is a change made here. ---- */
+  --color-on-strong: #ffffff;
+  --color-halo: #ffffff;
+
+  --color-success-text: #1e5c33;
+  --color-success-bg: #e6f4ea;
+  --color-warning-text: #92400e;
+  --color-warning-bg: #fef3c7;
+  --color-danger-text: #9b1c1c;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fde8e8;
+  --color-info-text: #1e40af;
+  --color-info-bg: #e8eefc;
+  --color-neutral-text: #666b60;
+  --color-neutral-bg: #f0efea;
+
+  /* Status fills over the survey plan: a light tint near, a strong one in
+     the overview where plots are specks. */
+  --status-available-tint: rgba(47, 158, 68, 0.32);
+  --status-available-tint-strong: rgba(47, 158, 68, 0.62);
+  --status-reserved-tint: rgba(234, 179, 8, 0.42);
+  --status-reserved-tint-strong: rgba(234, 179, 8, 0.85);
+  --status-occupied-tint: rgba(30, 64, 175, 0.2);
+  --status-occupied-tint-strong: rgba(30, 64, 175, 0.7);
+
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-popover: 0 6px 20px rgba(35, 38, 31, 0.16);
+  --shadow-sheet: 0 -8px 24px rgba(35, 38, 31, 0.18);
+
+  /* The paper the survey plan is drawn on, behind every map. */
+  --color-map-paper: #eeeeec;
+
+  --duration-fast: 0.12s;
+  --duration-base: 0.2s;
 }
 
 body {
@@ -141,7 +177,7 @@ a {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-strong);
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
@@ -174,7 +210,7 @@ a {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius);
-  color: #fff;
+  color: var(--color-on-strong);
   font-size: var(--text-xl);
   line-height: 1;
   cursor: pointer;
@@ -219,7 +255,7 @@ a {
 /* 6.35:1 on --color-bg, which is what body paints, and 6.82:1 on
    --color-surface. Muted text carries hints, labels and next-of-kin notes,
    text people read twice, so it clears AA with room rather than by a hair;
-   the previous #666b60 sat at 4.85:1. */
+   the previous var(--color-neutral-text) sat at 4.85:1. */
 .panel-heading {
   color: var(--color-text-muted);
 }
@@ -244,17 +280,17 @@ a {
   text-decoration: none;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius);
-  transition: background 0.2s;
+  transition: background var(--duration-base);
 }
 
 .nav-link:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .nav-link--active {
   background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  color: var(--color-on-strong);
   font-weight: 600;
 }
 
@@ -339,7 +375,7 @@ h2 {
 
 .btn-primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .btn-primary:hover {
@@ -352,8 +388,8 @@ h2 {
 }
 
 .btn-danger {
-  background: #b91c1c;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-on-strong);
 }
 
 .btn-danger:hover {
@@ -405,7 +441,7 @@ label {
 .field-error {
   font-size: var(--text-sm);
   font-weight: 400;
-  color: #9b1c1c;
+  color: var(--color-danger-text);
 }
 
 /* Border colour alone is a colour-only signal (WCAG 1.4.1). The inset ring adds
@@ -413,8 +449,8 @@ label {
    shift the moment validation fires mid-form. */
 input[aria-invalid='true'],
 textarea[aria-invalid='true'] {
-  border-color: #9b1c1c;
-  box-shadow: inset 0 0 0 1px #9b1c1c;
+  border-color: var(--color-danger-text);
+  box-shadow: inset 0 0 0 1px var(--color-danger-text);
 }
 
 .label-hint {
@@ -489,8 +525,8 @@ textarea {
 }
 
 .select-trigger--invalid {
-  border-color: #9b1c1c;
-  box-shadow: inset 0 0 0 1px #9b1c1c;
+  border-color: var(--color-danger-text);
+  box-shadow: inset 0 0 0 1px var(--color-danger-text);
 }
 
 .select-value {
@@ -509,7 +545,7 @@ textarea {
   flex: none;
   margin-right: var(--space-2xs);
   color: var(--color-text-muted);
-  transition: transform 0.15s;
+  transition: transform var(--duration-fast);
 }
 
 .select--open .select-chevron {
@@ -548,7 +584,7 @@ textarea {
   background: var(--color-surface);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius);
-  box-shadow: 0 6px 20px rgba(35, 38, 31, 0.16);
+  box-shadow: var(--shadow-popover);
 }
 
 .select-list[hidden] {
@@ -825,7 +861,7 @@ textarea {
 
 .btn-ghost {
   background: transparent;
-  color: #fff;
+  color: var(--color-on-strong);
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -900,7 +936,7 @@ textarea {
 
 .sidebar-user {
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .sidebar-role {
@@ -1179,99 +1215,99 @@ textarea {
   white-space: nowrap;
 }
 
-.mark--scheduled { color: #92400e; }
-.mark--interred  { color: #1e5c33; }
+.mark--scheduled { color: var(--color-warning-text); }
+.mark--interred  { color: var(--color-success-text); }
 
 /* Lot status marks. The map fills use the bright --status-* palette, but a
    mark is text, so it needs the darker ink that clears AA on the light
    surface; the word itself carries the status, so the colour is not the only
    signal. */
-.mark--available { color: #1e5c33; }
-.mark--reserved  { color: #92400e; }
-.mark--occupied  { color: #1e40af; }
+.mark--available { color: var(--color-success-text); }
+.mark--reserved  { color: var(--color-warning-text); }
+.mark--occupied  { color: var(--color-info-text); }
 
 .badge--admin {
-  background: #2c5530;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-strong);
 }
 
 .badge--staff {
   background: #1d4ed8;
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .badge--user {
   background: #6b7280;
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .badge--active {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge--inactive {
-  background: #fde8e8;
-  color: #9b1c1c;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .badge--pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .badge--approved {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge--rejected {
-  background: #fde8e8;
-  color: #9b1c1c;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .badge--available {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge--reserved {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .badge--occupied {
-  background: #e8eefc;
-  color: #1e40af;
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
 }
 
 /* Interment reuses the done/upcoming colours but keeps its own classes, so
    restyling lot status cannot silently restyle burial reporting. */
 .badge--interred {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge--scheduled {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 /* Payment status: settled reuses the completion green, partial the pending
    amber, unpaid a muted ink. */
 .badge--paid {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .badge--partial {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .badge--unpaid {
-  background: #f0efea;
-  color: #666b60;
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
 }
 
 .alert {
@@ -1282,14 +1318,14 @@ textarea {
 }
 
 .alert--error {
-  background: #fde8e8;
-  color: #9b1c1c;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
   border: 1px solid #fca5a5;
 }
 
 .alert--success {
-  background: #e6f4ea;
-  color: #1e5c33;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
   border: 1px solid #a5d6a7;
 }
 
@@ -1333,7 +1369,7 @@ textarea {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: 0 6px 20px rgba(35, 38, 31, 0.16);
+  box-shadow: var(--shadow-popover);
 }
 
 .row-menu-item {
@@ -1360,7 +1396,7 @@ textarea {
 }
 
 .row-menu-item--danger {
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 /* A confirm opened from inside the menu wraps to the menu's width. */
@@ -1435,18 +1471,18 @@ textarea {
 }
 
 .swatch--available {
-  background: rgba(47, 158, 68, 0.32);
+  background: var(--status-available-tint);
   border-color: var(--status-available);
 }
 
 .swatch--reserved {
-  background: rgba(234, 179, 8, 0.42);
+  background: var(--status-reserved-tint);
   border: 1px dashed #a16207;
 }
 
 .swatch--occupied {
-  background: rgba(30, 64, 175, 0.22);
-  border-color: rgba(30, 64, 175, 0.7);
+  background: var(--status-occupied-tint);
+  border-color: var(--status-occupied-tint-strong);
 }
 
 .visually-hidden {
@@ -1517,7 +1553,7 @@ textarea {
   padding: 0 5px;
   border-radius: 999px;
   background: #dc2626;
-  color: #fff;
+  color: var(--color-on-strong);
   font-size: var(--text-sm);
   font-weight: 700;
   margin-left: var(--space-2xs);
@@ -1605,7 +1641,7 @@ table.report-table {
   height: 100%;
   min-height: 420px;
   display: block;
-  background: #eeeeec;
+  background: var(--color-map-paper);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: grab;
@@ -1753,11 +1789,11 @@ table.report-table {
 .section-row--active,
 .section-row--active:hover {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .section-row--active .section-row-count {
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .section-list-heading {
@@ -1791,7 +1827,7 @@ table.report-table {
 .chip--active {
   background: var(--color-text);
   border-color: var(--color-text);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .map-search {
@@ -1815,7 +1851,7 @@ table.report-table {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-raised);
   overflow: hidden;
 }
 
@@ -1858,7 +1894,7 @@ table.report-table {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: 0 4px 14px rgba(35, 38, 31, 0.18);
+  box-shadow: var(--shadow-popover);
   font-size: var(--text-sm);
   pointer-events: none;
   white-space: nowrap;
@@ -1910,7 +1946,7 @@ table.report-table {
 }
 
 .map-section-label:hover rect {
-  fill: #fff;
+  fill: var(--color-halo);
   stroke-width: 2.5px;
 }
 
@@ -1937,19 +1973,19 @@ table.report-table {
 }
 
 .lot--available {
-  fill: rgba(47, 158, 68, 0.32);
+  fill: var(--status-available-tint);
   stroke: var(--status-available);
 }
 
 .lot--reserved {
-  fill: rgba(234, 179, 8, 0.42);
+  fill: var(--status-reserved-tint);
   stroke: #a16207;
   stroke-dasharray: 4 3;
 }
 
 .lot--occupied {
-  fill: rgba(30, 64, 175, 0.2);
-  stroke: rgba(30, 64, 175, 0.7);
+  fill: var(--status-occupied-tint);
+  stroke: var(--status-occupied-tint-strong);
 }
 
 .lot-rect:hover {
@@ -1967,18 +2003,18 @@ table.report-table {
 }
 
 .map-svg[data-detail='far'] .lot--available {
-  fill: rgba(47, 158, 68, 0.62);
-  stroke: rgba(47, 158, 68, 0.62);
+  fill: var(--status-available-tint-strong);
+  stroke: var(--status-available-tint-strong);
 }
 
 .map-svg[data-detail='far'] .lot--reserved {
-  fill: rgba(234, 179, 8, 0.85);
-  stroke: rgba(234, 179, 8, 0.85);
+  fill: var(--status-reserved-tint-strong);
+  stroke: var(--status-reserved-tint-strong);
 }
 
 .map-svg[data-detail='far'] .lot--occupied {
-  fill: rgba(30, 64, 175, 0.7);
-  stroke: rgba(30, 64, 175, 0.7);
+  fill: var(--status-occupied-tint-strong);
+  stroke: var(--status-occupied-tint-strong);
 }
 
 /* The selected plot, drawn last so neighbours never cover it: a white halo
@@ -1989,7 +2025,7 @@ table.report-table {
 }
 
 .lot-halo {
-  stroke: #fff;
+  stroke: var(--color-halo);
   stroke-width: 7;
 }
 
@@ -2002,7 +2038,7 @@ table.report-table {
   font-weight: 700;
   fill: var(--status-selected);
   paint-order: stroke;
-  stroke: #fff;
+  stroke: var(--color-halo);
   stroke-linejoin: round;
 }
 
@@ -2018,7 +2054,7 @@ table.report-table {
   font-weight: 700;
   fill: var(--color-text);
   paint-order: stroke;
-  stroke: #fff;
+  stroke: var(--color-halo);
   stroke-linejoin: round;
   pointer-events: none;
 }
@@ -2234,7 +2270,7 @@ table.report-table {
    so a focused nav link or Logout drew a green ring on green — no visible focus.
    White clears 3:1 against it. Matches the coarse-pointer target treatment. */
 .sidebar :focus-visible {
-  outline-color: #fff;
+  outline-color: var(--color-on-strong);
 }
 
 /* First Tab stop on every page. Without it a keyboard user crosses the whole
@@ -2367,7 +2403,7 @@ textarea:disabled {
     width: min(300px, 85vw);
     z-index: 60;
     transform: translateX(-105%);
-    transition: transform 0.25s ease;
+    transition: transform var(--duration-base) ease;
     overflow-y: auto;
   }
   .sidebar--open {
@@ -2488,7 +2524,7 @@ textarea:disabled {
   cursor: pointer;
   font-size: var(--text-sm);
   font-weight: 500;
-  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .editor-chip:hover {
@@ -2499,7 +2535,7 @@ textarea:disabled {
 .editor-chip--active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .editor-chips {
@@ -2868,16 +2904,16 @@ textarea:disabled {
 
 .plot-list-item--selected {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-strong);
 }
 
 .plot-list-item--selected .mark {
-  color: #fff;
-  border-color: #fff;
+  color: var(--color-on-strong);
+  border-color: var(--color-on-strong);
 }
 
 .plot-list-item--selected:focus-visible {
-  outline-color: #fff;
+  outline-color: var(--color-on-strong);
 }
 
 .plot-list-code {
@@ -3461,7 +3497,7 @@ textarea:disabled {
     background: var(--color-surface);
     border: 0;
     border-top: 1px solid var(--color-border);
-    box-shadow: 0 -8px 24px rgba(35, 38, 31, 0.18);
+    box-shadow: var(--shadow-sheet);
   }
 
   .sheet-close {
@@ -3603,4 +3639,8 @@ textarea:disabled {
   .table--stack tbody th {
     font-size: var(--text-lg);
   }
+}
+
+.map-paper {
+  fill: var(--color-map-paper);
 }

@@ -718,7 +718,7 @@ export default function LotEditor() {
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
             >
-              <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} fill="#eeeeec" />
+              <rect x={vb[0] - 200} y={vb[1] - 200} width={vb[2] + 400} height={vb[3] + 400} className="map-paper" />
 
               <MapReferenceImage reference={reference} width={MAP_VIEWBOX[2]} height={MAP_VIEWBOX[3]} />
 
