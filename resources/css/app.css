@@ -1113,15 +1113,90 @@ textarea {
   color: var(--color-text-muted);
 }
 
+/* Secondary row actions. Fixed, not absolute: see RowMenu. */
+.row-menu {
+  display: inline-block;
+}
+
+.row-menu-list {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-width: 280px;
+  padding: var(--space-2xs) 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(35, 38, 31, 0.16);
+}
+
+.row-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-xs) var(--space-md);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.row-menu-item:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.row-menu-item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.row-menu-item--danger {
+  color: #b91c1c;
+}
+
+/* A confirm opened from inside the menu wraps to the menu's width. */
+.row-menu-list .confirm-inline {
+  flex-wrap: wrap;
+  white-space: normal;
+  padding: var(--space-xs) var(--space-md);
+}
+
+.form-advanced {
+  margin-top: var(--space-md);
+}
+
+.form-advanced summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.form-advanced label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-top: var(--space-sm);
+  max-width: 360px;
+}
+
+.section-plots {
+  min-width: 160px;
+}
+
+.section-plots .occupancy-bar {
+  max-width: 220px;
+}
+
 .table-actions {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
   white-space: nowrap;
-}
-
-.form-card--compact {
-  margin-bottom: var(--space-lg);
 }
 
 .map-legend {
@@ -2794,15 +2869,13 @@ textarea:disabled {
 }
 
 /* ==== Dashboard ====
-   Map-first overview. The plot plan is the page: it shows where the pressure
-   sits, which a row of equal-weight stat cards repeating the same four totals
-   cannot. Figures and the outstanding-work queue read as a rail beside it. */
-.dash-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
+   What needs doing first, then the numbers. The plot plan used to lead, but
+   with nearly every plot free it was one block of green: the counts say the
+   same thing exactly, and the full map is one click away. */
+.dash {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-md);
-  align-items: start;
-  margin-top: var(--space-md);
 }
 
 .dash-panel {
@@ -2813,63 +2886,96 @@ textarea:disabled {
   min-width: 0;
 }
 
-.dash-stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  min-width: 0;
-}
-
 .dash-panel h3 {
   margin: 0 0 var(--space-sm);
   font-size: var(--text-lg);
 }
 
-.dash-panel-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.dash-panel h3 .text-muted {
+  font-size: var(--text-md);
+  font-weight: 400;
+}
+
+.dash-panel .figure-list {
+  margin: 0;
+}
+
+.dash-queue {
+  border-left: 3px solid var(--color-primary);
+}
+
+.dash-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-sm);
 }
 
-.dash-panel-head h3 {
+.stat-tile p {
   margin: 0;
 }
 
-/* Width and height attributes come from the map viewBox, so the plan keeps
-   the cemetery's proportions at whatever width the panel ends up. */
-.occupancy-map {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #f4f1e8;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+.stat-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
-.occupancy-meter {
-  display: flex;
-  height: 8px;
-  margin-top: var(--space-sm);
+/* Proportional figures: a standalone number reads tighter without every digit
+   padded to the width of a zero. */
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.stat-sub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.swatch-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.swatch-dot--available,
+.occupancy-bar-seg--available { background: var(--status-available); }
+.swatch-dot--reserved,
+.occupancy-bar-seg--reserved { background: var(--status-reserved); }
+.swatch-dot--occupied,
+.occupancy-bar-seg--occupied { background: var(--status-occupied); }
+
+/* Segments share the bar by count, with a 2px surface gap between them so
+   neighbouring statuses never run together; min-width keeps three occupied
+   plots in thousands from rounding away. */
+.occupancy-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  min-width: 80px;
+  background: var(--color-border);
+  border-radius: 3px;
   overflow: hidden;
 }
 
-/* flex-basis 0 lets the segments share the bar by count; min-width keeps a
-   single occupied plot from rounding away to nothing. */
-.occupancy-meter span {
-  flex-basis: 0;
-  min-width: 2px;
+.occupancy-bar--large {
+  height: 10px;
+  border-radius: 4px;
 }
 
-.dash-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-lg);
-  margin-top: var(--space-xs);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
+.occupancy-bar-seg {
+  flex-basis: 0;
+  min-width: 3px;
 }
 
 .queue {
@@ -2902,12 +3008,6 @@ textarea:disabled {
 .queue-count {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 768px) {
-  .dash-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* After a reservation is sent. The form is gone, so this is the whole page:

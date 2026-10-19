@@ -2,15 +2,23 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
-import OccupancyMap from '../components/OccupancyMap'
-import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
+import PageHeader from '../components/PageHeader'
+import OccupancyBar from '../components/OccupancyBar'
 import { LOT_STATUS, PLOT_STATUSES, money } from '../lib/terms'
+
+const share = (count, total) => {
+  if (!total || !count) return '0%'
+  const pct = (count / total) * 100
+  if (pct < 1) return '<1%'
+  // 6,728 of 6,748 is not all of them.
+  if (pct > 99 && count < total) return '>99%'
+  return `${Math.round(pct)}%`
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState(null)
-  const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -20,13 +28,8 @@ export default function Dashboard() {
     })
   }, [])
 
-  useEffect(() => {
-    api('/api/map').then(({ ok, data }) => {
-      if (ok) setMapData(data)
-      else setError((current) => current || data?.error || 'Failed to load map data')
-    })
-  }, [])
-
+  // What is waiting on someone, first: the rest of the page is for reading,
+  // this is the part that gets acted on.
   const queue = stats
     ? [
         {
@@ -42,86 +45,84 @@ export default function Dashboard() {
       ].filter((item) => item.count > 0)
     : []
 
-  const loading = !stats && !mapData && !error
-
   return (
     <div>
-      <h2>Dashboard</h2>
-      <p className="text-muted">Welcome, {user.fullname} ({user.role}).</p>
+      <PageHeader title="Dashboard">
+        <Link to="/" className="btn btn-secondary">Open the cemetery map</Link>
+      </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
+      {!stats && !error && <Loading message="Loading dashboard..." />}
 
-      {loading && <Loading message="Loading dashboard..." />}
-
-      {(stats || mapData) && (
-        <div className="dash-grid">
-          <section className="dash-panel">
-            <div className="dash-panel-head">
-              <h3>Occupancy</h3>
-              <Link to="/">Open the full map</Link>
-            </div>
-
-            {mapData ? (
-              <OccupancyMap sections={mapData.sections} />
+      {stats && (
+        <div className="dash">
+          <section className="dash-panel dash-queue" aria-labelledby="queue-heading">
+            <h3 id="queue-heading">Needs attention</h3>
+            {queue.length === 0 ? (
+              <p className="text-muted">Nothing waiting.</p>
             ) : (
-              <p className="text-muted">Map unavailable.</p>
-            )}
-
-            {stats && (
-              <>
-                <div className="occupancy-meter" aria-hidden="true">
-                  {PLOT_STATUSES.filter((s) => stats.lots[s] > 0).map((s) => (
-                    <span key={s} style={{ flexGrow: stats.lots[s], background: STATUS_COLORS[s] }} />
-                  ))}
-                </div>
-                <div className="dash-legend">
-                  {PLOT_STATUSES.map((s) => (
-                    <span key={s}>
-                      <i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS[s] }} /> {LOT_STATUS[s]} ({stats.lots[s]})
-                    </span>
-                  ))}
-                  <span className="text-muted">{stats.lots.total} plots</span>
-                </div>
-              </>
+              <ul className="queue">
+                {queue.map((item) => (
+                  <li key={item.to}>
+                    <Link to={item.to}>
+                      <span>{item.label}</span>
+                      <span className="queue-count">{item.count}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
-          <div className="dash-stack">
-            <section className="dash-panel">
-              <h3>Key figures</h3>
-              {stats ? (
-                <dl className="figure-list">
-                  <div><dt>Plots</dt><dd>{stats.lots.total}</dd></div>
-                  <div><dt>Reservations</dt><dd>{stats.reservations.total}</dd></div>
-                  <div><dt>Reservations approved</dt><dd>{stats.reservations.approved}</dd></div>
-                  <div><dt>Burial records</dt><dd>{stats.burials.total}</dd></div>
-                  <div><dt>Payments recorded</dt><dd>{money(stats.payments?.total)}</dd></div>
-                  <div><dt>Collected this month</dt><dd>{money(stats.payments?.this_month)}</dd></div>
-                  <div><dt>Users</dt><dd>{stats.users}</dd></div>
-                </dl>
-              ) : (
-                <p className="text-muted">Unavailable.</p>
-              )}
+          {/* The tiles double as the bar's legend: each carries its status
+              swatch, so the counts are printed once. */}
+          <section className="dash-panel" aria-labelledby="plots-heading">
+            <h3 id="plots-heading">Plots <span className="text-muted">· {stats.lots.total.toLocaleString()} in all</span></h3>
+            <div className="stat-row">
+              {PLOT_STATUSES.map((s) => (
+                <div className="stat-tile" key={s}>
+                  <p className="stat-label">
+                    <i className={`swatch-dot swatch-dot--${s}`} aria-hidden="true" /> {LOT_STATUS[s]}
+                  </p>
+                  <p className="stat-value">{stats.lots[s].toLocaleString()}</p>
+                  <p className="stat-sub">{share(stats.lots[s], stats.lots.total)} of plots</p>
+                </div>
+              ))}
+            </div>
+            <OccupancyBar counts={stats.lots} large />
+          </section>
+
+          <div className="dash-pair">
+            <section className="dash-panel" aria-labelledby="money-heading">
+              <h3 id="money-heading">Payments</h3>
+              <div className="stat-row">
+                <div className="stat-tile">
+                  <p className="stat-label">Collected this month</p>
+                  <p className="stat-value">{money(stats.payments?.this_month)}</p>
+                </div>
+                <div className="stat-tile">
+                  <p className="stat-label">Collected in all</p>
+                  <p className="stat-value">{money(stats.payments?.total)}</p>
+                </div>
+              </div>
             </section>
 
-            <section className="dash-panel">
-              <h3>Pending work</h3>
-              {!stats ? (
-                <p className="text-muted">Unavailable.</p>
-              ) : queue.length === 0 ? (
-                <p className="text-muted">Nothing waiting.</p>
-              ) : (
-                <ul className="queue">
-                  {queue.map((item) => (
-                    <li key={item.to}>
-                      <Link to={item.to}>
-                        <span>{item.label}</span>
-                        <span className="queue-count">{item.count}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <section className="dash-panel" aria-labelledby="records-heading">
+              <h3 id="records-heading">Records</h3>
+              <dl className="figure-list">
+                <div>
+                  <dt><Link to={`/${user.role}/reservations`}>Reservations</Link></dt>
+                  <dd>{stats.reservations.total} <span className="text-muted">({stats.reservations.approved} approved)</span></dd>
+                </div>
+                <div>
+                  <dt><Link to={`/${user.role}/burial-records`}>Burial records</Link></dt>
+                  <dd>{stats.burials.total}</dd>
+                </div>
+                <div>
+                  <dt><Link to={`/${user.role}/users`}>User accounts</Link></dt>
+                  <dd>{stats.users}</dd>
+                </div>
+              </dl>
             </section>
           </div>
         </div>

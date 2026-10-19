@@ -7,6 +7,7 @@ import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
+import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import { ACCOUNT_STATUS, ROLES } from '../lib/terms'
 
@@ -19,6 +20,7 @@ export default function Users() {
   const [status, setStatus] = useState('')
   const [busyId, setBusyId] = useState(null)
 
+  const [adding, setAdding] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [savingAdd, setSavingAdd] = useState(false)
 
@@ -41,15 +43,24 @@ export default function Users() {
     const { ok, data } = await api('/api/users', { method: 'POST', body: form })
     setSavingAdd(false)
     if (ok) {
-      succeed(`Created ${data.user.fullname}`)
+      succeed(`Created ${data.user.fullname}.`)
       setForm(EMPTY_FORM)
+      setAdding(false)
       reload()
     } else {
       fail(data?.error || 'Failed to create user')
     }
   }
 
+  const openAdd = () => {
+    clear()
+    setEditing(null)
+    setForm(EMPTY_FORM)
+    setAdding(true)
+  }
+
   const openEdit = (u) => {
+    setAdding(false)
     setEditing(u)
     setEditForm({ ...u, password: '' })
     clear()
@@ -69,7 +80,7 @@ export default function Users() {
     const { ok, data } = await api(`/api/users/${editing.user_id}`, { method: 'POST', body })
     setSavingEdit(false)
     if (ok) {
-      succeed(`Updated ${data.user.fullname}`)
+      succeed(`Updated ${data.user.fullname}.`)
       setEditing(null)
       reload()
     } else {
@@ -77,27 +88,13 @@ export default function Users() {
     }
   }
 
-  const toggleStatus = async (u) => {
-    setBusyId(u.user_id)
-    const { ok, data } = await api(`/api/users/${u.user_id}`, {
-      method: 'POST',
-      body: { status: u.status === 'active' ? 'inactive' : 'active' },
-    })
-    setBusyId(null)
-    if (ok) {
-      succeed(`${u.fullname} ${u.status === 'active' ? 'deactivated' : 'activated'}.`)
-      reload()
-    } else {
-      fail(data?.error || 'Failed to update user')
-    }
-  }
-
   const handleDelete = async (u) => {
+    clear()
     setBusyId(u.user_id)
     const { ok, data } = await api(`/api/users/${u.user_id}/delete`, { method: 'POST' })
     setBusyId(null)
     if (ok) {
-      succeed(`Deleted ${u.fullname}`)
+      succeed(`Deleted ${u.fullname}.`)
       reload()
     } else {
       fail(data?.error || 'Delete failed')
@@ -106,12 +103,14 @@ export default function Users() {
 
   return (
     <div>
-      <h2>User Management</h2>
+      <PageHeader title="Users">
+        {isAdmin && !adding && !editing && <button className="btn btn-primary" onClick={openAdd}>Add User</button>}
+      </PageHeader>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       <Notice notice={notice} />
 
-      {isAdmin && (
-        <form onSubmit={handleSubmit} className="form-card form-card--compact">
+      {isAdmin && adding && (
+        <form onSubmit={handleSubmit} className="form-card section-block">
           <h3>Add User</h3>
           <div className="form-grid">
             <label>
@@ -144,6 +143,7 @@ export default function Users() {
             </label>
           </div>
           <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setAdding(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={savingAdd}>
               {savingAdd ? 'Adding...' : 'Add User'}
             </button>
@@ -190,6 +190,7 @@ export default function Users() {
               >
                 {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
+              <small className="label-hint">An inactive account cannot sign in.</small>
             </label>
             <label>
               New Password
@@ -255,7 +256,7 @@ export default function Users() {
                 <th>Phone</th>
                 <th>Role</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th><span className="visually-hidden">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -271,24 +272,6 @@ export default function Users() {
                     {(isAdmin || u.role !== 'admin') && (
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>Edit</button>
                     )}
-                    {u.user_id !== me.user_id &&
-                      (u.status === 'active' ? (
-                        <ConfirmButton
-                          label="Deactivate"
-                          danger
-                          onConfirm={() => toggleStatus(u)}
-                          busy={busyId === u.user_id}
-                          message="Deactivate this account? They will no longer be able to sign in."
-                        />
-                      ) : (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          disabled={busyId === u.user_id}
-                          onClick={() => toggleStatus(u)}
-                        >
-                          {busyId === u.user_id ? 'Working...' : 'Activate'}
-                        </button>
-                      ))}
                     {isAdmin && u.user_id !== me.user_id && (
                       <ConfirmButton
                         label="Delete"

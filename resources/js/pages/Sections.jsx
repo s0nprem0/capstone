@@ -6,72 +6,67 @@ import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
+import PageHeader from '../components/PageHeader'
+import OccupancyBar from '../components/OccupancyBar'
+import RowMenu from '../components/RowMenu'
 
 const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 4096 3072' }
 
 export default function Sections() {
-
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [savingAdd, setSavingAdd] = useState(false)
-
+  // One form for adding and editing: null when closed, {} when adding, the
+  // section when editing. Two forms used to stack up at the top of the page.
   const [editing, setEditing] = useState(null)
-  const [editForm, setEditForm] = useState(EMPTY_FORM)
-  const [savingEdit, setSavingEdit] = useState(false)
-
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState(null)
 
   const { items: sections, loaded, error, reload } = useList('/api/sections', {}, 'Failed to load sections')
   const { notice, succeed, fail, clear } = useNotice()
 
+  const isNew = editing && !editing.section_id
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const openAdd = () => {
+    clear()
+    setEditing({})
+    setForm(EMPTY_FORM)
+  }
+
+  const openEdit = (s) => {
+    clear()
+    setEditing(s)
+    setForm({
+      section_name: s.section_name || '',
+      location: s.location || '',
+      description: s.description || '',
+      svg_viewbox: s.svg_viewbox || EMPTY_FORM.svg_viewbox,
+    })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     clear()
-    setSavingAdd(true)
-    const { ok, data } = await api('/api/sections', { method: 'POST', body: form })
-    setSavingAdd(false)
+    setSaving(true)
+    const url = isNew ? '/api/sections' : `/api/sections/${editing.section_id}`
+    const { ok, data } = await api(url, { method: 'POST', body: form })
+    setSaving(false)
     if (ok) {
-      succeed(`Created ${data.section_name}`)
-      setForm(EMPTY_FORM)
-      reload()
-    } else {
-      fail(data?.error || 'Failed to create section')
-    }
-  }
-
-  const openEdit = (s) => {
-    setEditing(s)
-    setEditForm({ ...s })
-    clear()
-  }
-
-  const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value })
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault()
-    if (!editing) return
-    clear()
-    setSavingEdit(true)
-    const body = { ...editForm }
-    delete body.section_id
-    const { ok, data } = await api(`/api/sections/${editing.section_id}`, { method: 'POST', body })
-    setSavingEdit(false)
-    if (ok) {
-      succeed(`Updated ${data.section_name}`)
+      succeed(isNew ? `Created ${data.section_name}.` : `Updated ${data.section_name}.`)
       setEditing(null)
       reload()
     } else {
-      fail(data?.error || 'Failed to update section')
+      fail(data?.error || (isNew ? 'Failed to create section' : 'Failed to update section'))
     }
   }
 
   const handleDelete = async (s) => {
+    clear()
     setBusyId(s.section_id)
     const { ok, data } = await api(`/api/sections/${s.section_id}/delete`, { method: 'POST' })
     setBusyId(null)
     if (ok) {
-      succeed(`Deleted ${s.section_name}`)
+      succeed(`Deleted ${s.section_name}.`)
       reload()
     } else {
       fail(data?.error || 'Delete failed')
@@ -106,72 +101,47 @@ export default function Sections() {
     }
   }
 
-  const countBadge = (count, status) => (
-    <span className={`badge badge--${status}`} title={`${status} lots`}>
-      {status}: {count}
-    </span>
-  )
-
   return (
     <div>
-      <h2>Section Management</h2>
+      <PageHeader title="Sections">
+        {!editing && <button className="btn btn-primary" onClick={openAdd}>Add Section</button>}
+      </PageHeader>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       <Notice notice={notice} />
 
-      <form onSubmit={handleSubmit} className="form-card form-card--compact">
-        <h3>Add Section</h3>
-        <div className="form-grid">
-          <label>
-            Section Name
-            <input name="section_name" value={form.section_name} onChange={handleChange} maxLength="50" required />
-          </label>
-          <label>
-            Location
-            <input name="location" value={form.location} onChange={handleChange} maxLength="100" />
-          </label>
-          <label>
-            SVG View Box
-            <input name="svg_viewbox" value={form.svg_viewbox} onChange={handleChange} />
-            <small className="label-hint">Crop region as "x y width height", e.g. 280 270 1320 350.</small>
-          </label>
-          <label>
-            Description
-            <textarea name="description" value={form.description} onChange={handleChange} />
-          </label>
-        </div>
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={savingAdd}>
-            {savingAdd ? 'Adding...' : 'Add Section'}
-          </button>
-        </div>
-      </form>
-
       {editing && (
-        <form onSubmit={handleEditSubmit} className="form-card section-block">
-          <h3>Edit Section — {editing.section_name}</h3>
+        <form onSubmit={handleSubmit} className="form-card section-block">
+          <h3>{isNew ? 'Add Section' : `Edit Section — ${editing.section_name}`}</h3>
           <div className="form-grid">
             <label>
               Section Name
-              <input name="section_name" value={editForm.section_name} onChange={handleEditChange} maxLength="50" required />
+              <input name="section_name" value={form.section_name} onChange={handleChange} maxLength="50" required />
             </label>
             <label>
               Location
-              <input name="location" value={editForm.location} onChange={handleEditChange} maxLength="100" />
-            </label>
-            <label>
-              SVG View Box
-              <input name="svg_viewbox" value={editForm.svg_viewbox} onChange={handleEditChange} />
-              <small className="label-hint">Crop region as "x y width height".</small>
+              <input name="location" value={form.location} onChange={handleChange} maxLength="100" />
             </label>
             <label>
               Description
-              <textarea name="description" value={editForm.description} onChange={handleEditChange} />
+              <textarea name="description" value={form.description} onChange={handleChange} />
             </label>
           </div>
+          {/* The crop region is set by drawing the outline in the section
+              editor; typing coordinates is the fallback, not the way in. */}
+          {!isNew && (
+            <details className="form-advanced">
+              <summary>Advanced</summary>
+              <label>
+                SVG View Box
+                <input name="svg_viewbox" value={form.svg_viewbox} onChange={handleChange} />
+                <small className="label-hint">Crop region as "x y width height". Normally set by editing the outline.</small>
+              </label>
+            </details>
+          )}
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={savingEdit}>
-              {savingEdit ? 'Saving...' : 'Save Changes'}
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : isNew ? 'Add Section' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -187,65 +157,69 @@ export default function Sections() {
           <caption className="visually-hidden">Cemetery sections</caption>
           <thead>
             <tr>
-              <th>ID</th>
               <th>Name</th>
               <th>Location</th>
-              <th>Lots</th>
-              <th>Status</th>
-              <th>View Box</th>
-              <th>Actions</th>
+              <th>Plots</th>
+              <th><span className="visually-hidden">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {sections.map((s) => (
                 <tr key={s.section_id}>
-                  <td>{s.section_id}</td>
-                  <td>{s.is_locked ? `${s.section_name} 🔒` : s.section_name}</td>
-                  <td>{s.location || '—'}</td>
-                  <td>{s.lot_count}</td>
                   <td>
-                    <div className="table-actions">
-                      {countBadge(s.available, 'available')}
-                      {countBadge(s.reserved, 'reserved')}
-                      {countBadge(s.occupied, 'occupied')}
-                    </div>
+                    {s.section_name}
+                    {Boolean(s.is_locked) && <span className="cell-sub">Locked</span>}
                   </td>
-                  <td><code>{s.svg_viewbox}</code></td>
+                  <td>{s.location || '—'}</td>
+                  <td className="section-plots">
+                    <OccupancyBar counts={s} />
+                    <span className="cell-sub">
+                      {s.available} free of {s.lot_count}
+                      {s.reserved > 0 && ` · ${s.reserved} reserved`}
+                      {s.occupied > 0 && ` · ${s.occupied} occupied`}
+                    </span>
+                  </td>
                   <td>
                     <div className="table-actions">
-                      <Link to={`/admin/sections/editor?section=${s.section_id}`} className="btn btn-secondary btn-sm">
-                        {s.is_locked ? 'View outline' : 'Edit outline'}
-                      </Link>
-                      <Link to={`/admin/lots?section=${s.section_id}`} className="btn btn-secondary btn-sm">
-                        Edit lots
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        disabled={busyId === `reflow-${s.section_id}` || s.is_locked}
-                        title={s.is_locked ? 'Unlock the section to reflow lots' : 'Redraw lots into a grid inside the outline'}
-                        onClick={() => reflowLots(s)}
-                      >
-                        {busyId === `reflow-${s.section_id}` ? 'Reflowing...' : 'Reflow lots'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        disabled={busyId === `lock-${s.section_id}`}
-                        onClick={() => toggleLock(s)}
-                        title={s.is_locked ? 'Unlock this section (allows editing its outline and lots)' : 'Lock this section (freezes outline and lot geometry)'}
-                      >
-                        {busyId === `lock-${s.section_id}` ? '…' : s.is_locked ? 'Unlock' : 'Lock'}
-                      </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>Edit</button>
-                      <ConfirmButton
-                        label="Delete"
-                        danger
-                        disabled={Boolean(s.is_locked)}
-                        onConfirm={() => handleDelete(s)}
-                        busy={busyId === s.section_id}
-                        message={`Delete ${s.section_name}? Only empty sections can be deleted.`}
-                      />
+                      <RowMenu>
+                        {(close) => (
+                          <>
+                            <Link to={`/admin/sections/editor?section=${s.section_id}`} className="row-menu-item">
+                              {s.is_locked ? 'View outline' : 'Edit outline'}
+                            </Link>
+                            <Link to={`/admin/lots?section=${s.section_id}`} className="row-menu-item">
+                              Edit lots
+                            </Link>
+                            <ConfirmButton
+                              label="Reflow lots"
+                              className="row-menu-item"
+                              disabled={Boolean(s.is_locked) || busyId === `reflow-${s.section_id}`}
+                              busy={busyId === `reflow-${s.section_id}`}
+                              confirmLabel="Reflow"
+                              message="Redraw every lot as a grid inside the outline?"
+                              onConfirm={async () => { await reflowLots(s); close(false) }}
+                            />
+                            <button
+                              type="button"
+                              className="row-menu-item"
+                              disabled={busyId === `lock-${s.section_id}`}
+                              onClick={async () => { await toggleLock(s); close(false) }}
+                            >
+                              {s.is_locked ? 'Unlock' : 'Lock'}
+                            </button>
+                            <ConfirmButton
+                              label="Delete"
+                              className="row-menu-item row-menu-item--danger"
+                              danger
+                              disabled={Boolean(s.is_locked)}
+                              onConfirm={async () => { await handleDelete(s); close(false) }}
+                              busy={busyId === s.section_id}
+                              message={`Delete ${s.section_name}? Only empty sections can be deleted.`}
+                            />
+                          </>
+                        )}
+                      </RowMenu>
                     </div>
                   </td>
                 </tr>
