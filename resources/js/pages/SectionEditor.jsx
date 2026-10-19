@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import Icon from '../components/Icon'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { MapReferenceImage, readReference, saveReference } from '../map/reference'
 
@@ -416,7 +417,7 @@ export default function SectionEditor() {
           {section && (
             <>
               <span className={`editor-dirty${saving || savedAt || dirty ? '' : ' editor-dirty--muted'}`} aria-live="polite">
-                {saving ? 'Saving…' : savedAt ? 'Saved ✓' : dirty ? 'unsaved changes' : `${verticesLabel} · auto`}
+                {saving ? 'Saving…' : savedAt ? <><Icon name="check" size={14} /> Saved</> : dirty ? 'unsaved changes' : `${verticesLabel} · auto`}
               </span>
               <label className="map-reference-toggle">
                 <input
@@ -439,7 +440,7 @@ export default function SectionEditor() {
                 disabled={locked}
                 title="Insert a vertex on the outline, then drag it into place"
               >
-                {adding ? '✕ Cancel add' : '＋ Add vertex'}
+                {adding ? <><Icon name="x" size={14} /> Cancel add</> : <><Icon name="plus" size={14} /> Add vertex</>}
               </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={reset} disabled={!dirty || saving}>
                 Reset
@@ -454,7 +455,7 @@ export default function SectionEditor() {
                 disabled={saving}
                 title={locked ? 'Unlock to edit this outline' : 'Freeze this outline and its lot geometry'}
               >
-                {locked ? '🔒 Unlock section' : '🔓 Lock section'}
+                {locked ? <><Icon name="unlock" size={14} /> Unlock section</> : <><Icon name="lock" size={14} /> Lock section</>}
               </button>
             </>
           )}
@@ -467,21 +468,28 @@ export default function SectionEditor() {
         </p>
       )}
       {locked && section && (
-        <p className="alert alert--info">
-          🔒 This section is locked — its outline and lot positions are frozen. Unlock it to edit.
+        <p className="alert alert--info alert--icon">
+          <Icon name="lock" />
+          <span>This section is locked: its outline and lot positions are frozen. Unlock it to edit.</span>
         </p>
       )}
       {adding && !locked && (
-        <p className="alert alert--info">
-          ✛ Click anywhere on the outline to drop a vertex there — it snaps to the nearest edge, and you can
-          drag it into position. Press <kbd>Esc</kbd> or click Cancel to stop.
+        <p className="alert alert--info alert--icon">
+          <Icon name="pointer" />
+          <span>
+            Click anywhere on the outline to drop a vertex there. It snaps to the nearest edge, and you can
+            drag it into position. Press <kbd>Esc</kbd> or click Cancel to stop.
+          </span>
         </p>
       )}
       {placeholder && !locked && (
-        <p className="alert alert--warn">
-          ⚠ No outline saved for this section yet — the dashed rectangle below is just its view box, not the
-          real boundary. Drag the corners, or click an edge to add vertices, until it follows the traced
-          ground, then save. Until you save, the map falls back to drawing this rectangle.
+        <p className="alert alert--warn alert--icon">
+          <Icon name="alert" />
+          <span>
+            No outline saved for this section yet. The dashed rectangle below is just its view box, not the
+            real boundary. Drag the corners, or click an edge to add vertices, until it follows the traced
+            ground, then save. Until you save, the map falls back to drawing this rectangle.
+          </span>
         </p>
       )}
 

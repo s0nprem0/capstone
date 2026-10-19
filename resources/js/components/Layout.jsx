@@ -2,6 +2,7 @@ import { Outlet, NavLink, Link, useLocation, useNavigationType } from 'react-rou
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../lib/api'
+import Icon from './Icon'
 
 const NOTIFICATIONS = { to: '/notifications', label: 'Notifications', badge: true }
 
@@ -208,7 +209,7 @@ export default function Layout() {
             aria-label="Open navigation menu"
             aria-expanded={sidebarOpen}
           >
-            ☰
+            <Icon name="menu" size={18} />
           </button>
           <span className="topbar-title">
             {pageTitle || 'St. John Memorial Garden & Parks'}

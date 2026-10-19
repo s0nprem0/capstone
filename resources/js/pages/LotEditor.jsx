@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
 import Select from '../components/Select'
+import Icon from '../components/Icon'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { DEFAULT_REFERENCE, MapReferenceImage, readReference, saveReference } from '../map/reference'
@@ -581,7 +582,7 @@ export default function LotEditor() {
             onConfirm={reflow}
           />
           <button type="button" className="btn btn-primary btn-sm" onClick={addLot} disabled={!sectionRow || saving}>
-            + Add lot
+            <Icon name="plus" size={14} /> Add lot
           </button>
           <button
             type="button"
@@ -590,13 +591,13 @@ export default function LotEditor() {
             disabled={!undoStamp || saving}
             title="Undo last move, resize or nudge (Ctrl/Cmd+Z)"
           >
-            ↶ Undo
+            <Icon name="undo" size={14} /> Undo
           </button>
           <span
             className={`editor-dirty${saving || savedAt ? '' : ' editor-dirty--muted'}`}
             aria-live="polite"
           >
-            {saving ? 'Saving…' : savedAt ? 'Saved ✓' : 'changes auto-save'}
+            {saving ? 'Saving…' : savedAt ? <><Icon name="check" size={14} /> Saved</> : 'changes auto-save'}
           </span>
         </div>
       </div>

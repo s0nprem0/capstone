@@ -3468,3 +3468,30 @@ textarea:disabled {
     padding-right: 52px;
   }
 }
+
+/* Icons sit on the text baseline beside the word they illustrate. */
+.icon {
+  flex: none;
+  vertical-align: -0.15em;
+}
+
+.btn .icon,
+.editor-dirty .icon {
+  margin-right: var(--space-3xs);
+}
+
+.topbar-menu .icon {
+  vertical-align: middle;
+}
+
+/* An alert with a leading icon: icon and text side by side, the text
+   wrapping under itself rather than under the icon. */
+.alert--icon {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.alert--icon > .icon {
+  margin-top: 0.2em;
+}
