@@ -568,9 +568,17 @@ export default function LotEditor() {
       <div className="page-header">
         <h2>Lot Editor</h2>
         <div className="table-actions">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={reflow} disabled={!sectionRow || saving}>
-            Reflow grid
-          </button>
+          {/* Redraws every lot in the section and is outside Undo, so it asks
+              first: one stray click used to discard a hand-placed layout. */}
+          <ConfirmButton
+            label="Reflow grid"
+            confirmLabel="Reflow"
+            danger
+            disabled={!sectionRow || saving}
+            busy={saving}
+            message={`Redraw every lot in ${sectionRow?.section_name || 'this section'} as a grid? Hand-placed positions are lost and Undo cannot restore them.`}
+            onConfirm={reflow}
+          />
           <button type="button" className="btn btn-primary btn-sm" onClick={addLot} disabled={!sectionRow || saving}>
             + Add lot
           </button>

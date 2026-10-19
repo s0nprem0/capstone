@@ -109,6 +109,9 @@ textarea {
      the pale green (3.45) and yellow (1.92) while dark ink fails on the deep
      blue (2.00). Each pairing here clears WCAG AA. */
   --status-available-ink: var(--color-text);
+  /* Available as text on the light surfaces. The fill green is only 3.27:1
+     there, too faint for small type; this is 7.58:1. */
+  --status-available-text: #1e5c33;
   --status-reserved-ink: var(--color-text);
   --status-occupied-ink: #ffffff;
 }
@@ -1531,7 +1534,7 @@ table.report-table {
 
 .section-row-count {
   flex: none;
-  color: var(--status-available);
+  color: var(--status-available-text);
   font-variant-numeric: tabular-nums;
 }
 
