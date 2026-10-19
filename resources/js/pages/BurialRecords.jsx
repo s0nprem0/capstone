@@ -1,125 +1,197 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
+import useList from '../lib/useList'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import PlotPicker from '../components/PlotPicker'
+import Notice, { useNotice } from '../components/Notice'
 import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate } from '../lib/terms'
+
+const EMPTY_FORM = {
+  deceased_fullname: '', date_of_birth: '', date_of_death: '',
+  burial_date: '', lot_id: '', burial_type: 'single',
+  next_of_kin_name: '', next_of_kin_phone: '', interment_status: 'scheduled',
+}
+
+// The server files an interment only against a plot someone holds.
+const BURIABLE = new Set(['reserved', 'occupied'])
 
 export default function BurialRecords() {
   const [searchParams] = useSearchParams()
-  const [records, setRecords] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState('')
   // Deep links from the map arrive as ?q=<lot code>; the existing search
   // already matches lot codes, so there is no second filter to maintain.
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [interment, setInterment] = useState('')
   const [type, setType] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [editId, setEditId] = useState(null)
-  const [form, setForm] = useState({
-    deceased_fullname: '', date_of_birth: '', date_of_death: '',
-    burial_date: '', lot_id: '', burial_type: 'single',
-    next_of_kin_name: '', next_of_kin_phone: '', interment_status: 'scheduled',
-  })
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [plotSearch, setPlotSearch] = useState('')
+  const [plots, setPlots] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [busyId, setBusyId] = useState(null)
+  const { notice, succeed, fail, clear } = useNotice()
   const q = useDebounced(search)
 
-  const load = async () => {
-    const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (interment) params.set('interment_status', interment)
-    if (type) params.set('burial_type', type)
-    const qs = params.toString()
-    const path = qs ? `/api/burial-records?${qs}` : '/api/burial-records'
-    const { ok, data } = await api(path)
-    if (ok) setRecords(data)
-    else setError(data?.error || 'Failed to load burial records')
-    setLoaded(true)
-  }
+  const { items: records, loaded, error, reload } = useList(
+    '/api/burial-records',
+    { q, interment_status: interment, burial_type: type },
+    'Failed to load burial records'
+  )
 
-  useEffect(() => { load() }, [q, interment, type])
+  // Plots are chosen by code, not typed in as an internal id nobody can know.
+  // The map payload is cached for the session, so this costs nothing after
+  // the first page that loads it.
+  useEffect(() => {
+    if (!showForm || plots.length) return
+    api('/api/map').then(({ ok, data }) => {
+      if (ok) setPlots((data.sections || []).flatMap((s) => s.lots || []))
+    })
+  }, [showForm, plots.length])
+
+  const selectedPlot = plots.find((l) => String(l.lot_id) === String(form.lot_id)) || null
+
+  const plotChoices = useMemo(() => {
+    const term = plotSearch.trim().toLowerCase()
+    return plots.filter(
+      (l) =>
+        (BURIABLE.has(l.status) || String(l.lot_id) === String(form.lot_id)) &&
+        (!term || l.lot_code.toLowerCase().includes(term) || l.section_name.toLowerCase().includes(term))
+    )
+  }, [plots, plotSearch, form.lot_id])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
   const openCreate = () => {
-    setEditId(null)
-    setForm({
-      deceased_fullname: '', date_of_birth: '', date_of_death: '',
-      burial_date: '', lot_id: '', burial_type: 'single',
-      next_of_kin_name: '', next_of_kin_phone: '', interment_status: 'scheduled',
-    })
+    clear()
+    setEditing(null)
+    setForm(EMPTY_FORM)
+    setPlotSearch('')
     setShowForm(true)
   }
 
   const openEdit = (r) => {
-    setEditId(r.burial_id)
+    clear()
+    setEditing(r)
     setForm({
       deceased_fullname: r.deceased_fullname,
       date_of_birth: r.date_of_birth || '',
       date_of_death: r.date_of_death || '',
       burial_date: r.burial_date,
-      lot_id: r.lot_id,
+      lot_id: String(r.lot_id),
       burial_type: r.burial_type,
       next_of_kin_name: r.next_of_kin_name || '',
       next_of_kin_phone: r.next_of_kin_phone || '',
       interment_status: r.interment_status,
     })
+    setPlotSearch('')
     setShowForm(true)
+  }
+
+  const closeForm = () => {
+    setShowForm(false)
+    setEditing(null)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    clear()
+    if (!form.lot_id) {
+      fail('Choose the plot this interment is filed against.')
+      return
+    }
     setSubmitting(true)
-    setError('')
     const body = { ...form, lot_id: Number(form.lot_id) }
-    const url = editId ? `/api/burial-records/${editId}` : '/api/burial-records'
+    const url = editing ? `/api/burial-records/${editing.burial_id}` : '/api/burial-records'
     const { ok, data } = await api(url, { method: 'POST', body })
     setSubmitting(false)
-    if (ok) { setShowForm(false); load() }
-    else setError(data?.error || 'Failed to save')
+    if (ok) {
+      succeed(editing ? `Entry for ${form.deceased_fullname} updated.` : `Entry for ${form.deceased_fullname} added.`)
+      closeForm()
+      reload()
+    } else {
+      fail(data?.error || 'Failed to save')
+    }
   }
 
-  const handleDelete = async (id) => {
-    setBusyId(id)
-    const { ok, data } = await api(`/api/burial-records/${id}/delete`, { method: 'POST' })
+  const handleDelete = async (r) => {
+    clear()
+    setBusyId(r.burial_id)
+    const { ok, data } = await api(`/api/burial-records/${r.burial_id}/delete`, { method: 'POST' })
     setBusyId(null)
-    if (ok) load()
-    else setError(data?.error || 'Delete failed')
+    if (ok) {
+      succeed(`Entry for ${r.deceased_fullname} deleted.`)
+      reload()
+    } else {
+      fail(data?.error || 'Delete failed')
+    }
   }
 
   return (
     <div>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
+      <Notice notice={notice} />
 
-      {showForm && (
-        <div className="form-card section-block">
-          <form onSubmit={handleSubmit}>
+      <section className="section-block" aria-labelledby="register-heading">
+        <div className="register-head">
+          <h2 id="register-heading">Register of Interments</h2>
+          <p>
+            St. John Memorial Garden &amp; Parks
+            {records.length > 0 && ` · ${records.length} ${records.length === 1 ? 'entry' : 'entries'}`}
+          </p>
+          {!showForm && <button className="btn btn-primary" onClick={openCreate}>New Entry</button>}
+        </div>
+
+        {showForm && (
+          <form onSubmit={handleSubmit} className="register-form" aria-labelledby="entry-form-heading">
+            <h3 id="entry-form-heading">
+              {editing ? `Edit entry — ${editing.deceased_fullname}` : 'New entry'}
+            </h3>
+
+            <fieldset className="plot-picker">
+              <legend>Plot</legend>
+              <span className="label-hint">
+                Only reserved or occupied plots can take an interment. Search by plot code or section.
+              </span>
+              <input
+                type="search"
+                className="search-input"
+                aria-label="Search plots"
+                placeholder="e.g. S4-015 or Section 4"
+                value={plotSearch}
+                onChange={(e) => setPlotSearch(e.target.value)}
+                autoComplete="off"
+              />
+              {selectedPlot && (
+                <p className="register-form-plot">
+                  Filed against <strong>{selectedPlot.lot_code}</strong>, {selectedPlot.section_name}
+                </p>
+              )}
+              <p className="panel-heading" id="entry-plot-list">
+                {plots.length ? `Plots (${plotChoices.length})` : 'Plots'}
+              </p>
+              <PlotPicker
+                lots={plotChoices}
+                selectedId={form.lot_id}
+                onSelect={(lot) => setForm((prev) => ({ ...prev, lot_id: String(lot.lot_id) }))}
+                labelledBy="entry-plot-list"
+                emptyMessage={plots.length ? 'No reserved or occupied plot matches that.' : 'Loading plots…'}
+              />
+            </fieldset>
+
             <div className="form-grid">
               <label>
                 Deceased Full Name
                 <input type="text" name="deceased_fullname" value={form.deceased_fullname} onChange={handleChange} required />
               </label>
               <label>
-                Plot ID
-                <input type="number" name="lot_id" value={form.lot_id} onChange={handleChange} required />
-              </label>
-              <label>
                 Burial Date
                 <input type="date" name="burial_date" value={form.burial_date} onChange={handleChange} required />
-              </label>
-              <label>
-                Burial Type
-                <select name="burial_type" value={form.burial_type} onChange={handleChange}>
-                  {Object.entries(BURIAL_TYPES).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
               </label>
               <label>
                 Date of Birth
@@ -130,12 +202,12 @@ export default function BurialRecords() {
                 <input type="date" name="date_of_death" value={form.date_of_death} onChange={handleChange} />
               </label>
               <label>
-                Next of Kin Name
-                <input type="text" name="next_of_kin_name" value={form.next_of_kin_name} onChange={handleChange} />
-              </label>
-              <label>
-                Next of Kin Phone
-                <input type="text" name="next_of_kin_phone" value={form.next_of_kin_phone} onChange={handleChange} />
+                Burial Type
+                <select name="burial_type" value={form.burial_type} onChange={handleChange}>
+                  {Object.entries(BURIAL_TYPES).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
               </label>
               <label>
                 Interment Status
@@ -145,132 +217,129 @@ export default function BurialRecords() {
                   ))}
                 </select>
               </label>
+              <label>
+                Next of Kin Name
+                <input type="text" name="next_of_kin_name" value={form.next_of_kin_name} onChange={handleChange} />
+              </label>
+              <label>
+                Next of Kin Phone
+                <input type="tel" name="next_of_kin_phone" value={form.next_of_kin_phone} onChange={handleChange} />
+              </label>
             </div>
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+              <button type="button" className="btn btn-secondary" onClick={closeForm}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Saving...' : editId ? 'Update' : 'Create'}
+                {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Add Entry'}
               </button>
             </div>
           </form>
+        )}
+
+        <div className="filter-bar register-filters">
+          <input
+            type="search"
+            className="search-input"
+            aria-label="Search the register"
+            placeholder="Search a name, plot, section or next of kin..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
+            <option value="">All interment statuses</option>
+            {Object.entries(INTERMENT_STATUS).map(([v, l]) => (
+              <option key={v} value={v}>{l}</option>
+            ))}
+          </select>
+          <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">All burial types</option>
+            {Object.entries(BURIAL_TYPES).map(([v, l]) => (
+              <option key={v} value={v}>{l}</option>
+            ))}
+          </select>
         </div>
-      )}
 
-      {!loaded && !error && <Loading message="Loading the register..." />}
+        {!loaded && !error && <Loading message="Loading the register..." />}
 
-      {loaded && !error && (
-        <section className="section-block" aria-labelledby="register-heading">
-          <div className="register-head">
-            <h2 id="register-heading">Register of Interments</h2>
-            <p>
-              St. John Memorial Garden &amp; Parks
-              {records.length > 0 && ` · ${records.length} ${records.length === 1 ? 'entry' : 'entries'}`}
-            </p>
-            <button className="btn btn-primary" onClick={openCreate}>New Entry</button>
-          </div>
-
-          <div className="filter-bar register-filters">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search a name, plot, section or next of kin..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        {loaded && !error && (records.length === 0 ? (
+          <div className="register register-scroll">
+            <EmptyState
+              noun="entries"
+              filtered={Boolean(q || interment || type)}
+              onClear={() => { setSearch(''); setInterment(''); setType('') }}
             />
-            <select aria-label="Filter by interment status" value={interment} onChange={(e) => setInterment(e.target.value)}>
-              <option value="">All interment statuses</option>
-              <option value="interred">Interred</option>
-              <option value="scheduled">Scheduled</option>
-            </select>
-            <select aria-label="Filter by burial type" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">All burial types</option>
-              {Object.entries(BURIAL_TYPES).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
           </div>
-
-          {records.length === 0 ? (
-            <div className="register register-scroll">
-              <EmptyState
-                noun="entries"
-                filtered={Boolean(q || interment || type)}
-                onClear={() => { setSearch(''); setInterment(''); setType('') }}
-              />
-            </div>
-          ) : (
-            <div className="register register-scroll">
-              <table className="register-table">
-                <caption className="visually-hidden">
-                  Register of interments, most recent first
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="register-no">No.</th>
-                    <th scope="col">Deceased</th>
-                    <th scope="col">Plot</th>
-                    <th scope="col">Section</th>
-                    <th scope="col">Interment</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Next of kin</th>
-                    <th scope="col">State</th>
-                    <th scope="col"><span className="visually-hidden">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((r) => {
-                    const years = lifespan(r.date_of_birth, r.date_of_death)
-                    return (
-                      <tr key={r.burial_id}>
-                        <td className="register-no">{String(r.burial_id).padStart(3, '0')}</td>
-                        <th scope="row" className="register-name">
-                          {r.deceased_fullname}
-                          {years && <span className="register-lifespan">{years}</span>}
-                        </th>
-                        <td className="register-cell">
-                          <Link
-                            to={`/?lot=${r.lot_id}`}
-                            className="register-plot"
-                            title="Show this plot on the cemetery map"
-                          >
-                            {r.lot_code}
-                          </Link>
-                        </td>
-                        <td className="register-cell">{r.section_name}</td>
-                        <td className="register-cell">{longDate(r.burial_date)}</td>
-                        <td className="register-cell">{label(BURIAL_TYPES, r.burial_type)}</td>
-                        <td className="register-cell">
-                          {r.next_of_kin_name || '—'}
-                          {r.next_of_kin_phone && (
-                            <span className="register-kin">{r.next_of_kin_phone}</span>
-                          )}
-                        </td>
-                        <td className="register-cell">
-                          <span className={`mark mark--${r.interment_status}`}>
-                            {label(INTERMENT_STATUS, r.interment_status)}
-                          </span>
-                        </td>
-                        <td className="register-actions">
-                          <div className="table-actions">
-                            <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
-                            <ConfirmButton
-                              label="Delete"
-                              danger
-                              onConfirm={() => handleDelete(r.burial_id)}
-                              busy={busyId === r.burial_id}
-                              message={`Delete the entry for ${r.deceased_fullname}? This cannot be undone.`}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
+        ) : (
+          <div className="register register-scroll">
+            <table className="register-table">
+              <caption className="visually-hidden">
+                Register of interments, most recent first
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="register-no">No.</th>
+                  <th scope="col">Deceased</th>
+                  <th scope="col">Plot</th>
+                  <th scope="col">Section</th>
+                  <th scope="col">Interment</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Next of kin</th>
+                  <th scope="col">State</th>
+                  <th scope="col"><span className="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((r) => {
+                  const years = lifespan(r.date_of_birth, r.date_of_death)
+                  return (
+                    <tr key={r.burial_id}>
+                      <td className="register-no">{String(r.burial_id).padStart(3, '0')}</td>
+                      <th scope="row" className="register-name">
+                        {r.deceased_fullname}
+                        {years && <span className="register-lifespan">{years}</span>}
+                      </th>
+                      <td className="register-cell">
+                        <Link
+                          to={`/?lot=${r.lot_id}`}
+                          className="register-plot"
+                          title="Show this plot on the cemetery map"
+                        >
+                          {r.lot_code}
+                        </Link>
+                      </td>
+                      <td className="register-cell">{r.section_name}</td>
+                      <td className="register-cell">{longDate(r.burial_date)}</td>
+                      <td className="register-cell">{label(BURIAL_TYPES, r.burial_type)}</td>
+                      <td className="register-cell">
+                        {r.next_of_kin_name || '—'}
+                        {r.next_of_kin_phone && (
+                          <span className="register-kin">{r.next_of_kin_phone}</span>
+                        )}
+                      </td>
+                      <td className="register-cell">
+                        <span className={`mark mark--${r.interment_status}`}>
+                          {label(INTERMENT_STATUS, r.interment_status)}
+                        </span>
+                      </td>
+                      <td className="register-actions">
+                        <div className="table-actions">
+                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
+                          <ConfirmButton
+                            label="Delete"
+                            danger
+                            onConfirm={() => handleDelete(r)}
+                            busy={busyId === r.burial_id}
+                            message={`Delete the entry for ${r.deceased_fullname}? This cannot be undone.`}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </section>
     </div>
   )
 }
