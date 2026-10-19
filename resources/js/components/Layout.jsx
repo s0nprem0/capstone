@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../lib/api'
 import Icon from './Icon'
+import { ROLES, label } from '../lib/terms'
 
 const NOTIFICATIONS = { to: '/notifications', label: 'Notifications', badge: true }
 
@@ -190,13 +191,13 @@ export default function Layout() {
           {user ? (
             <>
               <p className="sidebar-user">{user.fullname}</p>
-              <p className="sidebar-role">{user.role}</p>
+              <p className="sidebar-role">{label(ROLES, user.role)}</p>
               <button className="btn btn-ghost" onClick={logout}>
-                Logout
+                Sign out
               </button>
             </>
           ) : (
-            <Link to="/login" className="btn btn-ghost">Sign In</Link>
+            <Link to="/login" className="btn btn-ghost">Sign in</Link>
           )}
         </div>
       </aside>
@@ -211,9 +212,8 @@ export default function Layout() {
           >
             <Icon name="menu" size={18} />
           </button>
-          <span className="topbar-title">
-            {pageTitle || 'St. John Memorial Garden & Parks'}
-          </span>
+          {/* The page's own heading names it; a title here only repeated it. */}
+          <span className="topbar-title">St. John Memorial Garden &amp; Parks</span>
         </div>
         <Outlet />
       </main>

@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
 import Select from '../components/Select'
 import Icon from '../components/Icon'
+import ZoomControls from '../components/ZoomControls'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { DEFAULT_REFERENCE, MapReferenceImage, readReference, saveReference } from '../map/reference'
@@ -812,15 +813,16 @@ export default function LotEditor() {
 
             {mapData && sectionRow && lots.length === 0 && (
               <div className="editor-empty">
-                No lots in this section yet — click <b>+ Add lot</b> to place the first one.
+                No lots in this section yet. Click <b>Add lot</b> to place the first one.
               </div>
             )}
 
-            <div className="map-zoom-controls">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in" aria-label="Zoom in">+</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out" aria-label="Zoom out">−</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => flyTo([...MAP_VIEWBOX])} title="Fit view" aria-label="Fit view">⌂</button>
-            </div>
+            <ZoomControls
+              onZoomIn={() => zoomCenter(1.5)}
+              onZoomOut={() => zoomCenter(1 / 1.5)}
+              onFit={() => flyTo([...MAP_VIEWBOX])}
+              fitLabel="Fit the whole plan"
+            />
 
             <div className="map-drag-hint">
               Click to select · drag to move · arrows nudge 1 unit · Alt+arrows nudge 0.1 · Shift+arrows resize · Ctrl/Cmd+Z undo
@@ -829,7 +831,7 @@ export default function LotEditor() {
 
           {selectedLot && form && (
             <aside className="map-detail">
-              <h3>Edit Lot — {form.lot_code || selectedLot.lot_code}</h3>
+              <h3>Edit lot {form.lot_code || selectedLot.lot_code}</h3>
 
               <p className="text-muted editor-coords">
                 Position {Math.round(selectedLot.svg_x)}, {Math.round(selectedLot.svg_y)} ·{' '}

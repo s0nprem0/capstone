@@ -10,6 +10,7 @@ import PlotPicker from '../components/PlotPicker'
 import Notice, { useNotice } from '../components/Notice'
 import ExportActions from '../components/ExportActions'
 import Select from '../components/Select'
+import Blank from '../components/Blank'
 import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate, optionsOf } from '../lib/terms'
 
 const EMPTY_FORM = {
@@ -176,7 +177,7 @@ export default function BurialRecords() {
         {showForm && (
           <form onSubmit={handleSubmit} className="register-form" aria-labelledby="entry-form-heading">
             <h3 id="entry-form-heading">
-              {editing ? `Edit entry — ${editing.deceased_fullname}` : 'New entry'}
+              {editing ? `Edit entry: ${editing.deceased_fullname}` : 'New entry'}
             </h3>
 
             <fieldset className="plot-picker">
@@ -245,7 +246,17 @@ export default function BurialRecords() {
               </label>
               <label>
                 Next of Kin Phone
-                <input type="tel" name="next_of_kin_phone" value={form.next_of_kin_phone} onChange={handleChange} />
+                <input
+                  type="tel"
+                  name="next_of_kin_phone"
+                  value={form.next_of_kin_phone}
+                  onChange={handleChange}
+                  pattern="\+?[0-9\(][0-9 \(\)\-]{6,14}"
+                  maxLength={15}
+                  aria-describedby="kin-phone-hint"
+                  title="A phone number, e.g. 0917 123 4567"
+                />
+                <small className="label-hint" id="kin-phone-hint">Optional. e.g. 0917 123 4567</small>
               </label>
             </div>
             <div className="form-actions">
@@ -288,6 +299,7 @@ export default function BurialRecords() {
               noun="entries"
               filtered={Boolean(q || interment || type)}
               onClear={() => { setSearch(''); setInterment(''); setType('') }}
+              action={showForm ? undefined : { label: 'Add the first entry', onClick: openCreate }}
             />
           </div>
         ) : (
@@ -332,7 +344,7 @@ export default function BurialRecords() {
                       <td className="register-cell" data-label="Interment">{longDate(r.burial_date)}</td>
                       <td className="register-cell" data-label="Type">{label(BURIAL_TYPES, r.burial_type)}</td>
                       <td className="register-cell" data-label="Next of kin">
-                        {r.next_of_kin_name || '—'}
+                        {r.next_of_kin_name || <Blank />}
                         {r.next_of_kin_phone && (
                           <span className="register-kin">{r.next_of_kin_phone}</span>
                         )}

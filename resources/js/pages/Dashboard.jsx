@@ -56,7 +56,7 @@ export default function Dashboard() {
 
       {stats && (
         <div className="dash">
-          <section className="dash-panel dash-queue" aria-labelledby="queue-heading">
+          <section className={`dash-panel${queue.length ? ' dash-queue--waiting' : ''}`} aria-labelledby="queue-heading">
             <h3 id="queue-heading">Needs attention</h3>
             {queue.length === 0 ? (
               <p className="text-muted">Nothing waiting.</p>

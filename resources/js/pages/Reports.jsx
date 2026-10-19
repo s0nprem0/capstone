@@ -6,6 +6,7 @@ import { downloadCsv } from '../lib/csv'
 import Loading from '../components/Loading'
 import PageHeader from '../components/PageHeader'
 import OccupancyBar from '../components/OccupancyBar'
+import Blank from '../components/Blank'
 import { PAYMENT_METHODS, label, localISO, longDate, longDateTime, money } from '../lib/terms'
 
 // Each preset is a [from, to] pair; '' leaves that end open.
@@ -26,7 +27,7 @@ const periodText = (from, to) => {
   if (!from && !to) return 'All time'
   if (!from) return `Up to ${longDate(to)}`
   if (!to) return `From ${longDate(from)}`
-  return from === to ? longDate(from) : `${longDate(from)} – ${longDate(to)}`
+  return from === to ? longDate(from) : `${longDate(from)} to ${longDate(to)}`
 }
 
 const AUDIT_COLUMNS = [
@@ -195,8 +196,8 @@ export default function Reports() {
                       <td>{s.section_name}</td>
                       <td className="num">{s.total}</td>
                       <td className="num">{s.available}</td>
-                      <td className="num">{s.reserved || '—'}</td>
-                      <td className="num">{s.occupied || '—'}</td>
+                      <td className="num">{s.reserved}</td>
+                      <td className="num">{s.occupied}</td>
                       <td className="report-bar"><OccupancyBar counts={s} /></td>
                     </tr>
                   ))}
@@ -239,7 +240,7 @@ export default function Reports() {
                           <td>{l.user_name || 'System'}</td>
                           <td>{l.action}</td>
                           <td>{l.table_name}</td>
-                          <td>{l.record_id ? `#${l.record_id}` : '—'}</td>
+                          <td>{l.record_id ? `#${l.record_id}` : <Blank />}</td>
                         </tr>
                       ))}
                     </tbody>

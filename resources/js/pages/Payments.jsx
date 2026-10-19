@@ -13,6 +13,7 @@ import StatusBadge from '../components/StatusBadge'
 import ExportActions from '../components/ExportActions'
 import Select from '../components/Select'
 import Combobox from '../components/Combobox'
+import Blank from '../components/Blank'
 import { PAYMENT_METHODS, PAYMENT_STATUS, label, localISO, longDate, money, optionsOf } from '../lib/terms'
 
 const emptyForm = () => ({
@@ -251,8 +252,8 @@ export default function Payments() {
                   <td data-label="Client">{p.user_name}</td>
                   <td data-label="Amount" className="num">{money(p.amount)}</td>
                   <td data-label="Method">{label(PAYMENT_METHODS, p.method)}</td>
-                  <td data-label="Reference">{p.reference_no || '—'}</td>
-                  <td data-label="Recorded by">{p.recorded_by_name || '—'}</td>
+                  <td data-label="Reference">{p.reference_no || <Blank />}</td>
+                  <td data-label="Recorded by">{p.recorded_by_name || <Blank />}</td>
                   <td data-label="Reservation payment">
                     <StatusBadge kind="payment" value={p.payment_status} />
                   </td>

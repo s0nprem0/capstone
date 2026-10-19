@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import PlanImage, { levelFor } from '../map/PlanImage'
 import PlotShape from '../map/PlotShape'
+import ZoomControls, { ControlIcon } from './ZoomControls'
 import { LOT_STATUS, money } from '../lib/terms'
 
 export const STATUS_COLORS = {
@@ -781,7 +782,7 @@ export default function CemeterySvgMap({
               const width = fit(text.length * SECTION_LABEL_PX * 0.62 + SECTION_LABEL_PX)
               return (
                 <g key={section.section_id} className="map-section-label" data-section-id={section.section_id}>
-                  <title>{`${section.section_name} — ${section.counts?.available ?? 0} available`}</title>
+                  <title>{`${section.section_name}: ${section.counts?.available ?? 0} available`}</title>
                   <rect
                     x={x - width / 2}
                     y={y - height / 2}
@@ -833,35 +834,22 @@ export default function CemeterySvgMap({
 
       <HoverTip bindRef={tipRef} />
 
-      <div className="map-zoom-controls">
-        <div className="map-zoom-group">
-          <button type="button" onClick={() => zoomCenter(1.5)} title="Zoom in (+)" aria-label="Zoom in">
-            <ControlIcon d="M8 3v10M3 8h10" />
-          </button>
-          <button type="button" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out (−)" aria-label="Zoom out">
-            <ControlIcon d="M3 8h10" />
-          </button>
-        </div>
-        <div className="map-zoom-group">
-          <button
-            type="button"
-            onClick={fitView}
-            title={activeSection ? 'Re-centre on this section (0)' : 'Re-centre on the cemetery (0)'}
-            aria-label="Re-centre the map"
-          >
-            <ControlIcon d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setFillPane((v) => !v)}
-            aria-pressed={!fillPane}
-            aria-label="Show the whole survey sheet"
-            title={fillPane ? 'Show the whole survey sheet, margins included' : 'Back to the cemetery, filling the pane'}
-          >
-            <ControlIcon d={fillPane ? 'M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4' : 'M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4'} />
-          </button>
-        </div>
-      </div>
+      <ZoomControls
+        onZoomIn={() => zoomCenter(1.5)}
+        onZoomOut={() => zoomCenter(1 / 1.5)}
+        onFit={fitView}
+        fitTitle={activeSection ? 'Re-centre on this section (0)' : 'Re-centre on the cemetery (0)'}
+      >
+        <button
+          type="button"
+          onClick={() => setFillPane((v) => !v)}
+          aria-pressed={!fillPane}
+          aria-label="Show the whole survey sheet"
+          title={fillPane ? 'Show the whole survey sheet, margins included' : 'Back to the cemetery, filling the pane'}
+        >
+          <ControlIcon d={fillPane ? 'M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4' : 'M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4'} />
+        </button>
+      </ZoomControls>
 
       {noMatches && (
         <div className="map-empty">
@@ -881,13 +869,5 @@ export default function CemeterySvgMap({
         <span className="hint-touch">Drag to move · pinch to zoom</span>
       </div>
     </div>
-  )
-}
-
-function ControlIcon({ d }) {
-  return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }

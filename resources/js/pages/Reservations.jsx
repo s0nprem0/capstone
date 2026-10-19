@@ -116,6 +116,7 @@ export default function Reservations() {
             noun="reservations"
             filtered={Boolean(q || approval)}
             onClear={() => { setSearch(''); setApproval('') }}
+            action={isStaffView ? undefined : { label: 'Reserve a plot', to: '/visitor/reserve' }}
           />
         ) : (
           <table className="table table--stack">

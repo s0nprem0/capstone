@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
 import PageHeader from '../components/PageHeader'
 import Select from '../components/Select'
+import Blank from '../components/Blank'
 import StatusBadge from '../components/StatusBadge'
 import { ACCOUNT_STATUS, ROLES, optionsOf } from '../lib/terms'
 
@@ -144,7 +145,7 @@ export default function Users() {
 
       {editing && (
         <form onSubmit={handleEditSubmit} className="form-card section-block">
-          <h3>Edit User — {editing.fullname}</h3>
+          <h3>Edit {editing.fullname}</h3>
           <div className="form-grid">
             <label>
               Full Name
@@ -241,7 +242,7 @@ export default function Users() {
               <tr key={u.user_id}>
                 <td data-label="Name">{u.fullname}</td>
                 <td data-label="Email">{u.email}</td>
-                <td data-label="Phone">{u.phone || '—'}</td>
+                <td data-label="Phone">{u.phone || <Blank />}</td>
                 <td data-label="Role"><StatusBadge kind="role" value={u.role} /></td>
                 <td data-label="Status"><StatusBadge kind="account" value={u.status} /></td>
                 <td className="cell-actions">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import Icon from '../components/Icon'
+import ZoomControls from '../components/ZoomControls'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { MapReferenceImage, readReference, saveReference } from '../map/reference'
 
@@ -412,7 +413,7 @@ export default function SectionEditor() {
   return (
     <div className="map-page">
       <div className="page-header">
-        <h2>Section Editor — {section?.section_name || '…'}</h2>
+        <h2>{section ? `${section.section_name} outline` : 'Section outline'}</h2>
         <div className="table-actions">
           {section && (
             <>
@@ -548,20 +549,21 @@ export default function SectionEditor() {
                   style={{ cursor: locked ? 'default' : 'move' }}
                   onPointerDown={locked ? undefined : (e) => onVertexPointerDown(e, i)}
                 >
-                  <title>{`Vertex ${i + 1} — ${p[0]}, ${p[1]}`}</title>
+                  <title>{`Vertex ${i + 1} at ${p[0]}, ${p[1]}`}</title>
                 </circle>
               ))}
             </svg>
 
-            <div className="map-zoom-controls">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1.5)} title="Zoom in" aria-label="Zoom in">+</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => zoomCenter(1 / 1.5)} title="Zoom out" aria-label="Zoom out">−</button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={fitOutline} title="Fit outline" aria-label="Fit outline">⌂</button>
-            </div>
+            <ZoomControls
+              onZoomIn={() => zoomCenter(1.5)}
+              onZoomOut={() => zoomCenter(1 / 1.5)}
+              onFit={fitOutline}
+              fitLabel="Fit the outline"
+            />
 
             <div className="map-drag-hint">
               {locked
-                ? 'Locked — pan to inspect. Unlock to edit.'
+                ? 'Locked. Pan to inspect, or unlock to edit.'
                 : 'Drag a vertex to move it · "Add vertex" then click the outline to insert one · select a vertex then Delete to remove one · Ctrl/Cmd+Z to undo'}
             </div>
           </div>

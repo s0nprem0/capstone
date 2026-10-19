@@ -9,6 +9,7 @@ import Notice, { useNotice } from '../components/Notice'
 import PageHeader from '../components/PageHeader'
 import OccupancyBar from '../components/OccupancyBar'
 import RowMenu from '../components/RowMenu'
+import Blank from '../components/Blank'
 
 const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 4096 3072' }
 
@@ -94,7 +95,7 @@ export default function Sections() {
     const { ok, data } = await api(`/api/sections/${s.section_id}`, { method: 'POST', body: { is_locked: !s.is_locked } })
     setBusyId(null)
     if (ok) {
-      succeed(data.is_locked ? `Locked ${data.section_name} — outline and lot geometry are frozen.` : `Unlocked ${data.section_name}.`)
+      succeed(data.is_locked ? `Locked ${data.section_name}. Its outline and lot geometry are frozen.` : `Unlocked ${data.section_name}.`)
       reload()
     } else {
       fail(data?.error || 'Failed to update lock')
@@ -111,7 +112,7 @@ export default function Sections() {
 
       {editing && (
         <form onSubmit={handleSubmit} className="form-card section-block">
-          <h3>{isNew ? 'Add Section' : `Edit Section — ${editing.section_name}`}</h3>
+          <h3>{isNew ? 'Add Section' : `Edit ${editing.section_name}`}</h3>
           <div className="form-grid">
             <label>
               Section Name
@@ -170,7 +171,7 @@ export default function Sections() {
                     {s.section_name}
                     {Boolean(s.is_locked) && <span className="cell-sub">Locked</span>}
                   </td>
-                  <td data-label="Location">{s.location || '—'}</td>
+                  <td data-label="Location">{s.location || <Blank />}</td>
                   <td data-label="Plots" className="section-plots">
                     <OccupancyBar counts={s} />
                     <span className="cell-sub">

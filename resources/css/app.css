@@ -919,9 +919,27 @@ textarea {
   color: var(--color-text);
 }
 
-.file-input {
-  display: block;
-  margin-bottom: var(--space-md);
+.file-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-md);
+}
+
+/* The real input is visually hidden; its focus shows on the label. */
+.file-picker input:focus-visible + label {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.file-picker label {
+  cursor: pointer;
+}
+
+.file-picker-chosen {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
   font-size: var(--text-md);
 }
 
@@ -941,8 +959,6 @@ textarea {
 
 .sidebar-role {
   font-size: var(--text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   /* Same alpha as .nav-link (5.16:1 on --color-primary). 0.6 landed at
      4.26:1 and failed AA. */
   color: rgba(255, 255, 255, 0.7);
@@ -3031,7 +3047,7 @@ textarea:disabled {
 
 .plot-doc--filed {
   margin-top: var(--space-lg);
-  border-left: 2px solid var(--color-text-muted);
+  background: var(--color-bg);
 }
 
 /* The register's own labels, so the filed record reads as part of the book. */
@@ -3201,8 +3217,10 @@ textarea:disabled {
   margin: 0;
 }
 
-.dash-queue {
-  border-left: 3px solid var(--color-primary);
+/* A full border in the primary colour, and only while something waits: an
+   empty queue should not look urgent. */
+.dash-queue--waiting {
+  border-color: var(--color-primary);
 }
 
 .dash-pair {

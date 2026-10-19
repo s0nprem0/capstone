@@ -8,6 +8,7 @@ import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import PlotPicker from '../components/PlotPicker'
 import Select from '../components/Select'
+import Blank from '../components/Blank'
 import { nearestSection } from '../lib/sections'
 import { BURIAL_TYPES, INTERMENT_STATUS, LOT_STATUS, LOT_TYPES, label, lifespan, longDate, money } from '../lib/terms'
 
@@ -358,7 +359,7 @@ export default function Cemetery() {
                         <dt>Section</dt>
                         <dd>{selectedLot.section_name}{nearSection && `, near ${nearSection.section_name}`}</dd>
                       </div>
-                      <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
+                      <div><dt>Block</dt><dd>{selectedLot.block || <Blank>Not set</Blank>}</dd></div>
                       <div><dt>Type</dt><dd>{label(LOT_TYPES, selectedLot.lot_type)}</dd></div>
                       <div><dt>Price</dt><dd>{money(selectedLot.price)}</dd></div>
                     </dl>
