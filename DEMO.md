@@ -27,7 +27,7 @@ inside the docroot the PHP server serves from, so :8000 is the only address you
 need — the Vite dev server on :5173 is optional and only useful while editing.
 
 If you would rather show the project with no client data at all, run
-`make migrate && make map-data` and stop there. That gives 3890 available plots,
+`make migrate && make map-data` and stop there. That gives 6748 available plots,
 one admin, and an empty queue.
 
 ## Accounts
@@ -50,21 +50,21 @@ All demo accounts share one password so nothing has to be memorised on the spot.
 
 ## What is in the dataset
 
-3890 plots across 66 sections: **3871 available, 17 occupied, 3 reserved**. That
+6748 plots across 70 sections: **6728 available, 17 occupied, 3 reserved**. That
 split is chosen so all three status colours are visible on the map at once,
 which is the thing the redesign is about.
 
 The plots are the real survey of St. John Memorial Garden & Parks, read from
 the traced plan in `public/traces/line detailed.svg`. The grids there are
 serpentine paths rather than one path per plot, so the polylines are walked and
-each enclosed grid cell becomes a plot — 3890, which is what the drawing says
+each enclosed grid cell becomes a plot — 6748, which is what the drawing says
 rather than what a threshold recovered. The map base is a render of that same
 file, so plots and plan land on each other exactly. A lot code is
 `S<section number>-<position in section>`, e.g. `S3-001`.
 
-Six sections (22, 29, 40, 66, 67, 68) hold no plots. 66–68 covered only the
-perimeter ring, which is not in this set; the others have their circled number
-drawn in a gap rather than on a plot.
+Every section in the surveyed set holds at least one plot. Two of them,
+**North Strip A** and **North Strip B**, sit outside the numbered blocks; the
+rest are the numbered `Section 3`–`Section 68` rows.
 
 22 reservations covering every status the schema allows — 3 awaiting approval,
 17 approved, 2 rejected. 4 burial records, 3 interred and 1 scheduled. 9 users,
