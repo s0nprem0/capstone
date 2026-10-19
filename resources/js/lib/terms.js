@@ -29,6 +29,10 @@ export const LOT_STATUS = {
   maintenance: 'Maintenance',
 }
 
+// The three a plot moves through on the map; the other LOT_STATUS values are
+// set by hand in the editors and never drawn.
+export const PLOT_STATUSES = ['available', 'reserved', 'occupied']
+
 export const APPROVAL_STATUS = {
   pending: 'Pending',
   approved: 'Approved',
@@ -47,6 +51,22 @@ export const PAYMENT_STATUS = {
   unpaid: 'Unpaid',
   partial: 'Partial',
   paid: 'Paid',
+}
+
+export const ROLES = {
+  admin: 'Admin',
+  staff: 'Staff',
+  user: 'Visitor/Client',
+}
+
+export const ACCOUNT_STATUS = {
+  active: 'Active',
+  inactive: 'Inactive',
+}
+
+export const NOTIFICATION_TYPES = {
+  reservation: 'Reservation',
+  system: 'System',
 }
 
 export const label = (map, value) => (value == null ? '' : map[value] || value)
@@ -72,4 +92,18 @@ export const longDate = (value) => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const month = months[Number(m) - 1]
   return month ? `${Number(d)} ${month} ${y}` : String(value)
+}
+// Whole pesos print without centavos; a partial payment keeps both digits, so
+// ₱1,234.50 never reads as ₱1,234.5.
+export const money = (value) => {
+  const n = Number(value) || 0
+  const digits = Number.isInteger(n) ? 0 : 2
+  return `₱${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`
+}
+
+// 2026-07-20 14:05:00 -> 20 Jul 2026, 14:05
+export const longDateTime = (value) => {
+  if (!value) return '—'
+  const time = String(value).slice(11, 16)
+  return time ? `${longDate(value)}, ${time}` : longDate(value)
 }

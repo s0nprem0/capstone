@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import PlanImage, { levelFor } from '../map/PlanImage'
 import PlotShape from '../map/PlotShape'
+import { LOT_STATUS, money } from '../lib/terms'
 
 export const STATUS_COLORS = {
   available: 'var(--status-available)',
@@ -244,8 +245,6 @@ const placeLabels = (anchors, pxPerUnit) => {
   return placed
 }
 
-const STATUS_NAMES = { available: 'Available', reserved: 'Reserved', occupied: 'Occupied' }
-
 // Hover state lives here rather than in the map, so moving the pointer across
 // the site re-renders one small box instead of the 6,700 plot elements.
 function HoverTip({ bindRef }) {
@@ -269,9 +268,9 @@ function HoverTip({ bindRef }) {
       }}
     >
       <strong>{lot.lot_code}</strong>
-      <span className={`mark mark--${lot.status}`}>{STATUS_NAMES[lot.status] || lot.status}</span>
+      <span className={`mark mark--${lot.status}`}>{LOT_STATUS[lot.status] || lot.status}</span>
       <span className="map-tooltip-meta">
-        {lot.section_name} · ₱{Number(lot.price).toLocaleString()}
+        {lot.section_name} · {money(lot.price)}
       </span>
     </div>
   )

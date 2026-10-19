@@ -1,10 +1,5 @@
 import { useEffect, useRef } from 'react'
-
-export const STATUS_LABELS = {
-  available: 'Available',
-  reserved: 'Reserved',
-  occupied: 'Occupied',
-}
+import { LOT_STATUS, money } from '../lib/terms'
 
 // Capped so a one-letter search cannot mount thousands of nodes; whatever
 // drives `lots` is expected to offer a way to narrow it.
@@ -56,8 +51,8 @@ export default function PlotPicker({
               >
                 <span className="plot-list-code">{lot.lot_code}</span>
                 {showSection && <span className="plot-list-section">{lot.section_name}</span>}
-                {showPrice && <span className="plot-list-price">₱{Number(lot.price).toLocaleString()}</span>}
-                {showStatus && <span className={`mark mark--${lot.status}`}>{STATUS_LABELS[lot.status]}</span>}
+                {showPrice && <span className="plot-list-price">{money(lot.price)}</span>}
+                {showStatus && <span className={`mark mark--${lot.status}`}>{LOT_STATUS[lot.status]}</span>}
               </button>
             </li>
           )

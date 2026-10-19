@@ -1,17 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import useList from '../lib/useList'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import Notice, { useNotice } from '../components/Notice'
 
 const EMPTY_FORM = { section_name: '', location: '', description: '', svg_viewbox: '0 0 4096 3072' }
 
 export default function Sections() {
-  const [sections, setSections] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [savingAdd, setSavingAdd] = useState(false)
@@ -22,40 +20,30 @@ export default function Sections() {
 
   const [busyId, setBusyId] = useState(null)
 
-  const load = async () => {
-    const { ok, data } = await api('/api/sections')
-    if (ok) setSections(data)
-    else setError(data?.error || 'Failed to load sections')
-    setLoaded(true)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
+  const { items: sections, loaded, error, reload } = useList('/api/sections', {}, 'Failed to load sections')
+  const { notice, succeed, fail, clear } = useNotice()
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    clear()
     setSavingAdd(true)
     const { ok, data } = await api('/api/sections', { method: 'POST', body: form })
     setSavingAdd(false)
     if (ok) {
-      setSuccess(`Created ${data.section_name}`)
+      succeed(`Created ${data.section_name}`)
       setForm(EMPTY_FORM)
-      load()
+      reload()
     } else {
-      setError(data?.error || 'Failed to create section')
+      fail(data?.error || 'Failed to create section')
     }
   }
 
   const openEdit = (s) => {
     setEditing(s)
     setEditForm({ ...s })
-    setError('')
-    setSuccess('')
+    clear()
   }
 
   const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value })
@@ -63,19 +51,18 @@ export default function Sections() {
   const handleEditSubmit = async (e) => {
     e.preventDefault()
     if (!editing) return
-    setError('')
-    setSuccess('')
+    clear()
     setSavingEdit(true)
     const body = { ...editForm }
     delete body.section_id
     const { ok, data } = await api(`/api/sections/${editing.section_id}`, { method: 'POST', body })
     setSavingEdit(false)
     if (ok) {
-      setSuccess(`Updated ${data.section_name}`)
+      succeed(`Updated ${data.section_name}`)
       setEditing(null)
-      load()
+      reload()
     } else {
-      setError(data?.error || 'Failed to update section')
+      fail(data?.error || 'Failed to update section')
     }
   }
 
@@ -84,40 +71,38 @@ export default function Sections() {
     const { ok, data } = await api(`/api/sections/${s.section_id}/delete`, { method: 'POST' })
     setBusyId(null)
     if (ok) {
-      setSuccess(`Deleted ${s.section_name}`)
-      load()
+      succeed(`Deleted ${s.section_name}`)
+      reload()
     } else {
-      setError(data?.error || 'Delete failed')
+      fail(data?.error || 'Delete failed')
     }
   }
 
   const reflowLots = async (s) => {
     const key = `reflow-${s.section_id}`
-    setError('')
-    setSuccess('')
+    clear()
     setBusyId(key)
     const { ok, data } = await api('/api/lots/regrid', { method: 'POST', body: { section_id: s.section_id } })
     setBusyId(null)
     if (ok) {
-      setSuccess(`Reflowed ${data.updated} lot${data.updated === 1 ? '' : 's'} into ${s.section_name}'s outline.`)
-      load()
+      succeed(`Reflowed ${data.updated} lot${data.updated === 1 ? '' : 's'} into ${s.section_name}'s outline.`)
+      reload()
     } else {
-      setError(data?.error || 'Reflow failed')
+      fail(data?.error || 'Reflow failed')
     }
   }
 
   const toggleLock = async (s) => {
     const key = `lock-${s.section_id}`
-    setError('')
-    setSuccess('')
+    clear()
     setBusyId(key)
     const { ok, data } = await api(`/api/sections/${s.section_id}`, { method: 'POST', body: { is_locked: !s.is_locked } })
     setBusyId(null)
     if (ok) {
-      setSuccess(data.is_locked ? `Locked ${data.section_name} — outline and lot geometry are frozen.` : `Unlocked ${data.section_name}.`)
-      load()
+      succeed(data.is_locked ? `Locked ${data.section_name} — outline and lot geometry are frozen.` : `Unlocked ${data.section_name}.`)
+      reload()
     } else {
-      setError(data?.error || 'Failed to update lock')
+      fail(data?.error || 'Failed to update lock')
     }
   }
 
@@ -131,7 +116,7 @@ export default function Sections() {
     <div>
       <h2>Section Management</h2>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {success && <p className="alert alert--success" role="status">{success}</p>}
+      <Notice notice={notice} />
 
       <form onSubmit={handleSubmit} className="form-card form-card--compact">
         <h3>Add Section</h3>

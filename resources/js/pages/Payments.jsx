@@ -2,20 +2,21 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
+import useList from '../lib/useList'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
-import { PAYMENT_METHODS, PAYMENT_STATUS, label, longDate } from '../lib/terms'
+import PageHeader from '../components/PageHeader'
+import Notice, { useNotice } from '../components/Notice'
+import StatusBadge from '../components/StatusBadge'
+import { PAYMENT_METHODS, PAYMENT_STATUS, label, longDate, money } from '../lib/terms'
 
 const todayISO = () => {
   const d = new Date()
   const p = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
-
-const money = (v) =>
-  `₱${Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const emptyForm = () => ({
   reservation_id: '',
@@ -29,11 +30,7 @@ const emptyForm = () => ({
 export default function Payments() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
-  const [payments, setPayments] = useState([])
   const [reservations, setReservations] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [method, setMethod] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -41,22 +38,10 @@ export default function Payments() {
   const [form, setForm] = useState(emptyForm())
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState(null)
+  const { notice, succeed, fail, clear } = useNotice()
   const q = useDebounced(search)
 
-  const load = async () => {
-    const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (method) params.set('method', method)
-    const qs = params.toString()
-    const { ok, data } = await api(qs ? `/api/payments?${qs}` : '/api/payments')
-    if (ok) setPayments(data)
-    else setError(data?.error || 'Failed to load payments')
-    setLoaded(true)
-  }
-
-  useEffect(() => {
-    load()
-  }, [q, method])
+  const { items: payments, loaded, error, reload } = useList('/api/payments', { q, method }, 'Failed to load payments')
 
   // Reservations to record a payment against. Balance is total minus what has
   // been paid, so the person recording can see what is still owed.
@@ -69,8 +54,7 @@ export default function Payments() {
   const openRecord = () => {
     setEditId(null)
     setForm(emptyForm())
-    setError('')
-    setSuccess('')
+    clear()
     setShowForm(true)
   }
 
@@ -84,8 +68,7 @@ export default function Payments() {
       payment_date: p.payment_date,
       notes: p.notes || '',
     })
-    setError('')
-    setSuccess('')
+    clear()
     setShowForm(true)
   }
 
@@ -93,8 +76,7 @@ export default function Payments() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    clear()
     setSaving(true)
     const body = {
       reservation_id: Number(form.reservation_id),
@@ -108,37 +90,37 @@ export default function Payments() {
     const { ok, data } = await api(url, { method: 'POST', body })
     setSaving(false)
     if (ok) {
-      setSuccess(editId ? 'Payment updated.' : 'Payment recorded.')
+      succeed(editId ? 'Payment updated.' : 'Payment recorded.')
       setShowForm(false)
       setEditId(null)
       setForm(emptyForm())
-      load()
+      reload()
     } else {
-      setError(data?.error || 'Failed to save payment')
+      fail(data?.error || 'Failed to save payment')
     }
   }
 
   const handleDelete = async (id) => {
+    clear()
     setBusyId(id)
     const { ok, data } = await api(`/api/payments/${id}/delete`, { method: 'POST' })
     setBusyId(null)
     if (ok) {
-      setSuccess('Payment deleted.')
-      load()
+      succeed('Payment deleted.')
+      reload()
     } else {
-      setError(data?.error || 'Delete failed')
+      fail(data?.error || 'Delete failed')
     }
   }
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Payments</h2>
-        <button className="btn btn-primary" onClick={openRecord}>Record Payment</button>
-      </div>
+      <PageHeader title="Payments">
+        {!showForm && <button className="btn btn-primary" onClick={openRecord}>Record Payment</button>}
+      </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {success && <p className="alert alert--success" role="status">{success}</p>}
+      <Notice notice={notice} />
 
       {showForm && (
         <div className="form-card section-block">
@@ -218,7 +200,7 @@ export default function Payments() {
 
       {!loaded && !error && <Loading message="Loading payments..." />}
 
-      {loaded && !error && payments.length === 0 ? (
+      {loaded && !error && (payments.length === 0 ? (
         <EmptyState
           noun="payments"
           filtered={Boolean(q || method)}
@@ -255,9 +237,7 @@ export default function Payments() {
                   <td>{p.reference_no || '—'}</td>
                   <td>{p.recorded_by_name || '—'}</td>
                   <td>
-                    <span className={`badge badge--${p.payment_status}`}>
-                      {label(PAYMENT_STATUS, p.payment_status)}
-                    </span>
+                    <StatusBadge kind="payment" value={p.payment_status} />
                   </td>
                   <td>
                     <div className="table-actions">
@@ -278,7 +258,7 @@ export default function Payments() {
             </tbody>
           </table>
         </div>
-      )}
+      ))}
     </div>
   )
 }

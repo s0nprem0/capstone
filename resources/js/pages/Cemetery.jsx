@@ -6,9 +6,9 @@ import useMediaQuery from '../lib/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
-import PlotPicker, { STATUS_LABELS } from '../components/PlotPicker'
+import PlotPicker from '../components/PlotPicker'
 import { nearestSection } from '../lib/sections'
-import { BURIAL_TYPES, INTERMENT_STATUS, LOT_TYPES, label, lifespan, longDate } from '../lib/terms'
+import { BURIAL_TYPES, INTERMENT_STATUS, LOT_STATUS, LOT_TYPES, label, lifespan, longDate, money } from '../lib/terms'
 
 // Share of the map a phone's plot sheet can cover once the map is scrolled to
 // the top of the screen: the sheet is at most 48% of the screen, the map 70%.
@@ -284,7 +284,7 @@ export default function Cemetery() {
                     onClick={() => setFilterStatus(status)}
                     aria-pressed={filterStatus === status}
                   >
-                    {status === 'all' ? 'All Lots' : STATUS_LABELS[status]}
+                    {status === 'all' ? 'All Lots' : LOT_STATUS[status]}
                   </button>
                 ))}
               </div>
@@ -345,7 +345,7 @@ export default function Cemetery() {
                     <div className="plot-doc-head">
                       <h3>{selectedLot.lot_code}</h3>
                       <span className={`mark mark--${selectedLot.status}`}>
-                        {STATUS_LABELS[selectedLot.status] || selectedLot.status}
+                        {LOT_STATUS[selectedLot.status] || selectedLot.status}
                       </span>
                     </div>
                     <dl className="figure-list">
@@ -355,7 +355,7 @@ export default function Cemetery() {
                       </div>
                       <div><dt>Block</dt><dd>{selectedLot.block || '—'}</dd></div>
                       <div><dt>Type</dt><dd>{label(LOT_TYPES, selectedLot.lot_type)}</dd></div>
-                      <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
+                      <div><dt>Price</dt><dd>{money(selectedLot.price)}</dd></div>
                     </dl>
                   </div>
                   {selectedLot.status === 'available' &&
@@ -376,7 +376,7 @@ export default function Cemetery() {
                       </Link>
                     ))}
                   {selectedLot.status !== 'available' && (
-                    <p className="text-muted map-hint">This plot is currently {STATUS_LABELS[selectedLot.status].toLowerCase()}.</p>
+                    <p className="text-muted map-hint">This plot is currently {LOT_STATUS[selectedLot.status].toLowerCase()}.</p>
                   )}
 
                   {recordLinks.length > 0 && (

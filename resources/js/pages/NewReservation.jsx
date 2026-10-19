@@ -4,6 +4,7 @@ import { api, forget } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
 import { nearestSection } from '../lib/sections'
+import { LOT_TYPES, label, money } from '../lib/terms'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
@@ -379,15 +380,15 @@ export default function NewReservation() {
               <dt>Section</dt>
               <dd>{selectedLot.section_name}{nearSection && `, near ${nearSection.section_name}`}</dd>
             </div>
-            <div><dt>Type</dt><dd>{selectedLot.lot_type}</dd></div>
-            <div><dt>Price</dt><dd>₱{Number(selectedLot.price).toLocaleString()}</dd></div>
+            <div><dt>Type</dt><dd>{label(LOT_TYPES, selectedLot.lot_type)}</dd></div>
+            <div><dt>Price</dt><dd>{money(selectedLot.price)}</dd></div>
             <div><dt>Capacity</dt><dd>{slotMax} {slotMax === 1 ? 'slot' : 'slots'}</dd></div>
           </dl>
         )}
 
         <div className="form-actions">
           <p className="total-display">
-            Total: <strong>₱{totalAmount.toLocaleString()}</strong>
+            Total: <strong>{money(totalAmount)}</strong>
           </p>
           <Link to="/visitor/reservations" className="btn btn-secondary">Cancel</Link>
           <button type="submit" className="btn btn-primary" disabled={submitting}>

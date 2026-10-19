@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../lib/api'
+import useList from '../lib/useList'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import Notice, { useNotice } from '../components/Notice'
+import StatusBadge from '../components/StatusBadge'
+import { ACCOUNT_STATUS, ROLES } from '../lib/terms'
 
 const EMPTY_FORM = { fullname: '', email: '', phone: '', password: '', role: 'user', status: 'active' }
 
 export default function Users() {
   const { user: me } = useAuth()
-  const [users, setUsers] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
   const [status, setStatus] = useState('')
@@ -29,46 +29,30 @@ export default function Users() {
   const isAdmin = me?.role === 'admin'
   const q = useDebounced(search)
 
-  const load = async () => {
-    const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (role) params.set('role', role)
-    if (status) params.set('status', status)
-    const qs = params.toString()
-    const path = qs ? `/api/users?${qs}` : '/api/users'
-    const { ok, data } = await api(path)
-    if (ok) setUsers(data)
-    else setError(data?.error || 'Failed to load users')
-    setLoaded(true)
-  }
-
-  useEffect(() => {
-    load()
-  }, [q, role, status])
+  const { items: users, loaded, error, reload } = useList('/api/users', { q, role, status }, 'Failed to load users')
+  const { notice, succeed, fail, clear } = useNotice()
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
+    clear()
     setSavingAdd(true)
     const { ok, data } = await api('/api/users', { method: 'POST', body: form })
     setSavingAdd(false)
     if (ok) {
-      setSuccess(`Created ${data.user.fullname}`)
+      succeed(`Created ${data.user.fullname}`)
       setForm(EMPTY_FORM)
-      load()
+      reload()
     } else {
-      setError(data?.error || 'Failed to create user')
+      fail(data?.error || 'Failed to create user')
     }
   }
 
   const openEdit = (u) => {
     setEditing(u)
     setEditForm({ ...u, password: '' })
-    setError('')
-    setSuccess('')
+    clear()
   }
 
   const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value })
@@ -76,8 +60,7 @@ export default function Users() {
   const handleEditSubmit = async (e) => {
     e.preventDefault()
     if (!editing) return
-    setError('')
-    setSuccess('')
+    clear()
     setSavingEdit(true)
     const body = { ...editForm }
     delete body.user_id
@@ -86,11 +69,11 @@ export default function Users() {
     const { ok, data } = await api(`/api/users/${editing.user_id}`, { method: 'POST', body })
     setSavingEdit(false)
     if (ok) {
-      setSuccess(`Updated ${data.user.fullname}`)
+      succeed(`Updated ${data.user.fullname}`)
       setEditing(null)
-      load()
+      reload()
     } else {
-      setError(data?.error || 'Failed to update user')
+      fail(data?.error || 'Failed to update user')
     }
   }
 
@@ -102,10 +85,10 @@ export default function Users() {
     })
     setBusyId(null)
     if (ok) {
-      setSuccess('User updated')
-      load()
+      succeed(`${u.fullname} ${u.status === 'active' ? 'deactivated' : 'activated'}.`)
+      reload()
     } else {
-      setError(data?.error || 'Failed to update user')
+      fail(data?.error || 'Failed to update user')
     }
   }
 
@@ -114,10 +97,10 @@ export default function Users() {
     const { ok, data } = await api(`/api/users/${u.user_id}/delete`, { method: 'POST' })
     setBusyId(null)
     if (ok) {
-      setSuccess(`Deleted ${u.fullname}`)
-      load()
+      succeed(`Deleted ${u.fullname}`)
+      reload()
     } else {
-      setError(data?.error || 'Delete failed')
+      fail(data?.error || 'Delete failed')
     }
   }
 
@@ -125,7 +108,7 @@ export default function Users() {
     <div>
       <h2>User Management</h2>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {success && <p className="alert alert--success" role="status">{success}</p>}
+      <Notice notice={notice} />
 
       {isAdmin && (
         <form onSubmit={handleSubmit} className="form-card form-card--compact">
@@ -150,16 +133,13 @@ export default function Users() {
             <label>
               Role
               <select name="role" value={form.role} onChange={handleChange}>
-                <option value="user">Visitor/Client</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
+                {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </label>
             <label>
               Status
               <select name="status" value={form.status} onChange={handleChange}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </label>
           </div>
@@ -196,9 +176,7 @@ export default function Users() {
                   onChange={handleEditChange}
                   disabled={editing.user_id === me.user_id}
                 >
-                  <option value="user">Visitor/Client</option>
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
+                  {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </label>
             )}
@@ -210,8 +188,7 @@ export default function Users() {
                 onChange={handleEditChange}
                 disabled={editing.user_id === me.user_id}
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </label>
             <label>
@@ -251,14 +228,11 @@ export default function Users() {
         />
         <select aria-label="Filter by role" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">All roles</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff</option>
-          <option value="user">Visitor/Client</option>
+          {Object.entries(ROLES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <select aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          {Object.entries(ACCOUNT_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </div>
 
@@ -290,8 +264,8 @@ export default function Users() {
                 <td>{u.fullname}</td>
                 <td>{u.email}</td>
                 <td>{u.phone || '—'}</td>
-                <td><span className={`badge badge--${u.role}`}>{u.role}</span></td>
-                <td><span className={`badge badge--${u.status}`}>{u.status}</span></td>
+                <td><StatusBadge kind="role" value={u.role} /></td>
+                <td><StatusBadge kind="account" value={u.status} /></td>
                 <td>
                   <div className="table-actions">
                     {(isAdmin || u.role !== 'admin') && (

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import StatusBadge from '../components/StatusBadge'
+import { longDate } from '../lib/terms'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -84,7 +86,7 @@ export default function Profile() {
     }
   }
 
-  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'
+  const memberSince = longDate(user?.created_at)
 
   return (
     <div>
@@ -136,8 +138,8 @@ export default function Profile() {
             </div>
           </div>
           <p className="text-muted">
-            Role: <span className={`badge badge--${user?.role}`}>{user?.role}</span> — Status:{' '}
-            <span className={`badge badge--${user?.status}`}>{user?.status}</span> — Member since {memberSince}
+            Role: <StatusBadge kind="role" value={user?.role} /> — Status:{' '}
+            <StatusBadge kind="account" value={user?.status} /> — Member since {memberSince}
           </p>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>

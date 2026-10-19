@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import { NOTIFICATION_TYPES, label, longDateTime } from '../lib/terms'
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
@@ -40,11 +41,6 @@ export default function Notifications() {
     }
   }
 
-  const typeLabel = (type) => {
-    const map = { reservation: 'Reservation', system: 'System' }
-    return map[type] || type
-  }
-
   return (
     <div>
       <div className="page-header">
@@ -71,10 +67,10 @@ export default function Notifications() {
             >
               <div className="notification-content">
                 <span className={`badge badge--${n.type === 'reservation' ? 'pending' : 'user'}`}>
-                  {typeLabel(n.type)}
+                  {label(NOTIFICATION_TYPES, n.type)}
                 </span>
                 <p className="notification-message">{n.message}</p>
-                <span className="text-muted">{n.created_at}</span>
+                <span className="text-muted">{longDateTime(n.created_at)}</span>
               </div>
               {!n.is_read && (
                 <button className="btn btn-sm btn-secondary" onClick={() => markRead(n.notification_id)}>

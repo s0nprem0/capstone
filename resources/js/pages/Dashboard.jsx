@@ -5,14 +5,7 @@ import { api } from '../lib/api'
 import OccupancyMap from '../components/OccupancyMap'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
-
-const STATUSES = ['available', 'reserved', 'occupied']
-
-const STATUS_LABELS = {
-  available: 'Available',
-  reserved: 'Reserved',
-  occupied: 'Occupied',
-}
+import { LOT_STATUS, PLOT_STATUSES, money } from '../lib/terms'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -77,14 +70,14 @@ export default function Dashboard() {
             {stats && (
               <>
                 <div className="occupancy-meter" aria-hidden="true">
-                  {STATUSES.filter((s) => stats.lots[s] > 0).map((s) => (
+                  {PLOT_STATUSES.filter((s) => stats.lots[s] > 0).map((s) => (
                     <span key={s} style={{ flexGrow: stats.lots[s], background: STATUS_COLORS[s] }} />
                   ))}
                 </div>
                 <div className="dash-legend">
-                  {STATUSES.map((s) => (
+                  {PLOT_STATUSES.map((s) => (
                     <span key={s}>
-                      <i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS[s] }} /> {STATUS_LABELS[s]} ({stats.lots[s]})
+                      <i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS[s] }} /> {LOT_STATUS[s]} ({stats.lots[s]})
                     </span>
                   ))}
                   <span className="text-muted">{stats.lots.total} plots</span>
@@ -102,8 +95,8 @@ export default function Dashboard() {
                   <div><dt>Reservations</dt><dd>{stats.reservations.total}</dd></div>
                   <div><dt>Reservations approved</dt><dd>{stats.reservations.approved}</dd></div>
                   <div><dt>Burial records</dt><dd>{stats.burials.total}</dd></div>
-                  <div><dt>Payments recorded</dt><dd>₱{Number(stats.payments?.total || 0).toLocaleString()}</dd></div>
-                  <div><dt>Collected this month</dt><dd>₱{Number(stats.payments?.this_month || 0).toLocaleString()}</dd></div>
+                  <div><dt>Payments recorded</dt><dd>{money(stats.payments?.total)}</dd></div>
+                  <div><dt>Collected this month</dt><dd>{money(stats.payments?.this_month)}</dd></div>
                   <div><dt>Users</dt><dd>{stats.users}</dd></div>
                 </dl>
               ) : (

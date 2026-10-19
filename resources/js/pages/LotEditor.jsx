@@ -5,8 +5,9 @@ import ConfirmButton from '../components/ConfirmButton'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX } from '../map/tracePaths'
 import { DEFAULT_REFERENCE, MapReferenceImage, readReference, saveReference } from '../map/reference'
+import { LOT_STATUS, PLOT_STATUSES, money } from '../lib/terms'
 
-const STATUS_LABELS = { available: 'Available', reserved: 'Reserved', occupied: 'Occupied' }
+const STATUS_LABELS = Object.fromEntries(PLOT_STATUSES.map((s) => [s, LOT_STATUS[s]]))
 const LOT_TYPES = ['single', 'double', 'family']
 const MIN_SIZE = 10
 const NUDGE = 1
@@ -790,7 +791,7 @@ export default function LotEditor() {
                           <title>Drag to resize</title>
                         </g>
                       )}
-                      <title>{`${lot.lot_code} · ${STATUS_LABELS[lot.status] || lot.status} · ₱${Number(lot.price || 0).toLocaleString()}`}</title>
+                      <title>{`${lot.lot_code} · ${STATUS_LABELS[lot.status] || lot.status} · ${money(lot.price)}`}</title>
                     </g>
                   )
                 })}

@@ -278,6 +278,36 @@ h2 {
   margin-bottom: var(--space-lg);
 }
 
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* A second, quieter line in a table cell: the section under a plot code, the
+   amounts under a payment badge. Saves a column that would repeat the first. */
+.cell-sub {
+  display: block;
+  margin-top: var(--space-3xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Filter tabs that carry their own counts, so the queue size is visible
+   before the tab is opened. */
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-md);
+}
+
+.chip-count {
+  margin-left: var(--space-3xs);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
 .btn {
   display: inline-block;
   padding: var(--space-xs) var(--space-md);
@@ -853,6 +883,33 @@ textarea {
   background: var(--color-bg);
 }
 
+/* An entry being written, bound into the register between its head and its
+   filters rather than floating above the page title. */
+.register-form {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-surface);
+}
+
+.register-form h3 {
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-serif);
+}
+
+.register-form .plot-picker {
+  margin-bottom: var(--space-md);
+}
+
+.register-form .plot-list {
+  max-height: 220px;
+}
+
+.register-form-plot {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
 /* The sheet's head: whose register this is, which no page said before. */
 .register-head {
   display: flex;
@@ -1155,6 +1212,10 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
+}
+
+.notification-content .badge {
+  align-self: flex-start;
 }
 
 .notification-message {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { PAYMENT_METHODS, label } from '../lib/terms'
+import StatusBadge from '../components/StatusBadge'
+import { BURIAL_TYPES, LOT_TYPES, PAYMENT_METHODS, label, longDate, longDateTime, money } from '../lib/terms'
 
 export default function Reports() {
   const [report, setReport] = useState(null)
@@ -22,8 +23,6 @@ export default function Reports() {
   const handlePrint = () => {
     window.print()
   }
-
-  const formatCurrency = (val) => `₱${Number(val).toLocaleString()}`
 
   return (
     <div>
@@ -84,9 +83,9 @@ export default function Reports() {
                     <td>{r.reservation_id}</td>
                     <td>{r.lot_code}</td>
                     <td>{r.user_name}</td>
-                    <td>{r.reservation_date}</td>
-                    <td className="num">{formatCurrency(r.total_amount)}</td>
-                    <td><span className={`badge badge--${r.approved_status}`}>{r.approved_status}</span></td>
+                    <td>{longDate(r.reservation_date)}</td>
+                    <td className="num">{money(r.total_amount)}</td>
+                    <td><StatusBadge kind="approval" value={r.approved_status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -117,9 +116,9 @@ export default function Reports() {
                     <td>{b.deceased_fullname}</td>
                     <td>{b.lot_code}</td>
                     <td>{b.section_name}</td>
-                    <td>{b.burial_date}</td>
-                    <td>{b.burial_type}</td>
-                    <td><span className={`badge badge--${b.interment_status}`}>{b.interment_status}</span></td>
+                    <td>{longDate(b.burial_date)}</td>
+                    <td>{label(BURIAL_TYPES, b.burial_type)}</td>
+                    <td><StatusBadge kind="interment" value={b.interment_status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -152,10 +151,10 @@ export default function Reports() {
                   <tr key={l.lot_id}>
                     <td>{l.lot_code}</td>
                     <td>{l.section_name}</td>
-                    <td>{l.lot_type}</td>
+                    <td>{label(LOT_TYPES, l.lot_type)}</td>
                     <td>{l.block || '—'}</td>
-                    <td className="num">{formatCurrency(l.price)}</td>
-                    <td><span className={`badge badge--${l.status}`}>{l.status}</span></td>
+                    <td className="num">{money(l.price)}</td>
+                    <td><StatusBadge kind="lot" value={l.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -170,14 +169,14 @@ export default function Reports() {
           <h3>Payments Report</h3>
           <p className="text-muted">Generated: {new Date().toLocaleString()}</p>
           <div className="report-stats">
-            <span>Total: {formatCurrency(report.total)}</span>
+            <span>Total: {money(report.total)}</span>
             <span>Payments: {report.count}</span>
-            <span>This month: {formatCurrency(report.this_month)}</span>
+            <span>This month: {money(report.this_month)}</span>
           </div>
           {report.by_method.length > 0 && (
             <div className="report-stats">
               {report.by_method.map((m) => (
-                <span key={m.method}>{label(PAYMENT_METHODS, m.method)}: {formatCurrency(m.total)} ({m.count})</span>
+                <span key={m.method}>{label(PAYMENT_METHODS, m.method)}: {money(m.total)} ({m.count})</span>
               ))}
             </div>
           )}
@@ -189,10 +188,10 @@ export default function Reports() {
               <tbody>
                 {report.items.map((p) => (
                   <tr key={p.payment_id}>
-                    <td>{p.payment_date}</td>
+                    <td>{longDate(p.payment_date)}</td>
                     <td>{p.lot_code} <span className="text-muted">#{p.reservation_id}</span></td>
                     <td>{p.user_name}</td>
-                    <td className="num">{formatCurrency(p.amount)}</td>
+                    <td className="num">{money(p.amount)}</td>
                     <td>{label(PAYMENT_METHODS, p.method)}</td>
                     <td>{p.reference_no || '—'}</td>
                     <td>{p.recorded_by_name || '—'}</td>
@@ -225,7 +224,7 @@ export default function Reports() {
                     <td>{l.action}</td>
                     <td>{l.table_name}</td>
                     <td>#{l.record_id || '—'}</td>
-                    <td>{l.created_at}</td>
+                    <td>{longDateTime(l.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
