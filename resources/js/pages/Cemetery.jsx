@@ -6,6 +6,7 @@ import useMediaQuery from '../lib/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
 import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
+import MapSearch from '../components/MapSearch'
 import PlotPicker from '../components/PlotPicker'
 import Select from '../components/Select'
 import Blank from '../components/Blank'
@@ -17,23 +18,43 @@ import { BURIAL_TYPES, INTERMENT_STATUS, LOT_STATUS, LOT_TYPES, label, lifespan,
 // A chosen plot is brought into the part still showing.
 const SHEET_COVER = 0.3
 
+// Names are looked up on the server; shorter than this matches half the register.
+const NAME_MIN = 3
+const NO_PEOPLE = []
+
 export default function Cemetery() {
   const { user } = useAuth()
   const [mapData, setMapData] = useState(null)
   const [error, setError] = useState('')
   const [viewSectionId, setViewSectionId] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
-  const [search, setSearch] = useState('')
-  const [sectionFind, setSectionFind] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
+  const [search, setSearch] = useState(searchParams.get('q') || '')
+  const [sectionFind, setSectionFind] = useState('')
   const lotParam = searchParams.get('lot')
   // Phones get a dropdown for sections, a folded plot list and a sheet for the
   // plot's record: three stacked panes left the map a 270px strip.
   const phone = useMediaQuery('(max-width: 768px)')
   const layoutRef = useRef(null)
-  // The map reframes itself on whatever a search matched, so it follows the
-  // settled query rather than every keystroke.
-  const query = useDebounced(search.trim())
+  // One box finds a loved one by name or a plot by its code. The map reframes
+  // itself on whatever a search matched, so it follows the settled query, and
+  // the names come back from the server -- the plot codes and the names land
+  // together, or the map would flash "nothing matches" while a name is in flight.
+  const typed = useDebounced(search.trim())
+  const [match, setMatch] = useState({ query: typed, people: [] })
+  useEffect(() => {
+    if (typed.length < NAME_MIN) {
+      setMatch({ query: typed, people: NO_PEOPLE })
+      return undefined
+    }
+    let current = true
+    api(`/api/memorials?q=${encodeURIComponent(typed)}`).then(({ ok, data }) => {
+      if (current) setMatch({ query: typed, people: ok && Array.isArray(data) ? data : [] })
+    })
+    return () => { current = false }
+  }, [typed])
+  const { query, people } = match
+  const graves = useMemo(() => new Set(people.map((p) => String(p.lot_id))), [people])
 
   useEffect(() => {
     api('/api/map').then(({ ok, data }) => {
@@ -44,7 +65,8 @@ export default function Cemetery() {
 
   // Tabs, counts and the map all follow the active filter. The linked plot is
   // excepted: a ?lot= deep link has to show what it points at even when the
-  // filter would otherwise hide it.
+  // filter would otherwise hide it. So is a grave found by name: whoever typed
+  // it is looking for that person, not for plots of some status.
   const sections = useMemo(() => {
     if (!mapData) return []
     const q = query.toLowerCase()
@@ -52,12 +74,13 @@ export default function Cemetery() {
       ...s,
       lots: (s.lots || []).filter((l) => {
         const linked = lotParam !== null && String(l.lot_id) === lotParam
+        if (linked || graves.has(String(l.lot_id))) return true
         const passesStatus = filterStatus === 'all' || l.status === filterStatus
         const passesSearch = !q || l.lot_code.toLowerCase().includes(q)
-        return linked || (passesStatus && passesSearch)
+        return passesStatus && passesSearch
       }),
     }))
-  }, [mapData, filterStatus, query, lotParam])
+  }, [mapData, filterStatus, query, lotParam, graves])
 
   // Selection reads from the unfiltered set: a filtered-out lot must still be
   // reachable, or a ?lot= link stops working the moment someone sets a filter.
@@ -91,6 +114,22 @@ export default function Cemetery() {
         setInterment(ok && Array.isArray(data) && data.length ? data[0] : null)
       })
       .finally(() => current && setIntermentLoading(false))
+    return () => { current = false }
+  }, [canSeeInterments, selectedLot])
+
+  // Everyone else -- the public and visitors -- sees who rests in the plot,
+  // as its headstone would say it: the name and the date of death, never the
+  // next of kin. A plot still available has no one to look up.
+  const [memorials, setMemorials] = useState([])
+  useEffect(() => {
+    if (canSeeInterments || !selectedLot || selectedLot.status === 'available') {
+      setMemorials([])
+      return undefined
+    }
+    let current = true
+    api(`/api/lots/${selectedLot.lot_id}/memorials`).then(({ ok, data }) => {
+      if (current) setMemorials(ok && Array.isArray(data) ? data : [])
+    })
     return () => { current = false }
   }, [canSeeInterments, selectedLot])
 
@@ -154,6 +193,15 @@ export default function Cemetery() {
     setSearchParams(next ? { lot: next } : {}, { replace: true })
   }
 
+  const showSearch = query.length >= NAME_MIN
+
+  // One person found and nothing else matched: open their grave straight away.
+  // A lone match is only a faint tint on the map until it is selected, and the
+  // family should not have to hunt for it a second time.
+  useEffect(() => {
+    if (people.length === 1 && compositeLots.length === 1) selectLot(people[0])
+  }, [people]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // On a phone the map is taller than what is left of the screen once its
   // record slides up, so bring the map to the top: the plot then shows above
   // the sheet rather than under it.
@@ -187,10 +235,18 @@ export default function Cemetery() {
 
   return (
     <div className="map-page">
-      <h2>Cemetery Map</h2>
-      <p className="text-muted map-intro">
-        Choose a section to zoom in, then tap a plot to see its details. Plots marked Available can be reserved.
-      </p>
+      <div className="map-head">
+        <h2>Cemetery Map</h2>
+        {mapData && (
+          <MapSearch
+            value={search}
+            onChange={setSearch}
+            people={showSearch ? people : NO_PEOPLE}
+            onChoose={selectLot}
+            selectedId={lotParam}
+          />
+        )}
+      </div>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       {!mapData && !error && <Loading message="Loading map..." />}
 
@@ -272,15 +328,7 @@ export default function Cemetery() {
             </div>
 
             <div className="map-rail-group map-rail-filter">
-              <p className="panel-heading">Filter</p>
-              <input
-                className="search-input map-search"
-                type="search"
-                aria-label="Search plots by lot code"
-                placeholder="Search lot code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <p className="panel-heading">Show plots</p>
               <div className="map-filters">
                 {['all', 'available', 'reserved', 'occupied'].map((status) => (
                   <button
@@ -307,7 +355,7 @@ export default function Cemetery() {
                 selectedId={lotParam}
                 onSelect={selectLot}
                 labelledBy="plots-list-heading"
-                emptyMessage="Choose a section or search a lot code to list its plots here."
+                emptyMessage="Choose a section, or search above, to list plots here."
                 showSection={!activeSection}
               />
             </details>
@@ -383,6 +431,18 @@ export default function Cemetery() {
                     ))}
                   {selectedLot.status !== 'available' && (
                     <p className="text-muted map-hint">This plot is currently {LOT_STATUS[selectedLot.status].toLowerCase()}.</p>
+                  )}
+
+                  {memorials.length > 0 && (
+                    <div className="plot-doc plot-doc--filed">
+                      <p className="plot-doc-label">In loving memory</p>
+                      {memorials.map((m) => (
+                        <div key={m.deceased_fullname} className="plot-doc-memorial">
+                          <p className="plot-doc-name">{m.deceased_fullname}</p>
+                          {m.date_of_death && <p className="plot-doc-years">Died {longDate(m.date_of_death)}</p>}
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {recordLinks.length > 0 && (

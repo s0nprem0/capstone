@@ -2922,7 +2922,9 @@ textarea:disabled {
   outline-offset: -2px;
 }
 
-.plot-list-item--selected {
+/* Hover must not wash out the selection: the white text needs the green. */
+.plot-list-item--selected,
+.plot-list-item--selected:hover {
   background: var(--color-primary);
   color: var(--color-on-strong);
 }
@@ -3364,11 +3366,6 @@ textarea:disabled {
   gap: var(--space-xs) var(--space-sm);
 }
 
-.map-intro {
-  margin: 0 0 var(--space-sm);
-  max-width: 60ch;
-}
-
 /* The map is a tab stop (arrow keys pan, +/- zoom). Its frame clips outside
    it, so the ring is drawn inside the edge. */
 .map-svg:focus-visible {
@@ -3723,4 +3720,146 @@ textarea:disabled {
     gap: var(--space-xl);
     align-items: start;
   }
+}
+
+/* ==== Map search ====
+   The page's first control: families come to find a person, so the box
+   runs the width of the header and the people found drop down over the map. */
+.map-page > .map-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.map-head h2 {
+  margin: 0;
+  flex: none;
+  line-height: 2.75rem;
+}
+
+.map-search-box {
+  position: relative;
+  flex: 1;
+  max-width: 44rem;
+}
+
+.map-search-icon {
+  position: absolute;
+  left: var(--space-sm);
+  top: 1.375rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.map-search-input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 2.5rem;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: var(--text-lg);
+}
+
+.map-search-input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.map-search-hint {
+  display: block;
+  margin-top: var(--space-3xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.map-search-results {
+  position: absolute;
+  top: calc(2.75rem + var(--space-3xs));
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: var(--space-3xs) 0;
+  list-style: none;
+  max-height: min(22rem, 60vh);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-popover);
+}
+
+.map-search-results[hidden] {
+  display: none;
+}
+
+.map-search-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--space-md);
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.map-search-option:last-child {
+  border-bottom: 0;
+}
+
+.map-search-option--active {
+  background: var(--color-bg);
+}
+
+.map-search-option[aria-selected='true'] {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.map-search-name {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--text-lg);
+}
+
+.map-search-meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .map-page > .map-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+
+  .map-head h2 {
+    line-height: 1.2;
+  }
+
+  .map-search-box {
+    max-width: none;
+  }
+
+  /* Over the map, not the page: the list is what the screen is for now. */
+  .map-search-results {
+    max-height: 55vh;
+    max-height: 55dvh;
+  }
+}
+
+.plot-doc-memorial + .plot-doc-memorial {
+  margin-top: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-border);
 }

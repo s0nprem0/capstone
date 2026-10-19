@@ -854,8 +854,9 @@ export default function CemeterySvgMap({
       {noMatches && (
         <div className="map-empty">
           <p>
-            No plot matches <strong>{query}</strong>.
+            No name or plot code matches <strong>{query}</strong>.
           </p>
+          <p className="text-muted">Try the surname only, or ask the cemetery office.</p>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onClearSearch}>
             Clear search
           </button>
