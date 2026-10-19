@@ -22,7 +22,7 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 - **Burial records** — deceased details, lot assignment, burial type, interment status; creation requires a reserved or occupied lot (a free lot cannot host a burial)
 - **Notifications** — per-user messages on reservation and payment events, unread badge and mark-read
 - **Search & filters** — debounced search and status/type/date filters across users, reservations, payments, burial records, and lots
-- **Reports** — reservations, burial records, availability, payments, audit logs (printable)
+- **Reports** — a printable summary for any period (reservations, payments, interments, availability by section, audit log); the Reservations, Payments and Burial Records lists print and export as CSV with their filters
 - **Dashboards** — stats cards + recent activity for staff/admin
 - **User management** — admin creates/updates users, activates/deactivates accounts, assigns roles; visitors manage their own profile and password
 - **Backup & restore** — admin-only SQL export/import, audit-logged
@@ -250,7 +250,7 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/notifications` | GET | Auth |
 | `/api/notifications/{id}/read`, `/api/notifications/read-all` | POST | Auth |
 | `/api/stats/dashboard` | GET | admin, staff |
-| `/api/reports/{reservations,burial-records,availability,payments,audit-logs}` | GET | admin, staff |
+| `/api/reports/{reservations,burial-records,availability,payments,audit-logs,summary}` | GET | admin, staff |
 | `/api/backup/export` | GET | admin |
 | `/api/backup/import` | POST | admin |
 

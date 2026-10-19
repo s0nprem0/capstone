@@ -98,7 +98,7 @@ RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{i
 - `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject`
 - `/api/payments` CRUD (`mine` for a visitor's own), staff/admin records
 - `/api/notifications` (mine, mark read)
-- `/api/reports/*` (reservations, burial-records, availability, payments, audit-logs)
+- `/api/reports/*` (reservations, burial-records, availability, payments, audit-logs, summary; `summary` and `audit-logs` take an optional `from`/`to` date range)
 - `/api/backup/export`, `/api/backup/import`
 - `/api/stats/dashboard`
 - `/api/map` (sections + lots with SVG grid coordinates and status)

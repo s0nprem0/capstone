@@ -201,22 +201,26 @@ find entries. **Delete** removes an entry permanently and asks for confirmation.
 
 Open **Users** to view accounts and their status. Search by name, email, phone,
 role, or status, or filter by role and status. Staff can **Edit** a visitor
-account and **Activate** or **Deactivate** it. Admin accounts can only be managed
-by an administrator.
+account, including setting its **Status** to Active or Inactive (an inactive
+account cannot sign in). Admin accounts can only be managed by an administrator.
 
 ### Reports
 
-Open **Reports** and choose one of four reports:
+Open **Reports** and choose a period — **This month**, **Last month**,
+**This year**, **All time**, or your own **From** and **To** dates. The page shows,
+for that period:
 
-- **Reservations Report** — totals by approval, with the list.
-- **Burial Records Report** — totals by interment status, with the list.
-- **Lot Availability Report** — totals by status, with the lots. When there are
-  more lots than fit in one view, the report says how many are shown of the
-  total.
-- **Audit Log Report** — recent system activity.
+- **Reservations received** — by approval status, and the value booked.
+- **Payments collected** — the total and a breakdown by method.
+- **Interments** — scheduled and interred.
+- **Plot availability** — as of today, for the whole cemetery and by section.
+- **Audit log** — system activity in the period, with **Export CSV**.
 
-Each report has a **Print Report** button, and a **Back** button to return to the
-list.
+**Print** prints the page for the chosen period.
+
+For a full list, open **Reservations**, **Payments** or **Burial Records**, narrow
+it with the search and filters, and use **Print** or **Export CSV** there. Both
+keep your filters, and the printout notes which filters were applied.
 
 ## 6. Administrator
 
@@ -270,7 +274,8 @@ Backups and restores are recorded in the audit log.
 | Approve a reservation | Reservations (staff) | **Approve** on a pending row |
 | File a burial | Burial Records (staff) | **New Entry** |
 | Record a payment | Payments (staff) | **Record Payment**, pick the reservation and amount |
-| Generate a report | Reports (staff) | choose a report, **Print Report** |
+| Generate a report | Reports (staff) | choose a period, **Print** |
+| Export a list | Reservations, Payments or Burial Records (staff) | filter, then **Export CSV** or **Print** |
 | Add a staff account | Users (admin) | **Add User** |
 | Back up the data | Settings (admin) | **Download Backup (.sql)** |
 

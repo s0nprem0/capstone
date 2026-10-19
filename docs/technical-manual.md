@@ -263,7 +263,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/notifications/unread-count` | Auth | `{ unread_count }` (lightweight badge poll) |
 | `POST /api/notifications/{id}/read` \| `/read-all` | Auth | |
 | `GET /api/stats/dashboard` | admin, staff | Dashboard figures |
-| `GET /api/reports/{reservations,burial-records,availability,payments,audit-logs}` | admin, staff | See §9 |
+| `GET /api/reports/{reservations,burial-records,availability,payments,audit-logs,summary}` | admin, staff | See §9 |
 | `GET /api/lots` | Public | Paginated (`limit` ≤ 1000, default 200; `offset`) |
 | `GET /api/lots/available` | Public | Paginated as above |
 | `GET /api/lots/{id}` | Public | Single lot |
@@ -319,9 +319,23 @@ validation error · `429` rate-limited · `500` server error.
   columns); the page discloses "showing the first N of M" when capped.
 - **payments** — total, count, this-month total, totals by method, + up to 1000
   rows.
-- **audit-logs** — up to 200 most recent entries.
+- **audit-logs** — up to 200 most recent entries, plus the total; takes the
+  optional `from` / `to` range below.
+- **summary** — what the Reports page shows for a period: reservations received
+  (by `created_at`) by approval status with their value, payments collected (by
+  `payment_date`) by method, interments (by `burial_date`) by status, and plot
+  availability now, overall and by section.
 
-Reports are not stored; the front end offers **Print** for a hard copy.
+`from` and `to` are optional, inclusive `YYYY-MM-DD` dates; a malformed date or
+`from` after `to` answers 422 rather than falling back to all time. A DATETIME
+column is bounded by the start of the day after `to`, so all of that day counts.
+
+Reports are not stored. The Reports page prints the period summary; the full
+lists print and export as CSV from the Reservations, Payments and Burial Records
+pages (`ExportActions`), keeping the page's filters. The CSV writer
+(`resources/js/lib/csv.js`) writes a UTF-8 BOM for Excel, plain numbers and
+`YYYY-MM-DD` dates, and prefixes any cell starting with `= + - @` with `'` so a
+spreadsheet never runs user-entered text as a formula.
 
 ## 10. Cemetery map subsystem
 
