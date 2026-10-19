@@ -3666,3 +3666,61 @@ textarea:disabled {
 .map-paper {
   fill: var(--color-map-paper);
 }
+
+/* ==== Account settings ====
+   Phone first: intro, then the card, one field per row. From 900px the intro
+   takes a left column and the card a fixed-measure right one, so fields stay
+   a readable width instead of stretching across a wide screen. */
+.settings-page > .page-header {
+  margin-bottom: var(--space-2xs);
+}
+
+.settings-intro {
+  margin: 0 0 var(--space-lg);
+}
+
+.settings-section {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-section-intro h3 {
+  margin: 0 0 var(--space-2xs);
+  font-size: var(--text-xl);
+}
+
+.settings-section-intro p {
+  margin: 0;
+  max-width: 36ch;
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 34rem;
+}
+
+.settings-card .alert {
+  margin: 0;
+}
+
+.settings-card input {
+  width: 100%;
+}
+
+.settings-actions {
+  display: flex;
+  gap: var(--space-xs);
+  padding-top: var(--space-2xs);
+}
+
+@media (min-width: 900px) {
+  .settings-section {
+    grid-template-columns: minmax(12rem, 18rem) minmax(0, 34rem);
+    gap: var(--space-xl);
+    align-items: start;
+  }
+}

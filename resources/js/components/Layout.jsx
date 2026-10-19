@@ -23,7 +23,7 @@ function roleNav(role) {
       },
       {
         heading: 'Account',
-        items: [{ to: '/visitor/profile', label: 'Profile' }, NOTIFICATIONS],
+        items: [{ to: '/visitor/profile', label: 'Account settings' }, NOTIFICATIONS],
       },
     ]
   }

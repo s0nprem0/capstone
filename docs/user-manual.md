@@ -63,7 +63,7 @@ The left-hand menu changes with your role:
 | You are… | The menu offers |
 | --- | --- |
 | Not signed in | Cemetery Map, Sign In |
-| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, Profile, Notifications |
+| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, Account settings, Notifications |
 | Staff | Dashboard, Cemetery Map, Notifications, Reservations, Payments, Burial Records, Users, Reports |
 | Administrator | everything Staff has, plus Sections, Lots, and Settings |
 
@@ -122,12 +122,11 @@ status** (with how much has been paid of the total). Choose the plot code to see
 it on the map. Use the search box or the **All approvals** dropdown to narrow the
 list.
 
-### Profile
+### Account settings
 
-Open **Profile** to update your **Registration Info** (name, email, phone) and to
-**Change Password**. Changing your password requires your current password. Your
-role and account status are shown for information; only an administrator can
-change those.
+Open **Account settings** to update your **Registration info** (name, email, phone) and to
+change your **Password**. Changing your password requires your current password.
+Your role and account status can only be changed by an administrator.
 
 ### Notifications
 

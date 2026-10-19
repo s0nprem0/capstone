@@ -89,131 +89,150 @@ export default function Profile() {
   }
 
   return (
-    <div>
-      <PageHeader title="My Profile" />
+    <div className="settings-page">
+      <PageHeader title="Account settings" />
+      <p className="text-muted settings-intro">
+        Signed in as {user?.email}. Member since {longDate(user?.created_at)}.
+      </p>
 
-      <div className="form-card section-block">
-        <h3>Registration Info</h3>
-        <Notice notice={info.notice} />
-        <form onSubmit={saveInfo} noValidate>
-          <div className="form-grid">
-            <div className="field">
-              <label>
-                Full Name
-                <input
-                  name="fullname"
-                  value={form.fullname}
-                  onChange={handleChange}
-                  onBlur={() => blur('fullname')}
-                  aria-invalid={!!show('fullname')}
-                  required
-                />
-              </label>
-              {show('fullname') && <span className="field-error" role="alert">{errors.fullname}</span>}
-            </div>
-            <div className="field">
-              <label>
-                Email
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  onBlur={() => blur('email')}
-                  aria-invalid={!!show('email')}
-                  required
-                />
-              </label>
-              {show('email') && <span className="field-error" role="alert">{errors.email}</span>}
-            </div>
-            <div className="field">
-              <label>
-                Phone
-                <input type="tel" name="phone" value={form.phone} onChange={handleChange} />
-              </label>
-            </div>
+      {/* One section per concern: what it is on the left, the fields in a
+          single narrow column on the right, the button right under them. */}
+      <section className="settings-section" aria-labelledby="settings-info-heading">
+        <div className="settings-section-intro">
+          <h3 id="settings-info-heading">Registration info</h3>
+          <p className="text-muted">The name and contact details the cemetery office uses for your reservations.</p>
+        </div>
+        <form className="form-card settings-card" onSubmit={saveInfo} noValidate>
+          <Notice notice={info.notice} />
+          <div className="field">
+            <label htmlFor="profile-fullname">Full name</label>
+            <input
+              id="profile-fullname"
+              name="fullname"
+              value={form.fullname}
+              onChange={handleChange}
+              onBlur={() => blur('fullname')}
+              aria-invalid={!!show('fullname')}
+              aria-describedby={show('fullname') ? 'profile-fullname-error' : undefined}
+              autoComplete="name"
+              required
+            />
+            {show('fullname') && (
+              <span className="field-error" id="profile-fullname-error" role="alert">{errors.fullname}</span>
+            )}
           </div>
-          <p className="text-muted">Member since {longDate(user?.created_at)}</p>
-          <div className="form-actions">
+          <div className="field">
+            <label htmlFor="profile-email">Email</label>
+            <input
+              id="profile-email"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              onBlur={() => blur('email')}
+              aria-invalid={!!show('email')}
+              aria-describedby={show('email') ? 'profile-email-error' : undefined}
+              autoComplete="email"
+              required
+            />
+            {show('email') && (
+              <span className="field-error" id="profile-email-error" role="alert">{errors.email}</span>
+            )}
+          </div>
+          <div className="field">
+            <label htmlFor="profile-phone">Phone</label>
+            <input
+              id="profile-phone"
+              type="tel"
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              autoComplete="tel"
+              aria-describedby="profile-phone-hint"
+            />
+            <span className="label-hint" id="profile-phone-hint">Optional. The office calls this number about your reservation.</span>
+          </div>
+          <div className="settings-actions">
             <button type="submit" className="btn btn-primary" disabled={savingInfo}>
-              {savingInfo ? 'Saving...' : 'Save Changes'}
+              {savingInfo ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div className="form-card section-block">
-        <h3>Change Password</h3>
-        <Notice notice={pass.notice} />
-        <form onSubmit={changePassword} noValidate>
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="profile-current-password">Current Password</label>
-              <PasswordInput
-                id="profile-current-password"
-                name="current_password"
-                value={pwd.current_password}
-                onChange={handlePwdChange}
-                onBlur={() => blur('current_password')}
-                aria-invalid={!!show('current_password')}
-                aria-describedby={show('current_password') ? 'profile-current-password-error' : undefined}
-                autoComplete="current-password"
-                required
-              />
-              {show('current_password') && (
-                <span className="field-error" id="profile-current-password-error" role="alert">
-                  {errors.current_password}
-                </span>
-              )}
-            </div>
-            <div className="field">
-              <label htmlFor="profile-new-password">New Password</label>
-              <PasswordInput
-                id="profile-new-password"
-                name="password"
-                value={pwd.password}
-                onChange={handlePwdChange}
-                onBlur={() => blur('password')}
-                aria-invalid={!!show('password')}
-                aria-describedby={show('password') ? 'profile-new-password-error' : 'profile-new-password-hint'}
-                minLength={8}
-                autoComplete="new-password"
-                required
-              />
-              {show('password') ? (
-                <span className="field-error" id="profile-new-password-error" role="alert">{errors.password}</span>
-              ) : (
-                <span className="label-hint" id="profile-new-password-hint">At least 8 characters.</span>
-              )}
-            </div>
-            <div className="field">
-              <label htmlFor="profile-confirm-password">Confirm New Password</label>
-              <PasswordInput
-                id="profile-confirm-password"
-                name="password_confirmation"
-                value={pwd.password_confirmation}
-                onChange={handlePwdChange}
-                onBlur={() => blur('password_confirmation')}
-                aria-invalid={!!show('password_confirmation')}
-                aria-describedby={show('password_confirmation') ? 'profile-confirm-password-error' : undefined}
-                minLength={8}
-                autoComplete="new-password"
-                required
-              />
-              {show('password_confirmation') && (
-                <span className="field-error" id="profile-confirm-password-error" role="alert">
-                  {errors.password_confirmation}
-                </span>
-              )}
-            </div>
+      <section className="settings-section" aria-labelledby="settings-password-heading">
+        <div className="settings-section-intro">
+          <h3 id="settings-password-heading">Password</h3>
+          <p className="text-muted">Enter your current password, then the new one twice.</p>
+        </div>
+        <form className="form-card settings-card" onSubmit={changePassword} noValidate>
+          <Notice notice={pass.notice} />
+          <div className="field">
+            <label htmlFor="profile-current-password">Current password</label>
+            <PasswordInput
+              id="profile-current-password"
+              name="current_password"
+              value={pwd.current_password}
+              onChange={handlePwdChange}
+              onBlur={() => blur('current_password')}
+              aria-invalid={!!show('current_password')}
+              aria-describedby={show('current_password') ? 'profile-current-password-error' : undefined}
+              autoComplete="current-password"
+              required
+            />
+            {show('current_password') && (
+              <span className="field-error" id="profile-current-password-error" role="alert">
+                {errors.current_password}
+              </span>
+            )}
           </div>
-          <div className="form-actions">
+          <div className="field">
+            <label htmlFor="profile-new-password">New password</label>
+            <PasswordInput
+              id="profile-new-password"
+              name="password"
+              value={pwd.password}
+              onChange={handlePwdChange}
+              onBlur={() => blur('password')}
+              aria-invalid={!!show('password')}
+              aria-describedby={show('password') ? 'profile-new-password-error' : 'profile-new-password-hint'}
+              minLength={8}
+              autoComplete="new-password"
+              required
+            />
+            {show('password') ? (
+              <span className="field-error" id="profile-new-password-error" role="alert">{errors.password}</span>
+            ) : (
+              <span className="label-hint" id="profile-new-password-hint">At least 8 characters.</span>
+            )}
+          </div>
+          <div className="field">
+            <label htmlFor="profile-confirm-password">Confirm new password</label>
+            <PasswordInput
+              id="profile-confirm-password"
+              name="password_confirmation"
+              value={pwd.password_confirmation}
+              onChange={handlePwdChange}
+              onBlur={() => blur('password_confirmation')}
+              aria-invalid={!!show('password_confirmation')}
+              aria-describedby={show('password_confirmation') ? 'profile-confirm-password-error' : undefined}
+              minLength={8}
+              autoComplete="new-password"
+              required
+            />
+            {show('password_confirmation') && (
+              <span className="field-error" id="profile-confirm-password-error" role="alert">
+                {errors.password_confirmation}
+              </span>
+            )}
+          </div>
+          <div className="settings-actions">
             <button type="submit" className="btn btn-primary" disabled={savingPwd}>
-              {savingPwd ? 'Saving...' : 'Change Password'}
+              {savingPwd ? 'Saving...' : 'Change password'}
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   )
 }
