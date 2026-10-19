@@ -225,7 +225,7 @@ export default function Payments() {
         />
       ) : (
         <div className="table-container section-block">
-          <table className="table">
+          <table className="table table--stack">
             <caption className="visually-hidden">Recorded payments</caption>
             <thead>
               <tr>
@@ -243,20 +243,20 @@ export default function Payments() {
             <tbody>
               {payments.map((p) => (
                 <tr key={p.payment_id}>
-                  <td>{longDate(p.payment_date)}</td>
-                  <td>
+                  <td data-label="Date">{longDate(p.payment_date)}</td>
+                  <td data-label="Reservation">
                     <Link to={`/?lot=${p.lot_id}`} title="Show on the cemetery map">{p.lot_code}</Link>
                     <span className="text-muted"> #{p.reservation_id}</span>
                   </td>
-                  <td>{p.user_name}</td>
-                  <td className="num">{money(p.amount)}</td>
-                  <td>{label(PAYMENT_METHODS, p.method)}</td>
-                  <td>{p.reference_no || '—'}</td>
-                  <td>{p.recorded_by_name || '—'}</td>
-                  <td>
+                  <td data-label="Client">{p.user_name}</td>
+                  <td data-label="Amount" className="num">{money(p.amount)}</td>
+                  <td data-label="Method">{label(PAYMENT_METHODS, p.method)}</td>
+                  <td data-label="Reference">{p.reference_no || '—'}</td>
+                  <td data-label="Recorded by">{p.recorded_by_name || '—'}</td>
+                  <td data-label="Reservation payment">
                     <StatusBadge kind="payment" value={p.payment_status} />
                   </td>
-                  <td className="no-print">
+                  <td className="cell-actions no-print">
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>Edit</button>
                       {isAdmin && (

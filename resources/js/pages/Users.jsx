@@ -224,7 +224,7 @@ export default function Users() {
         />
       ) : (
         <div className="table-container section-block">
-          <table className="table">
+          <table className="table table--stack">
             <caption className="visually-hidden">User accounts</caption>
             <thead>
               <tr>
@@ -239,12 +239,12 @@ export default function Users() {
             <tbody>
               {users.map((u) => (
               <tr key={u.user_id}>
-                <td>{u.fullname}</td>
-                <td>{u.email}</td>
-                <td>{u.phone || '—'}</td>
-                <td><StatusBadge kind="role" value={u.role} /></td>
-                <td><StatusBadge kind="account" value={u.status} /></td>
-                <td>
+                <td data-label="Name">{u.fullname}</td>
+                <td data-label="Email">{u.email}</td>
+                <td data-label="Phone">{u.phone || '—'}</td>
+                <td data-label="Role"><StatusBadge kind="role" value={u.role} /></td>
+                <td data-label="Status"><StatusBadge kind="account" value={u.status} /></td>
+                <td className="cell-actions">
                   <div className="table-actions">
                     {(isAdmin || u.role !== 'admin') && (
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>Edit</button>

@@ -118,7 +118,7 @@ export default function Reservations() {
             onClear={() => { setSearch(''); setApproval('') }}
           />
         ) : (
-          <table className="table">
+          <table className="table table--stack">
             <caption className="visually-hidden">Reservations</caption>
             <thead>
               <tr>
@@ -134,23 +134,23 @@ export default function Reservations() {
             <tbody>
               {shown.map((r) => (
                 <tr key={r.reservation_id}>
-                  <td>
+                  <td data-label="Plot">
                     <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">{r.lot_code}</Link>
                     <span className="text-muted"> #{r.reservation_id}</span>
                     <span className="cell-sub">{r.section_name}</span>
                   </td>
-                  {isStaffView && <td>{r.user_name}</td>}
-                  <td>{longDate(r.reservation_date)}</td>
-                  <td className="num">{r.number_of_slots}</td>
-                  <td><StatusBadge kind="approval" value={r.approved_status} /></td>
-                  <td>
+                  {isStaffView && <td data-label="Client">{r.user_name}</td>}
+                  <td data-label="Date">{longDate(r.reservation_date)}</td>
+                  <td data-label="Slots" className="num">{r.number_of_slots}</td>
+                  <td data-label="Approval"><StatusBadge kind="approval" value={r.approved_status} /></td>
+                  <td data-label="Payment">
                     <StatusBadge kind="payment" value={r.payment_status} />
                     <span className="cell-sub">
                       {money(r.amount_paid)} of {money(r.total_amount)}
                     </span>
                   </td>
                   {showActions && (
-                    <td className="no-print">
+                    <td className="cell-actions no-print">
                       {r.approved_status === 'pending' && (
                         <div className="table-actions">
                           <button

@@ -3516,3 +3516,91 @@ textarea:disabled {
 .alert--icon > .icon {
   margin-top: 0.2em;
 }
+
+/* ==== Stacked rows on phones ====
+   An 820px table on a 390px screen meant reading a row by scrolling it
+   sideways. Below 640px each row becomes a card: the column name (data-label)
+   on the left, the value on the right, actions along the foot. Only the
+   lists opt in, with .table--stack; the short summary tables stay tables. */
+@media (max-width: 640px) {
+  .table-container:has(.table--stack),
+  .register-scroll:has(.table--stack) {
+    padding: 0;
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  .table--stack {
+    min-width: 0;
+  }
+
+  .table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .table--stack,
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td,
+  .table--stack tbody th {
+    display: block;
+    width: auto;
+  }
+
+  .table--stack tr {
+    margin-bottom: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+  }
+
+  .table--stack td,
+  .table--stack tbody th {
+    padding: var(--space-2xs) 0;
+    border: 0;
+    white-space: normal;
+  }
+
+  .table--stack td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-md);
+    text-align: right;
+  }
+
+  .table--stack td[data-label]::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-align: left;
+  }
+
+  /* The sub-line under a value stays with it, right-aligned. */
+  .table--stack td[data-label] .cell-sub {
+    text-align: right;
+  }
+
+  .table--stack .cell-actions {
+    margin-top: var(--space-2xs);
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .table--stack .cell-actions:empty {
+    display: none;
+  }
+
+  /* The register's row heading (the deceased's name) is the card's title. */
+  .table--stack tbody th {
+    font-size: var(--text-lg);
+  }
+}

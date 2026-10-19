@@ -292,7 +292,7 @@ export default function BurialRecords() {
           </div>
         ) : (
           <div className="register register-scroll">
-            <table className="register-table">
+            <table className="register-table table--stack">
               <caption className="visually-hidden">
                 Register of interments, most recent first
               </caption>
@@ -314,12 +314,12 @@ export default function BurialRecords() {
                   const years = lifespan(r.date_of_birth, r.date_of_death)
                   return (
                     <tr key={r.burial_id}>
-                      <td className="register-no">{String(r.burial_id).padStart(3, '0')}</td>
+                      <td className="register-no" data-label="No.">{String(r.burial_id).padStart(3, '0')}</td>
                       <th scope="row" className="register-name">
                         {r.deceased_fullname}
                         {years && <span className="register-lifespan">{years}</span>}
                       </th>
-                      <td className="register-cell">
+                      <td className="register-cell" data-label="Plot">
                         <Link
                           to={`/?lot=${r.lot_id}`}
                           className="register-plot"
@@ -328,21 +328,21 @@ export default function BurialRecords() {
                           {r.lot_code}
                         </Link>
                       </td>
-                      <td className="register-cell">{r.section_name}</td>
-                      <td className="register-cell">{longDate(r.burial_date)}</td>
-                      <td className="register-cell">{label(BURIAL_TYPES, r.burial_type)}</td>
-                      <td className="register-cell">
+                      <td className="register-cell" data-label="Section">{r.section_name}</td>
+                      <td className="register-cell" data-label="Interment">{longDate(r.burial_date)}</td>
+                      <td className="register-cell" data-label="Type">{label(BURIAL_TYPES, r.burial_type)}</td>
+                      <td className="register-cell" data-label="Next of kin">
                         {r.next_of_kin_name || '—'}
                         {r.next_of_kin_phone && (
                           <span className="register-kin">{r.next_of_kin_phone}</span>
                         )}
                       </td>
-                      <td className="register-cell">
+                      <td className="register-cell" data-label="State">
                         <span className={`mark mark--${r.interment_status}`}>
                           {label(INTERMENT_STATUS, r.interment_status)}
                         </span>
                       </td>
-                      <td className="register-actions no-print">
+                      <td className="register-actions no-print cell-actions">
                         <div className="table-actions">
                           <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
                           <ConfirmButton

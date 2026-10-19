@@ -153,7 +153,7 @@ export default function Sections() {
 
       {loaded && !error && sections.length > 0 && (
       <div className="table-container section-block">
-        <table className="table">
+        <table className="table table--stack">
           <caption className="visually-hidden">Cemetery sections</caption>
           <thead>
             <tr>
@@ -166,12 +166,12 @@ export default function Sections() {
           <tbody>
             {sections.map((s) => (
                 <tr key={s.section_id}>
-                  <td>
+                  <td data-label="Name">
                     {s.section_name}
                     {Boolean(s.is_locked) && <span className="cell-sub">Locked</span>}
                   </td>
-                  <td>{s.location || '—'}</td>
-                  <td className="section-plots">
+                  <td data-label="Location">{s.location || '—'}</td>
+                  <td data-label="Plots" className="section-plots">
                     <OccupancyBar counts={s} />
                     <span className="cell-sub">
                       {s.available} free of {s.lot_count}
@@ -179,7 +179,7 @@ export default function Sections() {
                       {s.occupied > 0 && ` · ${s.occupied} occupied`}
                     </span>
                   </td>
-                  <td>
+                  <td className="cell-actions">
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(s)}>Edit</button>
                       <RowMenu>
