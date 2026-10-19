@@ -25,8 +25,13 @@ request logic) behind one front controller.
 
 ## 2. Architecture
 
-Five layers — see [architecture.md](architecture.md) for the diagram. Summary:
+Six layers — see [architecture.md](architecture.md) for the diagram. Summary:
 
+- **Presentation (React SPA, in the browser).** Page views under
+  `resources/js/pages`, shared components under `resources/js/components`, the
+  SVG map renderer, and the client runtime (`react-router-dom`, `AuthContext`,
+  `lib/api.js`) that owns routing, session state, role guards, the CSRF header,
+  and the `/api/map` cache. No business rules live here.
 - **Front controller.** `public/index.php` serves the JSON API under `/api` and,
   for every other path, the built SPA shell (`public/dist`) or the Vite dev
   server. One entry point, one place for security headers and routing.
@@ -35,8 +40,8 @@ Five layers — see [architecture.md](architecture.md) for the diagram. Summary:
   `POST {id}` update, `POST {id}/delete` delete.
 - **Models.** `App\Models\Model` provides `find`, `create`, `update`, `delete`,
   `findBy`; entity models add their own queries. All values are bound.
-- **Views.** React pages under `resources/js/pages`, routed in `App.jsx` and
-  lazy-loaded per route.
+- **Views → API only.** The SPA calls `/api/*` and never the database.
+  Authorization is enforced server-side regardless of the client-side guards.
 
 ## 3. Repository layout
 

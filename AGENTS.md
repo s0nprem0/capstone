@@ -18,9 +18,11 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 - Containerization: `docker-compose.yml` (php:8000, node:5173, mysql:3306) + Makefile workflow.
 
 ## Architecture
+- Six layers: user access (browser) → presentation (React SPA) → application (PHP controllers + API) → data (MySQL) → external services (none) → infrastructure.
 - Client-Server + MVC: Models = data layer, Views = React pages, Controllers = request logic.
 - Single front controller `public/index.php`: serves JSON API under `/api`; serves the built Vite bundle (or dev server) for all other routes.
-- The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor the diagram omits, and matches the diagram's Payment Monitoring module (now implemented).
+- The presentation layer is browser-only (`resources/js/`): page views, shared components, the SVG map renderer, and the client runtime (router, `AuthContext`, `lib/api.js`). It holds no business rules and calls only `/api/*`.
+- The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor and the Presentation Layer the diagram omits, and matches the diagram's Payment Monitoring module (now implemented).
 
 ## Project structure
 ```

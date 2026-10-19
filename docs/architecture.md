@@ -13,23 +13,31 @@ flowchart TB
     A1["Administrator"]
     A2["Cemetery Staff"]
     A3["Client / Visitor"]
-    A4["Web Browser — React 18 SPA"]
+    A4["Web Browser<br/>Chrome · Edge · Firefox · Safari"]
   end
 
-  subgraph L2["2 · Application Layer"]
+  subgraph L2["2 · Presentation Layer — React 18 SPA"]
+    direction LR
+    P1["Page Views<br/>resources/js/pages<br/>Cemetery · Reservations · Payments · Burial Records"]
+    P2["Shared Components<br/>Layout · RouteGuards · ConfirmButton"]
+    P3["Cemetery Map Renderer<br/>CemeterySvgMap.jsx<br/>pure SVG, pan/zoom"]
+    P4["Client Runtime<br/>react-router-dom · AuthContext · lib/api.js<br/>role guards · CSRF header · /api/map cache"]
+  end
+
+  subgraph L3["3 · Application Layer — PHP"]
     direction LR
     M1["Authentication Module<br/>AuthController · Core/Auth · Csrf · RateLimiter"]
     M2["Reservation Management<br/>ReservationController"]
     M2b["Payment Monitoring<br/>PaymentController"]
     M3["Burial Records Management<br/>BurialRecordController"]
-    M4["Cemetery Plot and Mapping<br/>Map / Lot / Section controllers · SVG map"]
+    M4["Cemetery Plot and Mapping<br/>Map / Lot / Section controllers"]
     M5["Notification Module<br/>NotificationController"]
     M6["Report Generation<br/>ReportController · StatsController"]
     M7["User and System Management<br/>User / Section / Backup controllers"]
     M8["API Interface Layer<br/>Core/Router · public/index.php (REST /api)"]
   end
 
-  subgraph L3["3 · Data Layer — MySQL 8.0"]
+  subgraph L4["4 · Data Layer — MySQL 8.0"]
     direction LR
     D0[("Database Server")]
     D1["Client Data<br/>users"]
@@ -41,12 +49,12 @@ flowchart TB
     D7["Payment Records<br/>payments"]
   end
 
-  subgraph L4["4 · External Services"]
+  subgraph L5["5 · External Services"]
     direction LR
     X1["None — no map tiles, font vendored, in-app notifications.<br/>The app makes zero external requests."]
   end
 
-  subgraph L5["5 · Infrastructure Layer"]
+  subgraph L6["6 · Infrastructure Layer"]
     direction LR
     I1["Web Server<br/>Apache (XAMPP) or PHP built-in server"]
     I2["Application Server<br/>PHP 8.3"]
@@ -58,7 +66,11 @@ flowchart TB
   A1 --> A4
   A2 --> A4
   A3 --> A4
-  A4 --> M8
+  A4 --> P1
+  P1 --> P2
+  P1 --> P3
+  P1 --> P4
+  P4 --> M8
   M1 --> M8
   M2 --> M8
   M2b --> M8
@@ -81,6 +93,19 @@ flowchart TB
   I2 --> I4
 ```
 
+## Presentation layer (what runs in the browser)
+
+The presentation layer is the React single-page app served from `public/dist`.
+It holds no business rules — it renders state and forwards intent — and it is the
+layer the user never sees as "code", only as screens.
+
+| Piece | Where | Responsibility |
+| --- | --- | --- |
+| Page views | `resources/js/pages/` | One component per screen; 15 routes, lazy-loaded so the public map does not carry the admin editors |
+| Shared components | `resources/js/components/` | `Layout` (sidebar, nav), `RouteGuards`, `ConfirmButton`, `EmptyState`, `Loading`, `PasswordInput` |
+| Map renderer | `CemeterySvgMap.jsx` | Draws the survey as SVG; pan/zoom, status colouring, plot selection |
+| Client runtime | `react-router-dom`, `AuthContext`, `lib/api.js` | Client-side routing, session state, role-based route guards, the `X-CSRF-Token` header, and the per-session `/api/map` cache |
+
 ## Data model
 
 | Study datastore | Table(s) |
@@ -93,6 +118,10 @@ flowchart TB
 | Notification data | `notifications` |
 | Activity logs | `audit_logs`, `login_attempts` |
 | Report / backup data | none stored — reports are generated on demand and backups stream as a download |
+
+`schema.sql` seeds the 66 numbered sections; `database/survey/lots.sql` (loaded by
+`make map-data`) adds the traced plots and brings the set to **70 sections and
+6,748 plots**, including two perimeter blocks, *North Strip A* and *North Strip B*.
 
 ## Deviations from the study diagram
 
