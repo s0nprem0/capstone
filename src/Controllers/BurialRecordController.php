@@ -57,6 +57,11 @@ class BurialRecordController
             return;
         }
 
+        if (!self::validPhone($input['next_of_kin_phone'] ?? null)) {
+            Response::json(['error' => self::PHONE_ERROR], 422);
+            return;
+        }
+
         $lot = Lot::find($lotId);
         if (!$lot) {
             Response::json(['error' => 'Lot not found'], 404);
@@ -151,6 +156,10 @@ class BurialRecordController
             }
             $data['burial_type'] = $input['burial_type'];
         }
+        if (isset($input['next_of_kin_phone']) && !self::validPhone($input['next_of_kin_phone'])) {
+            Response::json(['error' => self::PHONE_ERROR], 422);
+            return;
+        }
         foreach (['next_of_kin_name', 'next_of_kin_phone'] as $field) {
             if (isset($input[$field])) {
                 $data[$field] = $input[$field] !== '' ? trim($input[$field]) : null;
@@ -182,5 +191,18 @@ class BurialRecordController
         BurialRecord::delete($id);
         AuditLog::record(Auth::id(), 'delete', 'burial_records', $id);
         Response::json(['message' => 'Deleted']);
+    }
+
+    private const PHONE_ERROR = 'next_of_kin_phone must be a phone number, e.g. 0917 123 4567';
+
+    /**
+     * Digits with the usual separators, 7 to 15 characters (the column's
+     * width): mobile and landline numbers, with or without +63. Empty is
+     * fine; the field is optional.
+     */
+    private static function validPhone(mixed $value): bool
+    {
+        $phone = trim((string) ($value ?? ''));
+        return $phone === '' || (bool) preg_match('/^\+?[0-9(][0-9 ()\-]{6,14}$/', $phone) && strlen($phone) <= 15;
     }
 }
