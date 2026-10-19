@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
 import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
+import PageHeader from '../components/PageHeader'
 import { NOTIFICATION_TYPES, label, longDateTime } from '../lib/terms'
 
 export default function Notifications() {
+  const { user } = useAuth()
+  // A notice about a reservation opens that reservation, found by its plot.
+  const reservationsPath = user?.role === 'user' ? '/visitor/reservations' : `/${user?.role}/reservations`
   const [notifications, setNotifications] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -43,14 +49,13 @@ export default function Notifications() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Notifications</h2>
+      <PageHeader title="Notifications">
         {unreadCount > 0 && (
           <button className="btn btn-secondary" onClick={markAllRead}>
             Mark all read ({unreadCount})
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
 
@@ -72,11 +77,22 @@ export default function Notifications() {
                 <p className="notification-message">{n.message}</p>
                 <span className="text-muted">{longDateTime(n.created_at)}</span>
               </div>
-              {!n.is_read && (
-                <button className="btn btn-sm btn-secondary" onClick={() => markRead(n.notification_id)}>
-                  Mark read
-                </button>
-              )}
+              <div className="notification-actions">
+                {n.lot_code && (
+                  <Link
+                    className="btn btn-sm btn-primary"
+                    to={`${reservationsPath}?q=${encodeURIComponent(n.lot_code)}`}
+                    onClick={() => !n.is_read && markRead(n.notification_id)}
+                  >
+                    View reservation
+                  </Link>
+                )}
+                {!n.is_read && (
+                  <button className="btn btn-sm btn-secondary" onClick={() => markRead(n.notification_id)}>
+                    Mark read
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

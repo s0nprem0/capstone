@@ -175,7 +175,8 @@ class PaymentController
         Notification::createFor(
             (int) $reservation['user_id'],
             'Payment of ₱' . number_format($amount, 2) . " recorded for lot {$lotCode}.",
-            'system'
+            'system',
+            (int) $reservation['reservation_id']
         );
     }
 }

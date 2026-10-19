@@ -141,16 +141,34 @@ UPDATE `cemetery_lots` SET `status` = 'reserved'
 WHERE `lot_code` IN ('S61-015','S65-020','S65-092');
 
 -- ===== Notifications =====
-INSERT INTO `notifications` (`user_id`, `message`, `type`, `is_read`, `created_at`) VALUES
-  (4, 'Your reservation for lot S3-001 was approved.',                    'reservation', 1, '2026-02-14 11:00:00'),
-  (4, 'Your reservation for lot S61-015 is awaiting approval.',           'reservation', 0, '2026-09-10 09:20:00'),
-  (5, 'Your reservation for lot S34-002 was rejected.',                   'reservation', 1, '2026-03-04 10:00:00'),
-  (5, 'Interment for lot S41-003 is scheduled on 2026-10-12.',            'system',      0, '2026-09-03 09:05:00'),
-  (6, 'Your reservation for lot S8-003 was approved.',                    'reservation', 1, '2026-03-10 15:00:00'),
-  (6, 'Your reservation for lot S45-010 was approved.',                   'reservation', 1, '2026-07-20 11:00:00'),
-  (7, 'Interment for lot S33-005 was completed.',                        'system',      1, '2026-07-20 18:00:00'),
-  (8, 'Your reservation for lot S52-005 was approved.',                   'reservation', 1, '2026-08-14 11:00:00'),
-  (1, 'Demo dataset loaded: 22 reservations, 4 burials.',                 'system',      0, NOW());
+-- Each notice names one of its client's real reservations and points at it,
+-- so the Notifications page links through to the record.
+INSERT INTO `notifications` (`user_id`, `message`, `type`, `reservation_id`, `is_read`, `created_at`) VALUES
+  (4, 'Your reservation #1 for lot S3-025 has been approved.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S3-025' AND r.user_id = 4 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-02-14 11:00:00'),
+  (4, 'Your reservation #18 for lot S61-015 is awaiting approval.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S61-015' AND r.user_id = 4 ORDER BY r.reservation_id DESC LIMIT 1), 0, '2026-09-10 09:20:00'),
+  (8, 'Your reservation #21 for lot S34-002 has been rejected.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S34-002' AND r.user_id = 8 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-03-04 10:00:00'),
+  (5, 'Interment for lot S41-008 is scheduled on 2026-10-12.', 'system',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S41-008' AND r.user_id = 5 ORDER BY r.reservation_id DESC LIMIT 1), 0, '2026-09-03 09:05:00'),
+  (6, 'Your reservation #3 for lot S8-004 has been approved.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S8-004' AND r.user_id = 6 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-03-10 15:00:00'),
+  (6, 'Your reservation #13 for lot S45-131 has been approved.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S45-131' AND r.user_id = 6 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-07-20 11:00:00'),
+  (7, 'Interment for lot S33-006 was completed.', 'system',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S33-006' AND r.user_id = 7 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-07-20 18:00:00'),
+  (8, 'Your reservation #15 for lot S52-062 has been approved.', 'reservation',
+    (SELECT r.reservation_id FROM reservations r JOIN cemetery_lots l ON l.lot_id = r.lot_id
+      WHERE l.lot_code = 'S52-062' AND r.user_id = 8 ORDER BY r.reservation_id DESC LIMIT 1), 1, '2026-08-14 11:00:00'),
+  (1, 'Demo dataset loaded: 22 reservations, 4 burials.', 'system', NULL, 0, NOW());
 
 -- ===== Audit trail =====
 -- A believable back-history so the audit report is not a single login row.

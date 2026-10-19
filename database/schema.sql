@@ -148,9 +148,13 @@ CREATE TABLE `notifications` (
   `user_id` INT UNSIGNED NOT NULL,
   `message` VARCHAR(255) NOT NULL,
   `type` ENUM('reservation', 'system') NOT NULL DEFAULT 'system',
+  -- The reservation a notice is about, so it can link there. Kept when the
+  -- reservation goes: the notice stays readable, just without the link.
+  `reservation_id` INT UNSIGNED NULL,
   `is_read` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE SET NULL,
   KEY `idx_notifications_user` (`user_id`)
 ) ENGINE=InnoDB;
 

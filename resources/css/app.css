@@ -1296,6 +1296,13 @@ textarea {
   align-self: flex-start;
 }
 
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: flex-start;
+}
+
 .notification-message {
   margin: 0;
 }

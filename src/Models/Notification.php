@@ -12,7 +12,12 @@ class Notification extends Model
     public static function forUser(int $userId): array
     {
         $stmt = self::db()->prepare(
-            "SELECT * FROM notifications WHERE user_id = :user_id ORDER BY notification_id DESC"
+            "SELECT n.*, l.lot_code
+             FROM notifications n
+             LEFT JOIN reservations r ON r.reservation_id = n.reservation_id
+             LEFT JOIN cemetery_lots l ON l.lot_id = r.lot_id
+             WHERE n.user_id = :user_id
+             ORDER BY n.notification_id DESC"
         );
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll();
@@ -43,12 +48,13 @@ class Notification extends Model
         return $stmt->execute(['user_id' => $userId]);
     }
 
-    public static function createFor(int $userId, string $message, string $type = 'system'): int
+    public static function createFor(int $userId, string $message, string $type = 'system', ?int $reservationId = null): int
     {
         return self::create([
             'user_id' => $userId,
             'message' => $message,
             'type' => $type,
+            'reservation_id' => $reservationId,
             'is_read' => 0,
         ]);
     }

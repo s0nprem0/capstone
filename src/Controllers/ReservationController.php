@@ -201,7 +201,8 @@ class ReservationController
         Notification::createFor(
             (int) $reservation['user_id'],
             "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been approved.",
-            'reservation'
+            'reservation',
+            $id
         );
         Response::json(['message' => 'Reservation approved']);
     }
@@ -224,7 +225,8 @@ class ReservationController
         Notification::createFor(
             (int) $reservation['user_id'],
             "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been rejected.",
-            'reservation'
+            'reservation',
+            $id
         );
         Response::json(['message' => 'Reservation rejected']);
     }
