@@ -107,3 +107,10 @@ export const longDateTime = (value) => {
   const time = String(value).slice(11, 16)
   return time ? `${longDate(value)}, ${time}` : longDate(value)
 }
+
+// Today (or `date`) as YYYY-MM-DD in local time. Not toISOString(): that is
+// UTC, which is still yesterday for the Philippines until 8 a.m.
+export const localISO = (date = new Date()) => {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`
+}

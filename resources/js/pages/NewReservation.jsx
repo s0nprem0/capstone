@@ -4,19 +4,11 @@ import { api, forget } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
 import { nearestSection } from '../lib/sections'
-import { LOT_TYPES, label, money } from '../lib/terms'
+import { LOT_TYPES, label, localISO, money } from '../lib/terms'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
 const TAKEN = 'That plot is no longer available. Someone may have reserved it while this page was open. Please choose another.'
-
-// Local date, not toISOString(): that is UTC, which rejects today's date for
-// anyone east of Greenwich during their own morning.
-const todayISO = () => {
-  const d = new Date()
-  const p = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
 
 // A half-filled form survives a dropped signal or a closed tab. Purpose is left
 // out: it is free text that often names the deceased, and localStorage is not
@@ -129,7 +121,7 @@ export default function NewReservation() {
   if (!form.lot_id) errors.lot_id = 'Select a lot.'
   else if (staleLot) errors.lot_id = TAKEN
   if (!form.reservation_date) errors.reservation_date = 'Pick a reservation date.'
-  else if (form.reservation_date < todayISO()) errors.reservation_date = 'The date cannot be in the past.'
+  else if (form.reservation_date < localISO()) errors.reservation_date = 'The date cannot be in the past.'
 
   const show = (name) => touched[name] && errors[name]
   const blur = (name) => setTouched((t) => ({ ...t, [name]: true }))
@@ -325,7 +317,7 @@ export default function NewReservation() {
                 onBlur={() => blur('reservation_date')}
                 aria-invalid={!!show('reservation_date')}
                 aria-describedby={show('reservation_date') ? 'res-date-error res-date-hint' : 'res-date-hint'}
-                min={todayISO()}
+                min={localISO()}
                 required
               />
             </label>

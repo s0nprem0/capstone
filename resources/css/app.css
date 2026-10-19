@@ -1313,48 +1313,73 @@ textarea {
   vertical-align: middle;
 }
 
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-md);
+/* ==== Reports ====
+   One period's activity on one printable page. The lists themselves print
+   from their own pages, with their filters. */
+.report-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
-.report-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: var(--space-lg);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.report-card:hover {
-  border-color: var(--color-primary);
-}
-
-.report-card h3 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-2xs);
-}
-
-.report-card p {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
+.report-period .status-tabs {
   margin: 0;
 }
 
-.report-stats {
+.report-period label {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
-  padding: var(--space-md) 0;
-  font-size: var(--text-md);
-  font-weight: 500;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  font-size: var(--text-sm);
 }
 
-.report-output h3 {
-  margin-bottom: 0;
+.report-period-line {
+  margin: 0 0 var(--space-md);
+}
+
+.report-link {
+  margin-left: var(--space-xs);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.report-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.report-table {
+  margin-top: var(--space-sm);
+}
+
+/* Summary tables are a few short columns; the 820px floor the full lists
+   need would push them out of a half-width panel. */
+table.report-table {
+  min-width: 0;
+}
+
+/* Long tables scroll inside their panel on screen and print in full. */
+.report-scroll {
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.report-bar {
+  width: 160px;
+}
+
+.register-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.print-only {
+  display: none;
 }
 
 /* ==== SVG digital map ==== */
@@ -1865,8 +1890,38 @@ textarea {
   .no-print,
   .sidebar,
   .topbar,
-  .sidebar-backdrop {
+  .sidebar-backdrop,
+  .filter-bar,
+  .status-tabs,
+  .alert,
+  .form-card,
+  .register-form {
     display: none !important;
+  }
+
+  /* What was printed: the filters behind it are hidden above. */
+  .print-only {
+    display: block;
+  }
+
+  .print-note {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .page-header {
+    flex-wrap: wrap;
+  }
+
+  .report-scroll {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .dash-panel {
+    break-inside: avoid;
   }
   .table {
     min-width: 0;

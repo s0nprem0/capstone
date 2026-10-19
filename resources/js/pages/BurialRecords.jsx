@@ -8,6 +8,7 @@ import Loading from '../components/Loading'
 import EmptyState from '../components/EmptyState'
 import PlotPicker from '../components/PlotPicker'
 import Notice, { useNotice } from '../components/Notice'
+import ExportActions from '../components/ExportActions'
 import { BURIAL_TYPES, INTERMENT_STATUS, label, lifespan, longDate } from '../lib/terms'
 
 const EMPTY_FORM = {
@@ -132,6 +133,27 @@ export default function BurialRecords() {
     }
   }
 
+  const columns = [
+    { label: 'No.', value: (r) => r.burial_id },
+    { label: 'Deceased', value: (r) => r.deceased_fullname },
+    { label: 'Date of birth', value: (r) => r.date_of_birth },
+    { label: 'Date of death', value: (r) => r.date_of_death },
+    { label: 'Plot', value: (r) => r.lot_code },
+    { label: 'Section', value: (r) => r.section_name },
+    { label: 'Burial date', value: (r) => r.burial_date },
+    { label: 'Burial type', value: (r) => label(BURIAL_TYPES, r.burial_type) },
+    { label: 'Next of kin', value: (r) => r.next_of_kin_name },
+    { label: 'Next of kin phone', value: (r) => r.next_of_kin_phone },
+    { label: 'Interment status', value: (r) => label(INTERMENT_STATUS, r.interment_status) },
+  ]
+  const describe = [
+    interment ? label(INTERMENT_STATUS, interment) : 'All entries',
+    type && label(BURIAL_TYPES, type),
+    q && `search "${q}"`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <div>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
@@ -144,7 +166,10 @@ export default function BurialRecords() {
             St. John Memorial Garden &amp; Parks
             {records.length > 0 && ` · ${records.length} ${records.length === 1 ? 'entry' : 'entries'}`}
           </p>
-          {!showForm && <button className="btn btn-primary" onClick={openCreate}>New Entry</button>}
+          <div className="register-head-actions">
+            <ExportActions name="register-of-interments" columns={columns} rows={records} describe={describe} />
+            {!showForm && <button className="btn btn-primary no-print" onClick={openCreate}>New Entry</button>}
+          </div>
         </div>
 
         {showForm && (
@@ -284,7 +309,7 @@ export default function BurialRecords() {
                   <th scope="col">Type</th>
                   <th scope="col">Next of kin</th>
                   <th scope="col">State</th>
-                  <th scope="col"><span className="visually-hidden">Actions</span></th>
+                  <th scope="col" className="no-print"><span className="visually-hidden">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -320,7 +345,7 @@ export default function BurialRecords() {
                           {label(INTERMENT_STATUS, r.interment_status)}
                         </span>
                       </td>
-                      <td className="register-actions">
+                      <td className="register-actions no-print">
                         <div className="table-actions">
                           <button className="btn btn-secondary btn-sm" onClick={() => openEdit(r)}>Edit</button>
                           <ConfirmButton

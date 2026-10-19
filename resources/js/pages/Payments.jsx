@@ -10,20 +10,15 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
 import StatusBadge from '../components/StatusBadge'
-import { PAYMENT_METHODS, PAYMENT_STATUS, label, longDate, money } from '../lib/terms'
-
-const todayISO = () => {
-  const d = new Date()
-  const p = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
+import ExportActions from '../components/ExportActions'
+import { PAYMENT_METHODS, PAYMENT_STATUS, label, localISO, longDate, money } from '../lib/terms'
 
 const emptyForm = () => ({
   reservation_id: '',
   amount: '',
   method: 'cash',
   reference_no: '',
-  payment_date: todayISO(),
+  payment_date: localISO(),
   notes: '',
 })
 
@@ -113,10 +108,26 @@ export default function Payments() {
     }
   }
 
+  const columns = [
+    { label: 'Payment date', value: (p) => p.payment_date },
+    { label: 'Reservation', value: (p) => p.reservation_id },
+    { label: 'Plot', value: (p) => p.lot_code },
+    { label: 'Client', value: (p) => p.user_name },
+    { label: 'Amount', value: (p) => Number(p.amount) },
+    { label: 'Method', value: (p) => label(PAYMENT_METHODS, p.method) },
+    { label: 'Reference', value: (p) => p.reference_no },
+    { label: 'Recorded by', value: (p) => p.recorded_by_name },
+    { label: 'Reservation payment', value: (p) => label(PAYMENT_STATUS, p.payment_status) },
+  ]
+  const describe = [method ? label(PAYMENT_METHODS, method) : 'All methods', q && `search "${q}"`]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <div>
       <PageHeader title="Payments">
-        {!showForm && <button className="btn btn-primary" onClick={openRecord}>Record Payment</button>}
+        <ExportActions name="payments" columns={columns} rows={payments} describe={describe} />
+        {!showForm && <button className="btn btn-primary no-print" onClick={openRecord}>Record Payment</button>}
       </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
@@ -220,7 +231,7 @@ export default function Payments() {
                 <th>Reference</th>
                 <th>Recorded by</th>
                 <th>Reservation payment</th>
-                <th>Actions</th>
+                <th className="no-print">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -239,7 +250,7 @@ export default function Payments() {
                   <td>
                     <StatusBadge kind="payment" value={p.payment_status} />
                   </td>
-                  <td>
+                  <td className="no-print">
                     <div className="table-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>Edit</button>
                       {isAdmin && (

@@ -10,7 +10,8 @@ import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
 import StatusBadge from '../components/StatusBadge'
-import { APPROVAL_STATUS, longDate, money } from '../lib/terms'
+import ExportActions from '../components/ExportActions'
+import { APPROVAL_STATUS, PAYMENT_STATUS, label, longDate, money } from '../lib/terms'
 
 export default function Reservations() {
   const { user } = useAuth()
@@ -53,12 +54,29 @@ export default function Reservations() {
     }
   }
 
+  const columns = [
+    { label: 'Reservation', value: (r) => r.reservation_id },
+    { label: 'Plot', value: (r) => r.lot_code },
+    { label: 'Section', value: (r) => r.section_name },
+    ...(isStaffView ? [{ label: 'Client', value: (r) => r.user_name }] : []),
+    { label: 'Reservation date', value: (r) => r.reservation_date },
+    { label: 'Slots', value: (r) => Number(r.number_of_slots) },
+    { label: 'Approval', value: (r) => label(APPROVAL_STATUS, r.approved_status) },
+    { label: 'Payment', value: (r) => label(PAYMENT_STATUS, r.payment_status) },
+    { label: 'Paid', value: (r) => Number(r.amount_paid) },
+    { label: 'Total', value: (r) => Number(r.total_amount) },
+  ]
+  const describe = [approval ? label(APPROVAL_STATUS, approval) : 'All reservations', q && `search "${q}"`]
+    .filter(Boolean)
+    .join(' · ')
+
   const tabs = [['', 'All', reservations.length], ...Object.entries(APPROVAL_STATUS).map(([v, l]) => [v, l, counts[v]])]
 
   return (
     <div>
       <PageHeader title={isStaffView ? 'Reservations' : 'My Reservations'}>
-        {!isStaffView && <Link to="/visitor/reserve" className="btn btn-primary">New Reservation</Link>}
+        <ExportActions name="reservations" columns={columns} rows={shown} describe={describe} />
+        {!isStaffView && <Link to="/visitor/reserve" className="btn btn-primary no-print">New Reservation</Link>}
       </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
@@ -110,7 +128,7 @@ export default function Reservations() {
                 <th className="num">Slots</th>
                 <th>Approval</th>
                 <th>Payment</th>
-                {showActions && <th><span className="visually-hidden">Actions</span></th>}
+                {showActions && <th className="no-print"><span className="visually-hidden">Actions</span></th>}
               </tr>
             </thead>
             <tbody>
@@ -132,7 +150,7 @@ export default function Reservations() {
                     </span>
                   </td>
                   {showActions && (
-                    <td>
+                    <td className="no-print">
                       {r.approved_status === 'pending' && (
                         <div className="table-actions">
                           <button
