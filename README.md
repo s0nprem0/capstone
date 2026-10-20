@@ -204,6 +204,7 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── docker/node.Dockerfile     # Node 22 + pnpm
 ├── docs/
 │   ├── architecture.md        # layered architecture reconciled with the build
+│   ├── security.md            # controls, permission matrix, privacy, known risks
 │   ├── user-manual.md         # end-user guide, per role
 │   └── technical-manual.md    # architecture, data model, API, deployment
 ├── DEMO.md                    # tech demo runbook + demo accounts
@@ -270,15 +271,24 @@ make fresh       # rebuild everything from scratch
 
 ## Security
 
-- All SQL via PDO prepared statements
-- Passwords hashed with `password_hash()` (bcrypt)
-- Server-side RBAC on every protected route (not just UI)
-- CSRF token required on all mutating requests
-- Sessions with HttpOnly/SameSite cookies
+The full controls, permission matrix, privacy notes, deployment checklist, and
+accepted risks are in **[docs/security.md](docs/security.md)**. Summary:
+
+- All SQL via PDO prepared statements (`ATTR_EMULATE_PREPARES` off); identifiers never come from request input
+- Passwords hashed with `password_hash()` (bcrypt, minimum 8 characters)
+- Server-side RBAC on every protected route (not just UI), plus ownership checks on a visitor's own records
+- CSRF token (`X-CSRF-Token`) required on every `POST` except login/register; invalid → `419`
+- Sessions with `HttpOnly`, `SameSite=Lax`, and `Secure` when HTTPS; ID regenerated on login
 - Login rate limiting (5 failed attempts per IP per 15 minutes) against brute force
+- Security headers on JSON API and SPA responses: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies
 - Input validation and uniqueness checks server-side
 - Data-integrity rules: lots are claimed atomically (no double-booking), approval is what turns a held plot into an occupied one, burials require a reserved/occupied lot
-- Personal data minimized per the Data Privacy Act of 2012; audit trail retained
+- Audit trail of logins, logouts, and every create/update/approve/reject/delete, viewable by staff and admins
+- Personal data minimized per the Data Privacy Act of 2012; public memorial search and plot statuses are disclosed by design
+
+Known gaps before production (no MFA, no password reset, no retention/erasure
+workflow, no HSTS/script CSP, admin restore executes arbitrary SQL) are listed in
+[section 14 of the security guide](docs/security.md#14-known-limitations-and-accepted-risks).
 
 ## Conventions
 

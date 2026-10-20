@@ -75,9 +75,9 @@ Still open: Documents, concession/ownership records, record-level notes and expi
 
 ## Roles & permissions (RBAC) — from the study
 - **Administrator** (`admin`): everything — manage user/staff accounts, roles, permissions, access levels; approve/reject reservations; manage sections and lots; generate reports; backup/restore; view audit logs.
-- **Staff** (`staff`): process reservations, manage burial records, manage user accounts (view/update/status), generate reports.
+- **Staff** (`staff`): process reservations, manage burial records and payments, manage user accounts (view/update/status, non-admin only), generate reports including the audit log.
 - **Visitor/Client** (`user`): register, log in, view public cemetery map, make reservations, track reservation status, manage their registration info.
-- **Public** (not logged in): view cemetery map (available/occupied plots only); must log in to reserve.
+- **Public** (not logged in): view the cemetery map and plot statuses (available/reserved/occupied) and search interred memorials; must log in to reserve. No owner or next-of-kin details are exposed.
 
 `users.role` must become `ENUM('admin','staff','user')` (client).
 
@@ -106,19 +106,23 @@ RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{i
 Always respond with proper HTTP status codes; validate inputs server-side; never trust client input; RBAC enforced on every route, not just in the UI.
 
 ## Frontend pages/routes (match the study's interface figures)
-- Public: `/` (cemetery map, available/occupied plots, no login), `/login`, `/register`.
+- Public: `/` (cemetery map with available/reserved/occupied plot statuses, memorial search, no login), `/login`, `/register`.
 - Visitor (auth, role `user`): `/visitor/reserve`, `/visitor/reservations` (My Reservations), `/visitor/profile` (Registration Info).
 - Staff: `/staff` (Dashboard), `/staff/reservations`, `/staff/payments`, `/staff/burial-records`, `/staff/users`, `/staff/reports`.
 - Admin: `/admin` (Dashboard), `/admin/reservations`, `/admin/payments`, `/admin/burial-records`, `/admin/users`, `/admin/reports`, `/admin/sections`, `/admin/lots`, `/admin/settings` (backup/restore).
 - Guard routes by role; redirect unauthorized users; extend the existing `Layout.jsx` sidebar with role-aware navigation.
 
 ## Security (study + Data Privacy Act 2012)
-- Hash passwords with `password_hash()` / verify with `password_verify()`.
-- PDO prepared statements everywhere.
-- Server-side RBAC on every mutation and read endpoint.
-- Session-based auth with secure flags; CSRF protection on mutating requests.
+- Full controls, permission matrix, privacy inventory, deployment checklist, and accepted risks: `docs/security.md`. Keep it in sync with auth, routes, headers, personal-data fields, and backups.
+- Hash passwords with `password_hash()` / verify with `password_verify()`; minimum 8 characters.
+- PDO prepared statements everywhere (`ATTR_EMULATE_PREPARES` off); identifiers never come from request input.
+- Server-side RBAC on every mutation and read endpoint; ownership checks on a visitor's own records; never trust client-side route guards.
+- Session auth with `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS, and ID regeneration on login. CSRF token required on every `POST` except login/register.
 - Input validation/sanitization on client and server; uniqueness checks prevent duplicate users and double-booked lots.
-- Minimize collected personal data; restrict access by role; retain audit trail.
+- Security headers (`Core/Headers`): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies. HSTS and script/style CSP are deployment TODOs.
+- Audit trail for logins, logouts, and every create/update/approve/reject/delete; readable by staff and admins.
+- Minimize collected personal data; restrict access by role; document public disclosures (map statuses, memorial search); define retention/erasure before deployment.
+- Backup/restore is admin-only and audit-logged; import executes arbitrary SQL as the app DB user, so review files and use a least-privilege DB account.
 
 ## Conventions & quality bar
 - PHP: `declare(strict_types=1)`, PSR-4 `App\`, existing style.

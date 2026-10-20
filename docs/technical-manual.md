@@ -4,7 +4,9 @@
 Garden & Parks.
 
 For the end-user guide see [user-manual.md](user-manual.md); for the layered
-diagram reconciled with the study see [architecture.md](architecture.md).
+diagram reconciled with the study see [architecture.md](architecture.md); for
+the full security controls, privacy notes, and known risks see
+[security.md](security.md).
 
 ---
 
@@ -76,7 +78,7 @@ file may be absent; `DB_*` still come from the environment, e.g. compose).
 | `DB_DATABASE` | Database name | `cemetery_db` |
 | `DB_USERNAME` | MySQL user | `cemetery_user` |
 | `DB_PASSWORD` | MySQL password | `secret` |
-| `APP_ENV`, `APP_DEBUG` | Environment flags | `local`, `true` |
+| `APP_ENV`, `APP_DEBUG` | Reserved environment flags; the app does not read them (errors are always generic, details go to the server log) | `local`, `true` |
 
 Templates: `.env.example` (Docker/standalone) and `.env.xampp.example` (XAMPP).
 `.env` is git-ignored; a fresh clone has none.
@@ -286,28 +288,47 @@ validation error · `429` rate-limited · `500` server error.
 
 ## 8. Authentication, authorization, security
 
+The authoritative guide, including the full permission matrix, personal-data
+inventory, deployment checklist, and accepted risks, is
+[security.md](security.md). Summary:
+
 - **Passwords** are hashed with `password_hash()` (bcrypt) and checked with
-  `password_verify()`.
-- **Sessions** are PHP sessions with `HttpOnly`, `SameSite=Lax`, and `Secure`
-  when HTTPS; the session id is regenerated on login.
-- **CSRF** — an `X-CSRF-Token` header is required on every mutating request
-  except login/register. Invalid or missing → `419`. The client caches the token
-  and retries once automatically on `419`.
+  `password_verify()`; the minimum length is 8 characters.
+- **Sessions** are PHP sessions with `HttpOnly`, `SameSite=Lax`, `Path=/`,
+  `Secure` when `$_SERVER['HTTPS']` is set, and a zero lifetime (browser
+  session). The session id is regenerated on login/register; logout destroys
+  the session. There is no application-level idle timeout.
+- **CSRF** — an `X-CSRF-Token` header is required on every `POST` except
+  login/register. Invalid or missing → `419`. The client keeps the token in
+  memory (never `localStorage`) and retries once automatically on `419`.
 - **RBAC** — `Auth::requireRole([...])` guards each controller method, not just
-  the UI. Rules: only admins create accounts, change roles, delete accounts,
-  delete burial records, and use backup/restore; staff may edit visitor accounts
-  and activate/deactivate them, but cannot manage `admin` accounts; a visitor may
-  edit only their own profile; and no one may change their own role, deactivate
-  their own account, or delete themselves.
-- **Rate limiting** — 5 failed logins per IP per 15 minutes (`login_attempts`).
+  the UI. Only admins create accounts, change roles, delete accounts, delete
+  burial records and payments, manage sections/lots beyond updates, and use
+  backup/restore; staff may edit non-admin accounts and activate/deactivate
+  them, but cannot manage `admin` accounts; a visitor may edit only their own
+  profile. Nobody may change their own role, deactivate their own account, or
+  delete themselves. A visitor can read only their own reservation; `mine`
+  endpoints filter by `Auth::id()`.
+- **Rate limiting** — 5 failed logins per IP per 15 minutes (`login_attempts`),
+  then `429`. The limit is per IP only; registration and public search are not
+  throttled.
 - **Input validation & uniqueness** — server-side, per endpoint (unique email,
-  unique `lot_code`, valid dates, capacity, coordinates).
-- **Security headers** (`Core/Headers`): `X-Content-Type-Options`,
-  `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
-  `Content-Security-Policy: frame-ancestors 'none'`; plus `Vary:
-  Accept-Encoding` when compressing.
-- **Audit trail** — `audit_logs` records logins, logouts, and every
-  create/update/approve/reject/delete.
+  unique `lot_code`, valid dates/enums, capacity, coordinates). All SQL is
+  parameterized with emulated prepares disabled.
+- **Security headers** (`Core/Headers`): `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`,
+  `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Permissions-Policy: camera=(), microphone=(), geolocation=()`; plus `Vary:
+  Accept-Encoding` when compressing. HSTS and a script/style CSP are not set.
+  JSON `GET` responses add `Cache-Control: private, no-cache` and an `ETag`.
+- **Audit trail** — `audit_logs` records registration, logins, logouts, and
+  every create/update/approve/reject/delete, plus lot/section imports, regrids,
+  and backup export/import. The report is readable by **staff and admins**.
+- **Public read endpoints** — `/api/map`, `/api/lots*`, `/api/memorials` (and
+  `/api/lots/{id}/memorials`) require no session. The map includes reserved and
+  occupied plot statuses; the memorial search returns deceased name, date of
+  death, and plot/section for interred records (see
+  [security.md §12](security.md#12-personal-data-and-the-data-privacy-act-of-2012)).
 
 ## 9. Reports
 
