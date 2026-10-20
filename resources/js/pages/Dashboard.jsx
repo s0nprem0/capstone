@@ -11,7 +11,7 @@ const share = (count, total) => {
   if (!total || !count) return '0%'
   const pct = (count / total) * 100
   if (pct < 1) return '<1%'
-  // 6,715 of 6,735 is not all of them.
+  // 6,749 of 6,769 is not all of them.
   if (pct > 99 && count < total) return '>99%'
   return `${Math.round(pct)}%`
 }

@@ -3,7 +3,7 @@ import { LOT_STATUS, PLOT_STATUSES } from '../lib/terms'
 /**
  * How a set of plots divides between the three statuses, as one bar. A status
  * with any plots keeps a sliver however small its share, so three occupied
- * plots in 6,735 still show rather than rounding away to nothing.
+ * plots in 6,769 still show rather than rounding away to nothing.
  */
 export default function OccupancyBar({ counts: raw, large = false }) {
   // Counts can arrive from PDO as strings; summing those would concatenate.

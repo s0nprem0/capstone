@@ -121,7 +121,7 @@ layer the user never sees as "code", only as screens.
 
 `schema.sql` seeds the 66 numbered sections; `database/survey/lots.sql` (loaded by
 `make map-data`) adds the traced plots and brings the set to **70 sections and
-6,735 plots**, including two perimeter blocks, *North Strip A* and *North Strip B*.
+6,769 plots**, including two perimeter blocks, *North Strip A* and *North Strip B*.
 
 ## Deviations from the study diagram
 
