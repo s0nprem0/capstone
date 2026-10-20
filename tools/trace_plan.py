@@ -6,9 +6,10 @@ space, and cemetery-base.png redraws its line work on the same sheet. Each
 plot is a patch of paper enclosed by drawn lines, so the
 plots are found as the enclosed regions of a line mask, upright or rotated.
 They are then grouped into the plan's blocks (the areas between walks), rows
-are recovered within each block, gaps a faint or smudged line left are filled
-and merged pairs split, and every row is given to the circled section number
-the plan prints for it.
+are recovered within each block, rows the paper's fold crosses are re-cut along
+the block's own column lines, and every row is given to the circled section
+number the plan prints for it. The northern strips, which the clean drawing
+leaves undivided, are read off the scan as a grid of row and column lines.
 
     python3 tools/trace_plan.py report            # counts per block and section
     python3 tools/trace_plan.py preview out.png   # every plot, coloured by section
@@ -52,35 +53,50 @@ def box(x0, y0, x1, y1):
 
 # The drawn site. Anything outside it (title block, location inset, margins)
 # is never a plot. Its edges double as the lines the perimeter rows follow.
-SITE = sheet([(212, 120), (1000, 98), (1142, 101), (1477, 146), (1532, 385), (1834, 940),
+SITE = sheet([(212, 120), (1000, 98), (1142, 101), (1477, 146), (1572, 385), (1834, 940),
               (1380, 1502), (652, 1128), (642, 1196), (146, 1132), (188, 388)])
 
 # Circles the centres file lacks: the two perimeter sections.
 EXTRA_CENTRES = {1: (379.0, 1587.0), 2: (3107.0, 2638.0)}
 
 # Blocks: name, outline, how rows map to sections.
+#   fold    - the sheet was folded, and the fold down its east side crosses
+#             four blocks. It reads as a line in the photograph, and the clean
+#             drawing follows it in places, but it is never a plot's edge: the
+#             plot it runs through is drawn up to twice as wide as its
+#             neighbours where the paper buckled (plot 3 of section 66,
+#             numbered on the plan, is one). These are the block's column lines
+#             either side of it, read off the plan; every row is re-cut along
+#             them.
 #   rows    - rows top to bottom, shared out between the circled numbers in the
 #             block, `per` rows each, in order (the plan circles a section's
 #             number in its first row).
 #   columns - columns left to right, each going to the nearest circle by x.
 #   single  - the whole block is one section.
+#   grid    - one section, read straight off the photograph as a grid of row
+#             and column lines: the clean drawing outlines the northern strips
+#             but leaves them undivided, and their pencil grid is too dense
+#             and smudged to trace cell by cell (see trace_grid).
 BLOCKS = [
     {'name': 'north-a', 'outline': sheet([(545, 135), (1000, 106), (1145, 106), (1478, 148), (1490, 218), (545, 210)]),
-     'mode': 'single', 'section': 69, 'code': 'NA', 'scan': True},
+     'mode': 'grid', 'section': 69, 'code': 'NA', 'seed': sheet([(1200, 170)])[0]},
     {'name': 'north-b', 'outline': sheet([(595, 208), (1502, 224), (1534, 390), (766, 382)]),
-     'mode': 'single', 'section': 70, 'code': 'NB', 'scan': True},
+     'mode': 'grid', 'section': 70, 'code': 'NB', 'seed': sheet([(1100, 300)])[0]},
     {'name': 'west', 'outline': box(236, 410, 521, 793), 'mode': 'rows', 'sections': list(range(3, 12))},
     {'name': 'west-2', 'outline': box(523, 410, 818, 793), 'mode': 'rows', 'sections': list(range(12, 21))},
     {'name': 'chapel', 'outline': box(819, 612, 992, 793), 'mode': 'columns', 'sections': [21, 22, 23, 24]},
     {'name': 'crypts', 'outline': box(226, 794, 613, 1114), 'mode': 'rows', 'sections': list(range(25, 32))},
     {'name': 'crypts-2', 'outline': box(614, 794, 992, 1242), 'mode': 'rows', 'sections': list(range(32, 42))},
     {'name': 'east', 'outline': sheet([(940, 418), (1514, 420), (1602, 664), (985, 664)]),
-     'mode': 'rows', 'sections': list(range(42, 48))},
-    {'name': 'east-2', 'outline': box(999, 665, 1338, 990), 'mode': 'rows', 'sections': list(range(48, 56))},
+     'mode': 'rows', 'sections': list(range(42, 48)), 'fold': [2149, 2163, 2183, 2203, 2219]},
+    {'name': 'east-2', 'outline': box(999, 665, 1338, 990), 'mode': 'rows', 'sections': list(range(48, 56)),
+     'fold': [2150, 2166, 2183, 2206, 2226]},
     {'name': 'east-3', 'outline': sheet([(1339, 665), (1578, 665), (1722, 945), (1722, 990), (1339, 990)]),
      'mode': 'rows', 'sections': list(range(56, 64))},
-    {'name': 'south', 'outline': box(999, 991, 1722, 1102), 'mode': 'single', 'section': 65},
-    {'name': 'south-2', 'outline': box(999, 1103, 1612, 1207), 'mode': 'single', 'section': 66, 'regular': False},
+    {'name': 'south', 'outline': box(999, 991, 1722, 1102), 'mode': 'single', 'section': 65,
+     'fold': [2153, 2169, 2186, 2201, 2229]},
+    {'name': 'south-2', 'outline': box(999, 1103, 1612, 1207), 'mode': 'single', 'section': 66, 'regular': False,
+     'fold': [2190, 2250]},
     {'name': 'south-3', 'outline': box(999, 1208, 1548, 1306), 'mode': 'single', 'section': 67, 'regular': False},
     {'name': 'south-4', 'outline': box(1150, 1307, 1465, 1405), 'mode': 'single', 'section': 68, 'regular': False},
 ]
@@ -91,12 +107,21 @@ BLOCKS = [
 # centre line, read off the plan, since it follows no edge of the site.
 PERIMETER = [
     {'section': 1, 'path': SITE[10:11] + SITE[9:10] + SITE[8:9] + SITE[7:8] + SITE[6:7], 'band': (0, 120)},
-    {'section': 2, 'path': SITE[4:7], 'band': (0, 120)},
+    {'section': 2, 'path': sheet([(1532, 385), (1834, 940), (1380, 1502)]), 'band': (0, 120)},
     # The clean drawing leaves out several of this row's dividers; read the scan.
     {'section': 64, 'path': sheet([(1583, 672), (1733, 938)]), 'band': (0, 75), 'scan': True},
 ]
 
 PERIMETER_SECTIONS = {p['section'] for p in PERIMETER}
+
+# Ground inside a block's outline that the plan does not divide into plots:
+# the two wedges between section 31's last row and the walk, where notes are
+# written in. Their strokes close off cells the trace would take for plots.
+# Outlines as the clean drawing closes them off.
+NOT_PLOTS = [
+    [(499, 2194), (584, 2194), (585, 2191), (755, 2187), (755, 2231)],
+    [(758, 2230), (904, 2225), (934, 2227), (936, 2224), (1001, 2222), (1001, 2266)],
+]
 
 SECTION_NAMES = {69: 'North Strip A', 70: 'North Strip B'}
 SECTION_NOTES = {
@@ -108,7 +133,7 @@ SECTION_NOTES = {
 }
 
 PRICE = 45000.00
-# The most plots a gap in a row is filled with.
+# The most plots a gap in a perimeter row is filled with.
 MAX_FILL = 4
 # A drawn line's width: what separates a plot put back by the trace from its
 # neighbours, as the line it stands in for would have.
@@ -129,16 +154,13 @@ def photo_lines(gray):
 
 
 def line_mask(gray):
-    """The clean drawing's lines, plus the scan's inside the blocks the clean
-    drawing outlines but does not divide into plots (the northern strips)."""
+    """The clean drawing's lines, plus the scan's along the perimeter rows the
+    clean drawing leaves partly undivided."""
     clean = cv2.imread(str(CLEAN), cv2.IMREAD_GRAYSCALE)
     # Thin, anti-aliased strokes: a pixel of thickening closes the hairline
     # gaps that let a block's edge plots leak into the walk outside.
     lines = cv2.dilate((clean < 200).astype(np.uint8) * 255, np.ones((3, 3), np.uint8))
     scan_only = np.zeros_like(gray)
-    for b in BLOCKS:
-        if b.get('scan'):
-            cv2.fillPoly(scan_only, [np.array(b['outline'], np.int32)], 255)
     for p in PERIMETER:
         if p.get('scan'):
             cv2.polylines(scan_only, [np.array(p['path'], np.int32)], False, 255, 2 * p['band'][1])
@@ -193,6 +215,225 @@ def find_cells(gray):
             outline = np.array(plot_outline(contour, (x, y), 2.5))
             cells.append(make_polygon(outline, filled_px) | {'traced': True})
     return drop_nested(cells)
+
+
+def local_peaks(profile, floor, spread):
+    """Local maxima above `floor`, strongest first, at least `spread` apart."""
+    found = [i for i in range(1, len(profile) - 1)
+             if profile[i] > floor and profile[i] >= profile[i - 1] and profile[i] > profile[i + 1]]
+    kept = []
+    for i in sorted(found, key=lambda i: -profile[i]):
+        if all(abs(i - k) >= spread for k in kept):
+            kept.append(i)
+    return sorted(kept)
+
+
+def follow_rows(soft, inside):
+    """A strip's row lines, each as {x: y}. Found as horizontal strokes in short
+    slabs along the strip, linked slab to slab where they continue, then
+    snapped to the stroke pixel by pixel. Only strictly inside the strip: its
+    own boundary cuts across the rows at a slanted end and would be taken for
+    a row line where it crosses one."""
+    core = cv2.erode(inside, np.ones((7, 7), np.uint8))
+    h = cv2.morphologyEx(soft, cv2.MORPH_OPEN, np.ones((1, 25), np.uint8)).astype(np.float32) * core
+    hb = cv2.blur(h, (1, 3))
+    xs = np.nonzero(inside.any(0))[0]
+    x0, x1 = int(xs.min()), int(xs.max())
+    half, step = 40, 50
+    tracks = []
+    for c in range(x0 + half, x1 - half + 1, step):
+        profile = np.convolve(h[:, c - half:c + half].sum(1), np.ones(3) / 3, 'same')
+        for p in local_peaks(profile, 0.35 * 2 * half, 8):
+            best = None
+            for t in tracks:
+                lx, ly = t[-1]
+                if 0 < c - lx <= 4 * step and abs(ly - p) <= 5 and (best is None or abs(ly - p) < abs(best[-1][1] - p)):
+                    best = t
+            if best is not None:
+                best.append((c, float(p)))
+            else:
+                tracks.append([(c, float(p))])
+    lines = []
+    for t in tracks:
+        if len(t) < 2:
+            continue
+        tx = np.array([q[0] for q in t], float)
+        ty = np.array([np.median([q[1] for q in t[max(0, i - 1):i + 2]]) for i in range(len(t))])
+        line = {}
+        for x in range(max(x0, int(tx[0]) - half), min(x1, int(tx[-1]) + half) + 1):
+            y = int(round(float(np.interp(x, tx, ty))))
+            window = hb[y - 2:y + 3, x]
+            line[x] = y - 2 + int(np.argmax(window)) if window.max() > 0 else float(y)
+        keys = sorted(line)
+        smooth = np.convolve(np.pad([line[k] for k in keys], 3, mode='edge'), np.ones(7) / 7, 'valid')
+        lines.append(dict(zip(keys, smooth.tolist())))
+    return lines, h
+
+
+def merge_doubled(cuts):
+    """One stroke gone over twice reads as two lines a few pixels apart."""
+    out = []
+    for x in cuts:
+        if out and x - out[-1][-1] < 5:
+            out[-1].append(x)
+        else:
+            out.append([x])
+    return [float(np.mean(g)) for g in out]
+
+
+def trace_grid(gray, clean, seed):
+    """Every plot of a northern strip, as rows of cells between the row lines
+    the strip draws and the column lines each row draws.
+
+    The strip is the paper the clean drawing closes off round `seed`. Columns
+    are read per row, since rows start and stop at different places. Where the
+    fold's smudge hides a column line, the gap is shared out at the row's own
+    spacing; where a row runs out to the strip's slanted east end, the plots cut
+    by it are kept, clipped to the strip."""
+    inside = cv2.erode((clean >= 200).astype(np.uint8), np.ones((3, 3), np.uint8))
+    _, lab = cv2.connectedComponents(inside, connectivity=4)
+    inside = (lab == lab[seed[1], seed[0]]).astype(np.uint8)
+    g = cv2.createCLAHE(3.0, (32, 32)).apply(gray)
+    contrast = cv2.blur(g.astype(np.float32), (31, 31)) - g
+    soft = (contrast > 10).astype(np.uint8)
+    ink = (contrast > 28).astype(np.uint8)
+    rows, hmask = follow_rows(soft, inside)
+    vmask = cv2.morphologyEx(ink, cv2.MORPH_OPEN, np.ones((20, 1), np.uint8)).astype(np.float32)
+    vsoft = cv2.morphologyEx(soft, cv2.MORPH_OPEN, np.ones((20, 1), np.uint8)).astype(np.float32)
+    xs = np.nonzero(inside.any(0))[0]
+    x0, x1 = int(xs.min()), int(xs.max())
+    top = {x: int(np.nonzero(inside[:, x])[0].min()) for x in range(x0, x1 + 1)}
+    bottom = {x: int(np.nonzero(inside[:, x])[0].max()) for x in range(x0, x1 + 1)}
+
+    def edges_at(x):
+        found = [('top', top[x] - 1)]
+        found += [(i, r[x]) for i, r in enumerate(rows) if x in r and top[x] + 5 < r[x] < bottom[x] - 5]
+        found.append(('bottom', bottom[x] + 1))
+        return sorted(found, key=lambda e: e[1])
+
+    heights = [b[1] - a[1] for x in range(x0, x1 + 1, 20) for a, b in zip(edges_at(x), edges_at(x)[1:]) if b[1] - a[1] > 20]
+    height = float(np.median(heights))
+
+    def rows_at(x):
+        # Where a row line is too faint to follow, two rows read as one band;
+        # cut it where the line runs, as an even share of the band.
+        e = edges_at(x)
+        out = [e[0]]
+        for (ka, ya), (kb, yb) in zip(e, e[1:]):
+            k = round((yb - ya) / height)
+            if k >= 2 and abs((yb - ya) / k - height) < 0.2 * height:
+                out += [((ka, kb, j), ya + j * (yb - ya) / k) for j in range(1, k)]
+            out.append((kb, yb))
+        return out
+
+    bands = {}
+    for x in range(x0, x1 + 1):
+        e = rows_at(x)
+        for (ka, ya), (kb, yb) in zip(e, e[1:]):
+            # A band thinner than half a row is the margin between the strip's
+            # outline and its grid, not a row of plots.
+            if yb - ya >= 0.5 * height:
+                bands.setdefault((ka, kb), {})[x] = (ya, yb)
+
+    out = []
+    for (ka, kb), cols in bands.items():
+        if len(cols) < 10:
+            continue
+        at = sorted(cols)
+        cover = np.array([vmask[int(round(cols[x][0] + 4)):int(round(cols[x][1] - 4)), x].mean() for x in at])
+        runs, i = [], 0
+        while i < len(cover):
+            if cover[i] > 0.5:
+                j = i
+                while j + 1 < len(cover) and cover[j + 1] > 0.5 and at[j + 1] == at[j] + 1:
+                    j += 1
+                runs.append((at[i], at[j]))
+                i = j + 1
+            else:
+                i += 1
+        faint = np.array([vsoft[int(round(cols[x][0] + 4)):int(round(cols[x][1] - 4)), x].mean() for x in at])
+
+        def snap(x, reach=4):
+            near = [i for i, c in enumerate(at) if abs(c - x) <= reach]
+            if not near:
+                return x
+            best = max(near, key=lambda i: faint[i])
+            return float(at[best]) if faint[best] > 0.5 else x
+
+        # A doubled or heavy stroke is still one line; anything far wider is
+        # the fold's smudge, under which the lines are lost.
+        cuts = [(a + b) / 2 for a, b in runs if b - a <= 14]
+        hidden = [(a, b) for a, b in runs if b - a > 14]
+        gaps = [d for d in np.diff(cuts) if 9 <= d <= 30]
+        if len(gaps) < 3:
+            continue
+        spacing = float(np.median(gaps))
+        cuts = merge_doubled(cuts)
+        spans = []
+        for a, b in zip(cuts, cuts[1:]):
+            k = max(1, round((b - a) / spacing))
+            smudged = any(ha < b and hb_ > a for ha, hb_ in hidden)
+            # Every drawn column is a plot, however narrow: the plan draws
+            # narrow ones between its groups, as the blocks do.
+            if k <= 1 and b - a <= 1.45 * spacing:
+                # Wider than a plot with a pencil divider down its middle: two
+                # plots the ink alone missed the line between. Only near the
+                # middle, clear of each plot's own inner pencil box.
+                mid = snap((a + b) / 2, 0.15 * (b - a)) if b - a >= 1.25 * spacing else None
+                if mid is not None and mid != (a + b) / 2:
+                    spans += [(a, mid), (mid, b)]
+                else:
+                    spans.append((a, b))
+            elif 2 <= k <= (5 if smudged else 3) and abs((b - a) / k - spacing) < 0.25 * spacing:
+                # The lines are there under the smudge, only fainter: put each
+                # cut on the strongest pencil stroke near its share of the gap.
+                inner = [snap(a + j * (b - a) / k) for j in range(1, k)]
+                edges = [a] + inner + [b]
+                spans += list(zip(edges, edges[1:]))
+        # The row runs on past its first or last column line to the strip's own
+        # edge: the plots there are bounded by the outline, or cut by the
+        # slanted east end. Only where the row's own lines carry on.
+        def ruled(xa, xb):
+            # Both of the row's lines, where it has two: under a short row
+            # the strip's paper runs on blank, bounded by one line only.
+            bounds = [j for j in (0, 1) if isinstance((ka, kb)[j], int)]
+            hits = [all(hmask[int(round(cols[x][j])) - 3:int(round(cols[x][j])) + 4, x].max() > 0 for j in bounds)
+                    for x in range(int(xa) + 1, int(xb)) if x in cols]
+            return bool(hits) and np.mean(hits) > 0.6
+        if cuts:
+            for start, end, outward in ((cuts[-1], at[-1] + 1 + LINE, 1), (at[0] - 1 - LINE, cuts[0], -1)):
+                run = end - start
+                if 0.5 * spacing <= run <= 2.6 * spacing and ruled(start, end):
+                    k = max(1, round(run / spacing))
+                    spans += [(start + j * run / k, start + (j + 1) * run / k) for j in range(k)]
+        cells = []
+        for a, b in spans:
+            pa = min(at, key=lambda x: abs(x - a))
+            pb = min(at, key=lambda x: abs(x - b))
+            quad = np.array([[a + LINE / 2, cols[pa][0] + LINE / 2], [b - LINE / 2, cols[pb][0] + LINE / 2],
+                             [b - LINE / 2, cols[pb][1] - LINE / 2], [a + LINE / 2, cols[pa][1] - LINE / 2]], np.float32)
+            mask = np.zeros_like(inside)
+            cv2.fillPoly(mask, [np.round(quad).astype(np.int32)], 1)
+            mask &= inside
+            area = int(mask.sum())
+            if area < 0.4 * spacing * height:
+                continue
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            outline = np.array(plot_outline(max(contours, key=cv2.contourArea), (0, 0), 1.0))
+            ox, oy = outline[:, 0], outline[:, 1]
+            if area >= 0.9 * (ox.max() - ox.min() + 1) * (oy.max() - oy.min() + 1):
+                cell = make_cell((ox.min() + ox.max()) / 2, (oy.min() + oy.max()) / 2,
+                                 ox.max() - ox.min(), oy.max() - oy.min(), 0, area)
+            else:
+                cell = make_polygon(outline, area)
+            cells.append(cell | {'traced': True})
+        if cells:
+            out.append(sorted(cells, key=lambda c: c['cx']))
+    out.sort(key=lambda r: float(np.median([c['cy'] for c in r])))
+    for index, row in enumerate(out):
+        for c in row:
+            c['row'] = index
+    return out
 
 
 def plot_outline(contour, offset, tolerance):
@@ -328,35 +569,48 @@ def merge_slivers(row, width):
     return out
 
 
-def regularise_row(row, repair=True):
-    """Within one row: split cells a missing line merged, and (when repairing a
-    block read from the scan) fill gaps a broken line opened."""
+def drawn_dividers(c, width, dark):
+    """The photograph's own vertical lines inside a cell the clean drawing left
+    whole, each leaving most of a plot either side: what a line missing from
+    the redraw left."""
+    x0, x1 = c['cx'] - c['w'] / 2, c['cx'] + c['w'] / 2
+    y0, y1 = int(c['cy'] - c['h'] / 2) + 4, int(c['cy'] + c['h'] / 2) - 3
+    a, b = int(x0 + 0.6 * width), int(x1 - 0.6 * width)
+    if b <= a or y1 <= y0:
+        return []
+    cover = dark[y0:y1, a:b].mean(0)
+    cuts = []
+    for i, v in enumerate(cover):
+        if v >= 0.6 and v == cover[max(0, i - 3):i + 4].max() and (not cuts or a + i - cuts[-1] > 0.5 * width):
+            cuts.append(float(a + i))
+    return cuts
+
+
+def regularise_row(row, dark=None):
+    """Within one row: split cells a missing line merged."""
     row = sorted(row, key=lambda c: c['cx'])
     width = float(np.median([c['w'] for c in row]))
     height = float(np.median([c['h'] for c in row]))
     row = merge_slivers(row, width)
     out = []
     for c in row:
+        cuts = drawn_dividers(c, width, dark) if dark is not None and c['w'] >= 1.4 * width and not c.get('polygon') else []
+        if cuts:
+            edges = [c['cx'] - c['w'] / 2 - LINE / 2] + cuts + [c['cx'] + c['w'] / 2 + LINE / 2]
+            out += [make_cell((a + b) / 2, c['cy'], b - a - LINE, c['h'], 0) | {'traced': True}
+                    for a, b in zip(edges, edges[1:])]
+            continue
         k = round(c['w'] / width)
-        if k >= 2 and abs(c['w'] / k - width) < 0.3 * width:
+        # Only about a whole number of plots: a plot drawn half as wide again
+        # as its neighbours (the one a fold in the paper runs through) is one
+        # plot, not two halves.
+        if k >= 2 and abs(c['w'] / k - width) < 0.15 * width:
             left = c['cx'] - c['w'] / 2
             for j in range(k):
                 out.append(make_cell(left + (j + 0.5) * c['w'] / k, c['cy'], c['w'] / k - LINE, c['h'], 0))
         else:
             out.append(c)
-    if not repair:
-        return out
-    filled = [out[0]]
-    for a, b in zip(out, out[1:]):
-        gap = (b['cx'] - b['w'] / 2) - (a['cx'] + a['w'] / 2)
-        k = round(gap / width)
-        # Up to a few plots: a wider gap is a path or the row's end, not a smudge.
-        if 1 <= k <= MAX_FILL and abs(gap / k - width) < 0.35 * width:
-            left = a['cx'] + a['w'] / 2
-            for j in range(k):
-                filled.append(make_cell(left + (j + 0.5) * gap / k, (a['cy'] + b['cy']) / 2, gap / k - LINE, height, 0))
-        filled.append(b)
-    return filled
+    return out
 
 
 def split_tall(cells, height):
@@ -364,7 +618,7 @@ def split_tall(cells, height):
     out = []
     for c in cells:
         k = round(c['h'] / height)
-        if k >= 2 and abs(c['h'] / k - height) < 0.25 * height:
+        if k >= 2 and abs(c['h'] / k - height) < 0.15 * height:
             top = c['cy'] - c['h'] / 2
             out += [make_cell(c['cx'], top + (j + 0.5) * c['h'] / k, c['w'], c['h'] / k - LINE, 0) for j in range(k)]
         else:
@@ -427,43 +681,11 @@ def row_slope(cells):
     return max(np.linspace(-0.05, 0.05, 201), key=sharpness)
 
 
-def fill_columns(rows, slope):
-    """Put back plots a row is missing where the rows either side have one.
-
-    A block's plots line up in columns, so a gap in a row with a plot above it
-    and below it at the same place is a plot the trace missed: a circled
-    number or a digit drawn over it, more often than a smudged line. Only
-    inside the row's own extent, so a block's stepped edge is left as drawn.
-    """
-    def overlaps(c, x0, x1):
-        return min(c['cx'] + c['w'] / 2, x1) - max(c['cx'] - c['w'] / 2, x0) > 0.3 * (x1 - x0)
-
-    out = []
-    for i, row in enumerate(rows):
-        left = min(c['cx'] - c['w'] / 2 for c in row)
-        right = max(c['cx'] + c['w'] / 2 for c in row)
-        ry = float(np.median([c['cy'] - slope * c['cx'] for c in row]))
-        height = float(np.median([c['h'] for c in row]))
-        above = rows[i - 1] if i > 0 else []
-        below = rows[i + 1] if i + 1 < len(rows) else []
-        added = list(row)
-        for n in above:
-            x0, x1 = n['cx'] - n['w'] / 2, n['cx'] + n['w'] / 2
-            if x0 < left - 0.2 * n['w'] or x1 > right + 0.2 * n['w']:
-                continue
-            if any(overlaps(c, x0, x1) for c in added):
-                continue
-            if not any(overlaps(m, x0, x1) for m in below):
-                continue
-            added.append(make_cell(n['cx'], ry + slope * n['cx'], n['w'], height, 0))
-        out.append(sorted(added, key=lambda c: c['cx']))
-    return out
-
-
-def rows_of(cells, repair=False):
-    """Rows of a block, top to bottom. `repair` fills plots a smudged or hidden
-    line lost; only the blocks read from the scan need it. In the clean
-    drawing a gap is a gap, and filling it squeezed slivers between plots."""
+def rows_of(cells, dark=None):
+    """Rows of a block, top to bottom. A gap is left as drawn: in the clean
+    drawing a gap is a gap, and filling it squeezed slivers between plots.
+    `dark` is the photograph's strokes, which say where to cut a cell the
+    redraw left a line out of."""
     height = float(np.median([c['h'] for c in cells]))
     cells = split_tall(cells, height)
     slope = row_slope(cells)
@@ -474,13 +696,43 @@ def rows_of(cells, repair=False):
     # A sliver of a row is where a walk's edge line wobbles, not plots.
     rows = [r for r in rows if np.median([c['h'] for c in r]) >= 0.6 * height]
     rows = [r for r in rows if len(r) >= 2 or r[0]['area'] > 0.6 * height * height]
-    rows = [regularise_row(r, repair) for r in sorted(rows, key=lambda r: np.mean([c['ry'] for c in r]))]
-    if repair:
-        rows = fill_columns(rows, slope)
+    rows = [regularise_row(r, dark) for r in sorted(rows, key=lambda r: np.mean([c['ry'] for c in r]))]
     for index, row in enumerate(rows):
         for c in row:
             c['row'] = index
     return rows
+
+
+def refold(row, lines, dark):
+    """Re-cut a row's plots across the fold along the block's own column lines,
+    each found in the row itself within a few pixels of where the block has
+    it: a hand-ruled line wanders that far from top to bottom of a block."""
+    if not row:
+        return row
+    near = [c for c in row if lines[0] < c['cx'] < lines[-1] and is_upright(c) and not c.get('polygon')]
+    if not near:
+        return row
+    top = float(np.median([c['cy'] - c['h'] / 2 for c in near]))
+    bottom = float(np.median([c['cy'] + c['h'] / 2 for c in near]))
+    band = dark[int(top) + 4:int(bottom) - 3]
+    found = []
+    for x in lines:
+        cover = band[:, x - 5:x + 6].mean(0)
+        found.append(x - 5 + float(np.argmax(cover)) if cover.max() >= 0.4 else float(x))
+    keep = {'row': near[0]['row']} if 'row' in near[0] else {}
+    # Drawn wider only where the paper buckled: sold as the row's other plots are.
+    others = [c['area'] for c in row if c not in near]
+    keep['sold_as'] = float(np.median(others)) if others else None
+    cut = [make_cell((a + b) / 2, (top + bottom) / 2, b - a - LINE, bottom - top, 0) | {'traced': True} | keep
+           for a, b in zip(found, found[1:])]
+    return sorted([c for c in row if c not in near] + cut, key=lambda c: c['cx'])
+
+
+def rows_by_y(cells):
+    """Rows of a block of large plots drawn one by one: plots whose centres
+    share a band a plot tall."""
+    h = float(np.median([c['h'] for c in cells]))
+    return [[cells[i] for i in g] for g in cluster([c['cy'] for c in cells], 0.5 * h)]
 
 
 def assign_rows(rows, sections, centres):
@@ -533,10 +785,20 @@ def build():
     centres = {int(k): tuple(v) for k, v in json.loads(CENTRES.read_text()).items()}
     centres.update(EXTRA_CENTRES)
     cells = find_cells(gray)
+    # Drawn strokes, ink or pencil: well darker than the paper round them.
+    paper = cv2.blur(gray.astype(np.float32), (31, 31))
+    dark = ((paper - gray) > 8).astype(np.float32)
 
     sections, report = {}, []
     left = []
+    grids = [b for b in BLOCKS if b['mode'] == 'grid']
+    cells = [c for c in cells if not any(inside(b['outline'], c['cx'], c['cy']) for b in grids)]
     for c in cells:
+        # A plot in a block whose hand-drawn lines lean a few degrees is still
+        # one of the block's upright plots, not a perimeter plot.
+        if not c.get('polygon') and UPRIGHT <= abs(c['angle']) < 2 * UPRIGHT and \
+                any(inside(b['outline'], c['cx'], c['cy']) for b in BLOCKS):
+            c.update(make_cell(c['cx'], c['cy'], c['w'], c['h'], 0, c['area']))
         for b in BLOCKS:
             # Irregular plots belong to the blocks of large plots drawn one by one;
             # in a gridded block one is a neighbouring perimeter plot poking in.
@@ -547,14 +809,24 @@ def build():
         else:
             left.append(c)
 
+    clean = cv2.imread(str(CLEAN), cv2.IMREAD_GRAYSCALE)
     for b in BLOCKS:
         bc = b.get('cells', [])
-        if b['mode'] == 'single':
+        bc = [c for c in bc if not any(inside(area, c['cx'], c['cy']) for area in NOT_PLOTS)]
+        if b['mode'] == 'grid':
+            rows = trace_grid(gray, clean, b['seed'])
+            groups = [(b['section'], [c for r in rows for c in r])]
+            bc = groups[0][1]
+        elif b['mode'] == 'single':
             # Blocks of large plots are drawn individually; there is no grid to repair.
-            rows = rows_of(bc, repair=b.get('scan', False)) if b.get('regular', True) else [bc]
+            rows = rows_of(bc, dark=dark) if b.get('regular', True) else rows_by_y(bc)
+            if b.get('fold'):
+                rows = [refold(r, b['fold'], dark) for r in rows]
             groups = [(b['section'], [c for r in rows for c in r])]
         elif b['mode'] == 'rows':
-            rows = rows_of(bc, repair=b.get('scan', False))
+            rows = rows_of(bc, dark=dark)
+            if b.get('fold'):
+                rows = [refold(r, b['fold'], dark) for r in rows]
             groups = assign_rows(rows, b['sections'], centres)
         else:
             groups = assign_columns(bc, b['sections'], centres)
@@ -622,7 +894,7 @@ def code_prefix(s):
 
 
 def lot_type(c, standard):
-    ratio = c['area'] / standard
+    ratio = (c.get('sold_as') or c['area']) / standard
     return 'family' if ratio >= FAMILY_AT else 'double' if ratio >= DOUBLE_AT else 'single'
 
 
