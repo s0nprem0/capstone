@@ -68,7 +68,7 @@ rest are the numbered `Section 3`–`Section 68` rows.
 
 22 reservations covering every status the schema allows — 3 awaiting approval,
 17 approved, 2 rejected. 4 burial records, 3 interred and 1 scheduled. 9 users,
-one of them inactive. 20 audit-log entries.
+one of them inactive. 63 audit-log entries.
 
 The rows are internally consistent on purpose, because the obvious question
 about a coloured plot is what is behind it:
