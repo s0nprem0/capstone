@@ -106,27 +106,36 @@ BLOCKS = [
 # Section 64 is the inner row along the east walk; its path is the row's own
 # centre line, read off the plan, since it follows no edge of the site.
 PERIMETER = [
-    {'section': 1, 'path': SITE[10:11] + SITE[9:10] + SITE[8:9] + SITE[7:8] + SITE[6:7], 'band': (0, 120)},
-    {'section': 2, 'path': sheet([(1532, 385), (1834, 940), (1380, 1502)]), 'band': (0, 120)},
+    # The plan numbers its plots: Section 1 runs 1-34 down the west wall and
+    # along the south wall to the corner by Section 31; Section 2 runs 1-64
+    # down the east wall, round the bottom corner and back up the diagonal to
+    # that same corner.
+    {'section': 1, 'path': SITE[10:11] + SITE[9:10] + SITE[8:9] + SITE[7:8], 'band': (0, 120)},
+    # The clean drawing leaves out two of this row's dividers (between 19 and 20
+    # at the bend, and between 24 and 25); read the scan.
+    # Only as deep as the row, so the scan's digits never reach the blocks inside.
+    {'section': 2, 'path': sheet([(1532, 385), (1834, 940), (1380, 1502)]) + SITE[7:8], 'band': (0, 120),
+     'scan': True, 'scan_reach': 100},
     # The clean drawing leaves out several of this row's dividers; read the scan.
     {'section': 64, 'path': sheet([(1583, 672), (1733, 938)]), 'band': (0, 75), 'scan': True},
 ]
 
 PERIMETER_SECTIONS = {p['section'] for p in PERIMETER}
 
-# Ground inside a block's outline that the plan does not divide into plots:
-# the two wedges between section 31's last row and the walk, where notes are
-# written in. Their strokes close off cells the trace would take for plots.
-# Outlines as the clean drawing closes them off.
+# Drawn cells that are not plots: the two wedges between section 31's last
+# row and the walk, where notes are written in, and the corner piece at the
+# north end of Section 2, which the plan leaves unnumbered (its plot 1 is the
+# next one down). Outlines as the clean drawing closes them off.
 NOT_PLOTS = [
     [(499, 2194), (584, 2194), (585, 2191), (755, 2187), (755, 2231)],
     [(758, 2230), (904, 2225), (934, 2227), (936, 2224), (1001, 2222), (1001, 2266)],
+    [(3115, 770), (3205, 770), (3205, 856), (3115, 856)],
 ]
 
 SECTION_NAMES = {69: 'North Strip A', 70: 'North Strip B'}
 SECTION_NOTES = {
-    1: 'Perimeter row along the west and south walls',
-    2: 'Perimeter row along the east wall',
+    1: 'Perimeter row along the west wall and the south wall',
+    2: 'Perimeter row along the east wall and the south-east diagonal',
     64: 'Inner row along the east walk',
     69: 'Northern strip by the 8.00 m road; not numbered on the survey plan',
     70: 'Second northern strip; not numbered on the survey plan',
@@ -163,7 +172,8 @@ def line_mask(gray):
     scan_only = np.zeros_like(gray)
     for p in PERIMETER:
         if p.get('scan'):
-            cv2.polylines(scan_only, [np.array(p['path'], np.int32)], False, 255, 2 * p['band'][1])
+            reach = p.get('scan_reach', p['band'][1])
+            cv2.polylines(scan_only, [np.array(p['path'], np.int32)], False, 255, 2 * reach)
     scan_only = cv2.erode(scan_only, np.ones((7, 7), np.uint8))
     scan = photo_lines(gray)
     # The clean drawing is serpentine paths, which along a block's outer edge
@@ -792,7 +802,8 @@ def build():
     sections, report = {}, []
     left = []
     grids = [b for b in BLOCKS if b['mode'] == 'grid']
-    cells = [c for c in cells if not any(inside(b['outline'], c['cx'], c['cy']) for b in grids)]
+    cells = [c for c in cells if not any(inside(b['outline'], c['cx'], c['cy']) for b in grids)
+             and not any(inside(area, c['cx'], c['cy']) for area in NOT_PLOTS)]
     for c in cells:
         # A plot in a block whose hand-drawn lines lean a few degrees is still
         # one of the block's upright plots, not a perimeter plot.
@@ -812,7 +823,6 @@ def build():
     clean = cv2.imread(str(CLEAN), cv2.IMREAD_GRAYSCALE)
     for b in BLOCKS:
         bc = b.get('cells', [])
-        bc = [c for c in bc if not any(inside(area, c['cx'], c['cy']) for area in NOT_PLOTS)]
         if b['mode'] == 'grid':
             rows = trace_grid(gray, clean, b['seed'])
             groups = [(b['section'], [c for r in rows for c in r])]
@@ -837,15 +847,13 @@ def build():
 
     unplaced = []
     for c in left:
-        placed = False
-        for p in PERIMETER:
-            d, at, seg = distance_along(p['path'], c['cx'], c['cy'])
-            if p['band'][0] <= d < p['band'][1]:
-                c['along'], c['seg'] = at, seg
-                sections.setdefault(p['section'], []).append(c)
-                placed = True
-                break
-        if not placed:
+        # The nearest row, not the first: Sections 1 and 2 meet at a corner.
+        fits = [(d, at, seg, p) for p in PERIMETER for d, at, seg in [distance_along(p['path'], c['cx'], c['cy'])]
+                if p['band'][0] <= d < p['band'][1]]
+        if fits:
+            _, c['along'], c['seg'], p = min(fits, key=lambda f: f[0])
+            sections.setdefault(p['section'], []).append(c)
+        else:
             unplaced.append(c)
 
     for s in sections:

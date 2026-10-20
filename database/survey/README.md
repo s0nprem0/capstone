@@ -66,7 +66,7 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
 ## Coverage
 
-70 sections, 6,734 plots: every block the plan draws.
+70 sections, 6,735 plots: every block the plan draws.
 
 | Area | Sections | Notes |
 |---|---|---|
@@ -76,7 +76,7 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 | East blocks | 42-63, 65 | |
 | South blocks | 66-68 | Large plots, kept as drawn, end plots as outlines. |
 | Inner east row | 64 | |
-| Perimeter | 1 (west and south), 2 (east) | Circled on the plan, missing from the old seed. |
+| Perimeter | 1 (west and south), 2 (east and south-east) | Circled on the plan, missing from the old seed. Section 1 is plots 1-34 down the west wall and along the south wall; Section 2 is plots 1-64 down the east wall and back up the south-east diagonal. Codes match the numbers printed in the plots. |
 | Northern strips | 69, 70 | No circled number on the plan. Named North Strip A and B and coded `NA-`, `NB-`; the section numbers are internal. |
 
 ## What to check against the plan
@@ -84,8 +84,9 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 - **Section boundaries within a block.** Rows are shared out evenly; where a
   block's row count does not divide by its sections, which section gets the
   odd row is the tracer's best fit, not something the plan states.
-- **Lot numbers.** The plan's own numbering (the small figures in the plots and
-  the numbers in the perimeter rows) is not read. Codes follow position.
+- **Lot numbers.** Codes follow position. In the perimeter sections that is
+  the plan's own numbering (checked plot by plot for Sections 1 and 2); in the
+  blocks the small figures in the plots are not read.
 - **Lot type.** A plot over 1.7x the median area is a double, over 3.2x a
   family plot. The cemetery may sell them differently.
 - **North strips under the pencil crosses.** About 45 column lines in the
