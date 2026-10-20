@@ -47,7 +47,7 @@ build:
 migrate:
 	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
 
-# Loads the surveyed map: the 70 sections and the 6748 plots traced off the plan
+# Loads the surveyed map: the 70 sections and the 6734 plots traced off the plan
 # in public/traces/survey-lines.png. Kept out of schema.sql because it is
 # thousands of rows of surveyed geometry rather than a definition of the
 # database, and the plan can be re-traced without the schema moving.
