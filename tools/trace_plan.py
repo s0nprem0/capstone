@@ -61,13 +61,15 @@ EXTRA_CENTRES = {1: (379.0, 1587.0), 2: (3107.0, 2638.0)}
 
 # Blocks: name, outline, how rows map to sections.
 #   fold    - the sheet was folded, and the fold down its east side crosses
-#             four blocks. It reads as a line in the photograph, and the clean
-#             drawing follows it in places, but it is never a plot's edge: the
-#             plot it runs through is drawn up to twice as wide as its
-#             neighbours where the paper buckled (plot 3 of section 66,
-#             numbered on the plan, is one). These are the block's column lines
-#             either side of it, read off the plan; every row is re-cut along
-#             them.
+#             four blocks, where it blurs the column lines into one wide cell.
+#             These are the block's column lines either side of it, read off
+#             the plan; every row is re-cut along them.
+#   crease  - in this block the blur also hides a divider, so the widest cell
+#             across the fold is two plots. The plan's own
+#             numbering says so: without the cut, every printed 10, 20, 30...
+#             east of the fold lands one plot early, and the shortfall carries
+#             into the section's next row. Not so in Section 66, where the plan
+#             prints a single plot 3 across the fold.
 #   rows    - rows top to bottom, shared out between the circled numbers in the
 #             block, `per` rows each, in order (the plan circles a section's
 #             number in its first row).
@@ -88,13 +90,13 @@ BLOCKS = [
     {'name': 'crypts', 'outline': box(226, 794, 613, 1114), 'mode': 'rows', 'sections': list(range(25, 32))},
     {'name': 'crypts-2', 'outline': box(614, 794, 992, 1242), 'mode': 'rows', 'sections': list(range(32, 42))},
     {'name': 'east', 'outline': sheet([(940, 418), (1514, 420), (1602, 664), (985, 664)]),
-     'mode': 'rows', 'sections': list(range(42, 48)), 'fold': [2149, 2163, 2183, 2203, 2219]},
+     'mode': 'rows', 'sections': list(range(42, 48)), 'fold': [2149, 2163, 2183, 2203, 2219], 'crease': True},
     {'name': 'east-2', 'outline': box(999, 665, 1338, 990), 'mode': 'rows', 'sections': list(range(48, 56)),
-     'fold': [2150, 2166, 2183, 2206, 2226]},
+     'fold': [2150, 2166, 2183, 2206, 2226], 'crease': True},
     {'name': 'east-3', 'outline': sheet([(1339, 665), (1578, 665), (1722, 945), (1722, 990), (1339, 990)]),
      'mode': 'rows', 'sections': list(range(56, 64))},
     {'name': 'south', 'outline': box(999, 991, 1722, 1102), 'mode': 'single', 'section': 65,
-     'fold': [2153, 2169, 2186, 2201, 2229]},
+     'fold': [2153, 2169, 2186, 2201, 2229], 'crease': True},
     {'name': 'south-2', 'outline': box(999, 1103, 1612, 1207), 'mode': 'single', 'section': 66, 'regular': False,
      'fold': [2190, 2250]},
     {'name': 'south-3', 'outline': box(999, 1208, 1548, 1306), 'mode': 'single', 'section': 67, 'regular': False},
@@ -123,13 +125,15 @@ PERIMETER = [
 PERIMETER_SECTIONS = {p['section'] for p in PERIMETER}
 
 # Drawn cells that are not plots: the two wedges between section 31's last
-# row and the walk, where notes are written in, and the corner piece at the
-# north end of Section 2, which the plan leaves unnumbered (its plot 1 is the
-# next one down). Outlines as the clean drawing closes them off.
+# row and the walk, where notes are written in, and the pieces the plan leaves
+# unnumbered: the corner at the north end of Section 2 (its plot 1 is the next
+# one down) and the triangle under Section 67's plot 2 (its plot 17 is the next
+# one east). Outlines as the clean drawing closes them off.
 NOT_PLOTS = [
     [(499, 2194), (584, 2194), (585, 2191), (755, 2187), (755, 2231)],
     [(758, 2230), (904, 2225), (934, 2227), (936, 2224), (1001, 2222), (1001, 2266)],
     [(3115, 770), (3205, 770), (3205, 856), (3115, 856)],
+    [(2219, 2632), (2126, 2585), (2219, 2583)],
 ]
 
 SECTION_NAMES = {69: 'North Strip A', 70: 'North Strip B'}
@@ -208,9 +212,18 @@ def find_cells(gray):
         # The contour runs through the region's edge pixels, so the region is a
         # pixel larger; measured on the contour, the stored plot sits just inside
         # its drawn lines and never reaches a neighbour across one.
-        if min(rw, rh) < 1 or max(rw, rh) / min(rw, rh) > 10:
+        # Up to two narrow plots a missing row line joined end to end (the
+        # last column of Section 29), which split_tall cuts back.
+        if min(rw, rh) < 1 or max(rw, rh) / min(rw, rh) > 12:
             continue
-        if filled_px / ((rw + 1) * (rh + 1)) >= 0.75:
+        # A digit touching a plot's edge bites a notch out of it that filling
+        # holes cannot close (the printed 60 of Section 56); its hull still
+        # fills the rectangle. Upright plots only: a sliver of walk along a
+        # diagonal is hull-shaped too.
+        hull_px = cv2.contourArea(cv2.convexHull(contour)) + cv2.arcLength(cv2.convexHull(contour), True) / 2
+        if filled_px / ((rw + 1) * (rh + 1)) >= 0.75 or \
+                (hull_px / ((rw + 1) * (rh + 1)) >= 0.85 and filled_px >= 0.5 * hull_px
+                 and abs(((ang + 45) % 90) - 45) < UPRIGHT):
             cell = make_cell(cx, cy, rw, rh, ang, filled_px) | {'traced': True}
             if not is_upright(cell):
                 # A tilted plot is kept as traced (a rectangle fitted to it bulges
@@ -610,16 +623,9 @@ def regularise_row(row, dark=None):
             out += [make_cell((a + b) / 2, c['cy'], b - a - LINE, c['h'], 0) | {'traced': True}
                     for a, b in zip(edges, edges[1:])]
             continue
-        k = round(c['w'] / width)
-        # Only about a whole number of plots: a plot drawn half as wide again
-        # as its neighbours (the one a fold in the paper runs through) is one
-        # plot, not two halves.
-        if k >= 2 and abs(c['w'] / k - width) < 0.15 * width:
-            left = c['cx'] - c['w'] / 2
-            for j in range(k):
-                out.append(make_cell(left + (j + 0.5) * c['w'] / k, c['cy'], c['w'] / k - LINE, c['h'], 0))
-        else:
-            out.append(c)
+        # Otherwise a wide cell is one wide plot: the plan draws some, such as
+        # the first plot of each of Section 11's rows.
+        out.append(c)
     return out
 
 
@@ -713,10 +719,11 @@ def rows_of(cells, dark=None):
     return rows
 
 
-def refold(row, lines, dark):
+def refold(row, lines, dark, crease=False):
     """Re-cut a row's plots across the fold along the block's own column lines,
     each found in the row itself within a few pixels of where the block has
-    it: a hand-ruled line wanders that far from top to bottom of a block."""
+    it: a hand-ruled line wanders that far from top to bottom of a block.
+    With `crease`, the widest cell across the fold is cut in two."""
     if not row:
         return row
     near = [c for c in row if lines[0] < c['cx'] < lines[-1] and is_upright(c) and not c.get('polygon')]
@@ -729,6 +736,15 @@ def refold(row, lines, dark):
     for x in lines:
         cover = band[:, x - 5:x + 6].mean(0)
         found.append(x - 5 + float(np.argmax(cover)) if cover.max() >= 0.4 else float(x))
+    if crease:
+        # The widest cell across the fold, if well over a plot wide, is two
+        # plots: cut it at the strongest stroke in its middle half.
+        spans = list(zip(found, found[1:]))
+        width = float(np.median([c['w'] for c in row if c not in near] or [b - a for a, b in spans]))
+        a, b = max(spans, key=lambda ab: ab[1] - ab[0])
+        if b - a >= 1.3 * width:
+            lo, hi = int(a + (b - a) / 4), int(b - (b - a) / 4) + 1
+            found = sorted(found + [lo + float(np.argmax(band[:, lo:hi].mean(0)))])
     keep = {'row': near[0]['row']} if 'row' in near[0] else {}
     # Drawn wider only where the paper buckled: sold as the row's other plots are.
     others = [c['area'] for c in row if c not in near]
@@ -739,10 +755,16 @@ def refold(row, lines, dark):
 
 
 def rows_by_y(cells):
-    """Rows of a block of large plots drawn one by one: plots whose centres
-    share a band a plot tall."""
+    """Rows of a block of large plots drawn one by one, top to bottom, each left
+    to right: plots whose top edges share a row line. Not their centres: a
+    triangle cut by a diagonal walk sits low or high in its row."""
     h = float(np.median([c['h'] for c in cells]))
-    return [[cells[i] for i in g] for g in cluster([c['cy'] for c in cells], 0.5 * h)]
+    rows = [[cells[i] for i in g] for g in cluster([c['bbox'][1] for c in cells], 0.4 * h)]
+    rows = [sorted(r, key=lambda c: c['cx']) for r in sorted(rows, key=lambda r: min(c['bbox'][1] for c in r))]
+    for index, row in enumerate(rows):
+        for c in row:
+            c['row'] = index
+    return rows
 
 
 def assign_rows(rows, sections, centres):
@@ -786,7 +808,7 @@ def assign_columns(cells, sections, centres):
     xs = {s: centres[s][0] for s in sections}
     out = {s: [] for s in sections}
     for c in cells:
-        out[min(sections, key=lambda s: abs(xs[s] - c['cx']))].append(c)
+        out[min(sections, key=lambda s: abs(xs[s] - c['cx']))].append(c | {'by_column': True})
     return list(out.items())
 
 
@@ -831,12 +853,12 @@ def build():
             # Blocks of large plots are drawn individually; there is no grid to repair.
             rows = rows_of(bc, dark=dark) if b.get('regular', True) else rows_by_y(bc)
             if b.get('fold'):
-                rows = [refold(r, b['fold'], dark) for r in rows]
+                rows = [refold(r, b['fold'], dark, b.get('crease', False)) for r in rows]
             groups = [(b['section'], [c for r in rows for c in r])]
         elif b['mode'] == 'rows':
             rows = rows_of(bc, dark=dark)
             if b.get('fold'):
-                rows = [refold(r, b['fold'], dark) for r in rows]
+                rows = [refold(r, b['fold'], dark, b.get('crease', False)) for r in rows]
             groups = assign_rows(rows, b['sections'], centres)
         else:
             groups = assign_columns(bc, b['sections'], centres)
@@ -859,12 +881,19 @@ def build():
     for s in sections:
         sections[s] = drop_overlaps(sections[s])
 
-    # Order plots for numbering: perimeter rows along their path, blocks row by
-    # row, top to bottom then left to right.
+    # Order plots for numbering: perimeter rows along their path, the chapel
+    # block's sections down each column, left to right (the plan numbers them
+    # so: Section 21 runs 1-17 down its first column and 18-34 down its
+    # second), other blocks row by row, top to bottom then left to right.
     for s, sc in sections.items():
         if all('along' in c for c in sc):
             sc.sort(key=lambda c: c['along'])
             sc[:] = fill_strip(sc)
+        elif sc and all(c.get('by_column') for c in sc):
+            w = float(np.median([c['w'] for c in sc]))
+            columns = cluster([c['cx'] for c in sc], 0.5 * w)
+            col = {id(sc[i]): k for k, g in enumerate(sorted(columns, key=lambda g: sc[g[0]]['cx'])) for i in g}
+            sc.sort(key=lambda c: (col[id(c)], c['cy']))
         else:
             # Row order where rows were recovered; otherwise by position, in bands
             # a plot tall, for the blocks of large plots drawn one by one.

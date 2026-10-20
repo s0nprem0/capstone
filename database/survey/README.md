@@ -46,11 +46,14 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
    along the edge, since their plots are evenly spaced.
 5. **The fold.** The sheet was folded, and the fold runs down its east side
    through blocks 42-47, 48-55, 65 and 66. It reads as a line in the scan, and
-   the clean drawing follows it in places, but it is never a plot's edge: the
-   plot it crosses is drawn wider where the paper buckled. Each of those blocks
-   lists its column lines either side of the fold, and every row is re-cut
-   along them as the row itself draws them. These plots keep their row's lot
-   type rather than the type their width alone would give.
+   the clean drawing follows it in places, but the plots under it are blurred
+   together. Each of those blocks lists its column lines either side of the
+   fold, and every row is re-cut along them as the row itself draws them. In
+   blocks 42-47, 48-55 and 65 the blur also hides a divider, so the widest cell
+   across the fold is two plots: the plan's printed 10s and 20s only line up
+   with the codes that way. In Section 66 the wide plot is one, numbered 3 on
+   the plan. These plots keep their row's lot type rather than the type their
+   width alone would give.
 6. **Northern strips.** The clean drawing outlines them but does not divide
    them, so they are read off the scan as a grid: row lines followed along the
    strip, then each row's column lines. A column line hidden under the fold's
@@ -66,7 +69,7 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 
 ## Coverage
 
-70 sections, 6,735 plots: every block the plan draws.
+70 sections, 6,769 plots: every block the plan draws.
 
 | Area | Sections | Notes |
 |---|---|---|
@@ -84,9 +87,18 @@ The script needs numpy and OpenCV; its docstring has a one-line `nix shell`.
 - **Section boundaries within a block.** Rows are shared out evenly; where a
   block's row count does not divide by its sections, which section gets the
   odd row is the tracer's best fit, not something the plan states.
-- **Lot numbers.** Codes follow position. In the perimeter sections that is
-  the plan's own numbering (checked plot by plot for Sections 1 and 2); in the
-  blocks the small figures in the plots are not read.
+- **Lot numbers.** Codes follow position, and were checked against the
+  figures the plan prints (each plot 1, every tenth, and every plot in the
+  perimeter rows and Sections 66-68). They agree everywhere except:
+  - **Section 65, last two rows.** The plan numbers its first three rows on
+    from 1 to 264, then starts each of the last two rows again at 1 (its
+    printed 20, 30, 40... fall on each row's own 20th, 30th, 40th plot). Codes
+    run on, S65-265 to S65-429.
+  - **Sections 46 and 47, second row.** Their first rows draw 74 and 75 plots,
+    but the second rows' printed figures run one higher than that allows. The
+    drawing is followed; the plan's numbers there are one more than the code.
+  - **The chapel block (21-24)** is numbered down each column, as the plan
+    does, not across.
 - **Lot type.** A plot over 1.7x the median area is a double, over 3.2x a
   family plot. The cemetery may sell them differently.
 - **North strips under the pencil crosses.** About 45 column lines in the
