@@ -27,7 +27,7 @@ inside the docroot the PHP server serves from, so :8000 is the only address you
 need — the Vite dev server on :5173 is optional and only useful while editing.
 
 If you would rather show the project with no client data at all, run
-`make migrate && make map-data` and stop there. That gives 6734 available plots,
+`make migrate && make map-data` and stop there. That gives 6735 available plots,
 one admin, and an empty queue.
 
 ## Accounts
@@ -50,14 +50,14 @@ All demo accounts share one password so nothing has to be memorised on the spot.
 
 ## What is in the dataset
 
-6734 plots across 70 sections: **6714 available, 17 occupied, 3 reserved**. That
+6735 plots across 70 sections: **6715 available, 17 occupied, 3 reserved**. That
 split is chosen so all three status colours are visible on the map at once,
 which is the thing the redesign is about.
 
 The plots are the real survey of St. John Memorial Garden & Parks, read from
 the scanned plan `public/traces/survey-lines.png` and its clean redraw
 `public/traces/cemetery-base.png` by `tools/trace_plan.py`. Each cell the plan
-draws becomes a plot — 6734, which is what the drawing says rather than what a
+draws becomes a plot — 6735, which is what the drawing says rather than what a
 threshold recovered — and the fold in the paper is never taken for a line (see
 `database/survey/README.md`). The map base is a render of that same scan, so
 plots and plan land on each other exactly. A lot code is
