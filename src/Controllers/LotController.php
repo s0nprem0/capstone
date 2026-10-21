@@ -180,7 +180,7 @@ class LotController
         }
 
         $input = $this->router->input();
-        if (array_intersect(['section_id', 'svg_x', 'svg_y', 'svg_w', 'svg_h'], array_keys($input)) !== []
+        if (array_intersect(['section_id', 'svg_x', 'svg_y', 'svg_w', 'svg_h', 'svg_points'], array_keys($input)) !== []
             && $this->sectionLocked((int) $lot['section_id'])) {
             Response::json(['error' => 'This section is locked — lot positions are frozen. Unlock the section to move or resize lots.'], 422);
             return;
@@ -238,9 +238,17 @@ class LotController
         foreach (['svg_w', 'svg_h'] as $field) {
             if (array_key_exists($field, $data)) $data[$field] = $this->svgCoord($data[$field], 40.0);
         }
-        // The editor moves and resizes rectangles. A traced outline left behind
-        // would draw the plot where it used to be, so it gives way to the box.
-        if (array_intersect(['svg_x', 'svg_y', 'svg_w', 'svg_h'], array_keys($data)) !== []) {
+        // A traced outline moves with its plot when the editor sends the
+        // shifted points. Without them, a box change would leave the outline
+        // drawn where the plot used to be, so it gives way to the box.
+        if (array_key_exists('svg_points', $input)) {
+            $points = trim((string) ($input['svg_points'] ?? ''));
+            if ($points !== '' && (!$this->validSvgPoints($points) || strlen($points) > 512)) {
+                Response::json(['error' => 'svg_points must be "x y x y ..." with at least 3 vertices'], 422);
+                return;
+            }
+            $data['svg_points'] = $points !== '' ? $points : null;
+        } elseif (array_intersect(['svg_x', 'svg_y', 'svg_w', 'svg_h'], array_keys($data)) !== []) {
             $data['svg_points'] = null;
         }
 
