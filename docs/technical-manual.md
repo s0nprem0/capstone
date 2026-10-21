@@ -272,7 +272,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/lots` | admin | Create (server allocates `lot_code` if omitted) |
 | `POST /api/lots/import-grid` | admin | Bulk create from a lot array |
 | `POST /api/lots/regrid` | admin | Reflow a section's lots into a grid |
-| `POST /api/lots/{id}` | admin, staff | Update geometry/fields (blocked if section locked) |
+| `POST /api/lots/{id}` | admin, staff | Update fields and geometry; `svg_points` moves a traced outline with its box (geometry blocked if section locked) |
 | `POST /api/lots/{id}/delete` | admin | Blocked if reservations/burials refer to it |
 | `GET /api/sections`, `GET /api/sections/{id}` | admin, staff | With counts |
 | `POST /api/sections` | admin | |
@@ -368,8 +368,11 @@ spreadsheet never runs user-entered text as a formula.
   `viewBox`. Colours come from the status palette; the legend and text labels
   mean colour is never the only signal.
 - **Editors** — `SectionEditor` draws the section outline (`svg_points`);
-  `LotEditor` places/moves/resizes plots and supports grid reflow and CSV
-  import. Geometry is validated (`svgCoord`, point-in-polygon).
+  `LotEditor` places/moves/resizes plots (singly or as a multi-selection, with
+  bulk attribute edits and an undo/redo history) and supports grid reflow and
+  CSV import. Plot geometry edits go through `map/lotGeometry.js`, which keeps
+  a traced outline in step with its box. Geometry is validated server-side
+  (`svgCoord`, `validSvgPoints`, point-in-polygon).
 - **Geometry check** — `php verify-map.php` (or `make verify-map`) asserts every
   plot's centre lies inside its section outline, no two plots overlap, and
   nothing falls outside the overall viewBox.

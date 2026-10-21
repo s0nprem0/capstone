@@ -244,13 +244,36 @@ Open **Sections** to manage the cemetery's sections (rows of plots). You can:
 
 ### Lot Editor
 
-The **Lot Editor** shows the survey plan with the section's plots on top. Choose
-**+ Add lot** to add a plot, drag plots to move them, and use the handles to
-resize. **Reflow grid** redraws them into an even grid. **Undo** (or
-`Ctrl/Cmd+Z`) reverses the last change. Changes **auto-save**; the header shows
-**Saving…** and then **Saved ✓**. Use the chips to switch section. Selecting a
-plot opens an **Edit Lot** panel where you can change its block and description,
-and **Delete** it (allowed only when no reservation or burial refers to it).
+The **Lot Editor** shows the survey plan with the section's plots on top.
+
+- **Pick a section** by typing its name in **Section**, or step through them
+  with the arrow buttons beside it. **Find a lot** jumps to a plot by its code.
+- **Highlight** available, reserved or occupied plots with the status chips; the
+  others fade so you can see, for example, which plots are still free.
+- **Select** a plot by clicking it. **Shift+click** adds or removes plots, and
+  **Shift+drag** on an empty part of the map selects every plot in a box.
+  **Ctrl+A** selects the whole section, or only the highlighted plots.
+- **Move** the selection by dragging it or with the arrow keys (**Alt** for fine
+  steps). **Shift+arrows** or the corner handle resize a single plot. Exact
+  position and size can also be typed in the panel. Traced plots keep their
+  outline when moved or resized.
+- **Edit details** in the side panel. Fields save when you leave them or press
+  **Enter**; **Esc** puts the saved value back. With several plots selected the
+  panel sets type, price, block or status on all of them at once.
+- **Add beside** (or **Ctrl+D**) adds a plot next to the selected one with the
+  same size, type and price. With nothing selected, **Add lot** places one in
+  the first free space. The next free lot code is assigned automatically.
+- **Undo** and **Redo** (**Ctrl+Z**, **Ctrl+Shift+Z**) step back and forward
+  through moves and edits in this visit. **Reflow grid** redraws every plot as
+  an even grid and cannot be undone, so it asks first.
+- **Delete** removes the selected plots; any plot linked to a reservation or
+  burial record is kept and named in the message.
+
+The header shows whether changes are waiting, saving or saved. A change the
+server refuses (for example a lot code already in use) is put back and
+explained. On a **locked** section, plots cannot be moved, added or deleted, but
+their details can still be edited. The panel's **Keyboard and mouse** list has
+every shortcut.
 
 ### Settings — Backup & Restore
 

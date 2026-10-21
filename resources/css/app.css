@@ -2347,7 +2347,7 @@ textarea:disabled {
 /* ==== Reduced motion ====
    Six animations ran unconditionally: the loading spinner (indefinitely),
    the off-canvas drawer transform, and the nav-link, report-card,
-   lot-rect and editor-chip transitions. */
+   lot-rect transitions. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2505,7 +2505,6 @@ textarea:disabled {
   .btn-sm,
   .btn-ghost,
   .chip,
-  .editor-chip,
   .section-row {
     min-height: 44px;
   }
@@ -2529,69 +2528,40 @@ textarea:disabled {
   /* Buttons this close together are hard to hit without a miss. */
   .table-actions,
   .map-filters,
-  .editor-chips-list {
+  .lot-editor-filter {
     gap: var(--space-sm);
   }
 }
 
 /* ==== Lot Editor (admin) ==== */
-.editor-chip {
-  padding: var(--space-2xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
-}
-
-.editor-chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.editor-chip--active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-on-strong);
-}
-
-.editor-chips {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-top: var(--space-xs);
-}
-
-.editor-chips-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-}
-
-.editor-title {
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-}
-
 .editor-dirty {
-  margin-left: var(--space-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  margin-right: var(--space-xs);
   padding: var(--space-3xs) var(--space-xs);
   border-radius: 999px;
-  background: #fff3bf;
-  color: #99582a;
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+.editor-dirty--pending,
+.editor-dirty--saving {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 
-.editor-dirty--muted {
-  background: transparent;
-  color: var(--color-text-muted);
-  font-weight: 400;
+.editor-dirty--saved {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.editor-dirty--error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  font-weight: 600;
 }
 
 .editor-svg {
@@ -2641,16 +2611,6 @@ textarea:disabled {
   flex-wrap: wrap;
   gap: var(--space-2xs);
   margin-top: var(--space-2xs);
-}
-
-.editor-coords {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.lot-editor-legend {
-  margin-top: var(--space-sm);
-  margin-bottom: 0;
 }
 
 /* ==== Fit the whole map view into one page ====
@@ -3139,8 +3099,336 @@ textarea:disabled {
 }
 
 /* Editor-specific polish */
+.lot-editor-lot {
+  cursor: move;
+}
+
+.editor-svg--locked .lot-editor-lot {
+  cursor: pointer;
+}
+
+.editor-svg:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .lot-editor-lot:hover .lot-shape {
   filter: brightness(1.08);
+}
+
+.lot-editor-lot--dim {
+  opacity: 0.18;
+}
+
+.lot-editor-outline polygon,
+.lot-editor-outline rect {
+  fill: var(--status-occupied);
+  fill-opacity: 0.05;
+  stroke: var(--status-occupied);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+  stroke-linejoin: round;
+}
+
+.lot-editor-handle {
+  cursor: nwse-resize;
+}
+
+.lot-editor-handle-knob {
+  fill: var(--color-halo);
+  stroke: var(--status-selected);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.lot-editor-marquee {
+  fill: var(--status-selected);
+  fill-opacity: 0.08;
+  stroke: var(--status-selected);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+.lot-editor-bar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.lot-editor-section {
+  display: flex;
+  align-items: end;
+  gap: var(--space-2xs);
+}
+
+.lot-editor-section .select {
+  width: 13rem;
+}
+
+.lot-editor-find .select {
+  width: 12rem;
+}
+
+.lot-editor-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+}
+
+.lot-editor-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.lot-editor-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 2.25rem;
+}
+
+.lot-editor-filter-chip[aria-pressed='true'] {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-on-strong);
+}
+
+.lot-editor-scan {
+  margin-left: auto;
+}
+
+.lot-editor-scan .lot-reference-grid {
+  left: auto;
+  right: 0;
+}
+
+.lot-editor-scan .lot-reference-toggle,
+.lot-editor-scan .lot-reference-opacity {
+  grid-column: 1 / -1;
+}
+
+.lot-editor-history {
+  display: inline-flex;
+  gap: var(--space-2xs);
+}
+
+.lot-editor-error {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.lot-editor-error .btn-ghost {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.lot-editor-locked {
+  margin: 0 0 var(--space-sm);
+}
+
+.lot-editor .map-detail.lot-editor-panel {
+  flex-basis: 300px;
+}
+
+.lot-editor-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-height: 0;
+}
+
+.lot-editor-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.lot-editor-panel-head h3 {
+  margin: 0;
+}
+
+.lot-editor-link {
+  flex-shrink: 0;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.lot-editor-autosave,
+.lot-editor-note,
+.lot-editor-tip {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.lot-editor-tip {
+  color: var(--color-text);
+}
+
+.lot-editor-codes {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-editor-panel .editor-block-label label,
+.lot-editor-apply label,
+.lot-editor-geometry label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.lot-editor-panel .editor-block-label input,
+.lot-editor-apply input,
+.lot-editor-geometry input {
+  width: 100%;
+}
+
+.map-page .map-detail form.lot-editor-apply {
+  flex: none;
+  overflow: visible;
+}
+
+.lot-editor-apply {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--space-xs);
+}
+
+.lot-editor-geometry {
+  margin: var(--space-xs) 0 0;
+  padding: var(--space-xs) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.lot-editor-geometry legend {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.lot-editor-geometry[disabled] {
+  opacity: 0.6;
+}
+
+.lot-editor-geometry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin-bottom: var(--space-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-editor-counts {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+}
+
+.lot-editor-counts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.lot-editor-counts dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.lot-editor-counts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lot-editor-keys summary {
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.lot-editor-keys dl {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-sm);
+}
+
+.lot-editor-keys dl > div {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: var(--space-xs);
+}
+
+.lot-editor-keys dd {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.lot-editor-keys kbd {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: 0 var(--space-2xs);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
+.lot-editor-panel .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 700px) {
+  .lot-editor-section,
+  .lot-editor-find {
+    width: 100%;
+  }
+
+  .lot-editor-section .select,
+  .lot-editor-find .select {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .lot-editor-scan {
+    margin-left: 0;
+  }
+
+  .lot-editor-scan .lot-reference-grid {
+    right: auto;
+  }
 }
 
 /* Not on selected lots: they keep their purple stroke-width from
