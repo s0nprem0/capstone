@@ -51,7 +51,38 @@ export default function Reports() {
   const [audit, setAudit] = useState(null)
   const [error, setError] = useState('')
 
+  const [auditBusy, setAuditBusy] = useState(false)
+
   const qs = new URLSearchParams(Object.entries({ from, to }).filter(([, v]) => v)).toString()
+  const auditPage = (offset, limit) => api(`/api/reports/audit-logs?${qs ? `${qs}&` : ''}limit=${limit}&offset=${offset}`)
+
+  const showMoreAudit = async () => {
+    setAuditBusy(true)
+    const { ok, data } = await auditPage(audit.items.length, 200)
+    setAuditBusy(false)
+    if (ok) setAudit((a) => ({ ...data, items: [...a.items, ...data.items] }))
+    else setError(data?.error || 'Failed to load more of the audit log')
+  }
+
+  // The export is the whole period, not just the rows on screen.
+  const exportAudit = async () => {
+    setAuditBusy(true)
+    const items = []
+    let total = Infinity
+    while (items.length < total) {
+      const { ok, data } = await auditPage(items.length, 1000)
+      if (!ok) {
+        setAuditBusy(false)
+        setError(data?.error || 'Failed to export the audit log')
+        return
+      }
+      total = data.total
+      items.push(...data.items)
+      if (data.items.length === 0) break
+    }
+    setAuditBusy(false)
+    downloadCsv(`audit-log-${from || 'start'}-to-${to || localISO()}`, AUDIT_COLUMNS, items)
+  }
 
   useEffect(() => {
     let current = true
@@ -218,8 +249,8 @@ export default function Reports() {
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm no-print"
-                  disabled={!audit.items.length}
-                  onClick={() => downloadCsv(`audit-log-${from || 'start'}-to-${to || localISO()}`, AUDIT_COLUMNS, audit.items)}
+                  disabled={!audit.items.length || auditBusy}
+                  onClick={exportAudit}
                 >
                   Export CSV
                 </button>
@@ -246,6 +277,11 @@ export default function Reports() {
                     </tbody>
                   </table>
                 </div>
+              )}
+              {audit.total > audit.items.length && (
+                <button type="button" className="btn btn-secondary btn-sm no-print" onClick={showMoreAudit} disabled={auditBusy}>
+                  {auditBusy ? 'Loading...' : `Show ${Math.min(200, audit.total - audit.items.length)} more`}
+                </button>
               )}
             </section>
           )}

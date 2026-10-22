@@ -50,7 +50,7 @@ class Payment extends Model
         if ($where !== []) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-        $sql .= ' ORDER BY p.payment_date DESC, p.payment_id DESC LIMIT 1000';
+        $sql .= ' ORDER BY p.payment_date DESC, p.payment_id DESC';
 
         $stmt = self::db()->prepare($sql);
         $stmt->execute($params);

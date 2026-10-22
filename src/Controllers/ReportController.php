@@ -36,8 +36,7 @@ class ReportController
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN users u ON u.user_id = r.user_id
-             ORDER BY r.reservation_id DESC
-             LIMIT 1000"
+             ORDER BY r.reservation_id DESC"
         )->fetchAll();
 
         Response::json([
@@ -64,8 +63,7 @@ class ReportController
              FROM burial_records b
              JOIN cemetery_lots l ON l.lot_id = b.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
-             ORDER BY b.burial_id DESC
-             LIMIT 1000"
+             ORDER BY b.burial_id DESC"
         )->fetchAll();
 
         Response::json([
@@ -86,14 +84,13 @@ class ReportController
         $reserved = $db->query("SELECT COUNT(*) FROM cemetery_lots WHERE status = 'reserved'")->fetchColumn();
         $occupied = $db->query("SELECT COUNT(*) FROM cemetery_lots WHERE status = 'occupied'")->fetchColumn();
 
-        // Capped, and only the columns the report renders. The full lot set is
-        // ~3,890 rows; the frontend discloses the cap against the total below.
+        // Every plot, but only the columns the report renders: a report that
+        // silently stops partway is worse than a large one.
         $items = $db->query(
             "SELECT l.lot_id, l.lot_code, l.lot_type, l.block, l.price, l.status, s.section_name
              FROM cemetery_lots l
              JOIN cemetery_sections s ON s.section_id = l.section_id
-             ORDER BY s.section_name, l.lot_code
-             LIMIT 2000"
+             ORDER BY s.section_name, l.lot_code"
         )->fetchAll();
 
         Response::json([
@@ -122,8 +119,7 @@ class ReportController
              JOIN cemetery_sections s ON s.section_id = l.section_id
              JOIN users u ON u.user_id = r.user_id
              LEFT JOIN users rec ON rec.user_id = p.recorded_by
-             ORDER BY p.payment_date DESC, p.payment_id DESC
-             LIMIT 1000"
+             ORDER BY p.payment_date DESC, p.payment_id DESC"
         )->fetchAll();
 
         Response::json([
@@ -150,17 +146,28 @@ class ReportController
         $stmt->execute($params);
         $total = (int) $stmt->fetchColumn();
 
+        // Paged rather than capped, so the whole trail for a period stays
+        // reachable: the page asks for the next block, and the CSV export walks
+        // every block.
+        $limit = max(1, min(1000, (int) ($_GET['limit'] ?? 200)));
+        $offset = max(0, (int) ($_GET['offset'] ?? 0));
         $stmt = $db->prepare(
             "SELECT a.*, u.fullname AS user_name
              FROM audit_logs a
              LEFT JOIN users u ON u.user_id = a.user_id
              {$where}
-             ORDER BY a.log_id DESC LIMIT 200"
+             ORDER BY a.log_id DESC LIMIT :limit OFFSET :offset"
         );
-        $stmt->execute($params);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
 
         Response::json([
             'total' => $total,
+            'offset' => $offset,
             'items' => $stmt->fetchAll(),
         ]);
     }
