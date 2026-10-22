@@ -188,7 +188,10 @@ the session and compared with `hash_equals()`.
 - **Uniqueness and integrity**: duplicate emails and `lot_code`s are rejected;
   reservation capacity is checked against the lot type; lot claiming uses a
   transaction with `SELECT ... FOR UPDATE`; burials require a reserved or
-  occupied plot.
+  occupied plot, fit within its capacity (cremations excepted), mark it
+  occupied, and have birth, death and burial dates in order; a plot held by a
+  pending or approved reservation or a burial cannot be set back to
+  available by hand.
 - **Output**: React escapes interpolated text; the frontend does not use
   `dangerouslySetInnerHTML`. CSV exports prefix cells beginning with `= + - @`
   with `'` to prevent spreadsheet formula injection.

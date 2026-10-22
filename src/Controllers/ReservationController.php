@@ -90,8 +90,7 @@ class ReservationController
                 return;
             }
 
-            $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
-            $maxSlots = $capacity[$lot['lot_type']] ?? 1;
+            $maxSlots = Lot::capacity($lot);
             if ($slots > $maxSlots) {
                 $pdo->rollBack();
                 Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
@@ -151,8 +150,7 @@ class ReservationController
                 return;
             }
             $lot = Lot::find((int) $reservation['lot_id']);
-            $capacity = ['single' => 1, 'double' => 2, 'family' => 4];
-            $maxSlots = $lot ? ($capacity[$lot['lot_type']] ?? 1) : 1;
+            $maxSlots = $lot ? Lot::capacity($lot) : 1;
             if ($slots > $maxSlots) {
                 Response::json(['error' => "Lot capacity exceeded (max {$maxSlots} slots)"], 422);
                 return;

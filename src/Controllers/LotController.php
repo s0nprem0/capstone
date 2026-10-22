@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
+use App\Models\BurialRecord;
 use App\Models\CemeterySection;
 use App\Models\Lot;
 
@@ -138,6 +139,22 @@ class LotController
             Response::json(['error' => 'Invalid status'], 422);
             return;
         }
+        // A plot a reservation or a burial holds can only be let go through
+        // that record (reject, delete), or the next client could book it too.
+        if (($input['status'] ?? null) === 'available' && $lot['status'] !== 'available') {
+            $usage = Lot::usage($id);
+            if (Lot::liveReservations($id) > 0 || (int) $usage['burials'] > 0) {
+                Response::json(['error' => 'This lot is held by a pending or approved reservation or has a burial record, so it cannot be marked available. Reject or remove that record instead.'], 422);
+                return;
+            }
+        }
+        if (isset($input['lot_type']) && $input['lot_type'] !== $lot['lot_type']) {
+            $capacity = Lot::CAPACITY[$input['lot_type']];
+            if (BurialRecord::slotsUsed($id) > $capacity || Lot::largestLiveReservation($id) > $capacity) {
+                Response::json(['error' => "A {$input['lot_type']} lot holds {$capacity}, fewer than its burials or reserved slots"], 422);
+                return;
+            }
+        }
         if ((float) ($input['price'] ?? 0) < 0) {
             Response::json(['error' => 'price must not be negative'], 422);
             return;
@@ -211,6 +228,22 @@ class LotController
         if (isset($input['status']) && !in_array($input['status'], ['available', 'reserved', 'occupied'], true)) {
             Response::json(['error' => 'Invalid status'], 422);
             return;
+        }
+        // A plot a reservation or a burial holds can only be let go through
+        // that record (reject, delete), or the next client could book it too.
+        if (($input['status'] ?? null) === 'available' && $lot['status'] !== 'available') {
+            $usage = Lot::usage($id);
+            if (Lot::liveReservations($id) > 0 || (int) $usage['burials'] > 0) {
+                Response::json(['error' => 'This lot is held by a pending or approved reservation or has a burial record, so it cannot be marked available. Reject or remove that record instead.'], 422);
+                return;
+            }
+        }
+        if (isset($input['lot_type']) && $input['lot_type'] !== $lot['lot_type']) {
+            $capacity = Lot::CAPACITY[$input['lot_type']];
+            if (BurialRecord::slotsUsed($id) > $capacity || Lot::largestLiveReservation($id) > $capacity) {
+                Response::json(['error' => "A {$input['lot_type']} lot holds {$capacity}, fewer than its burials or reserved slots"], 422);
+                return;
+            }
         }
         if (isset($input['price']) && (float) $input['price'] < 0) {
             Response::json(['error' => 'price must not be negative'], 422);

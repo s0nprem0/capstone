@@ -64,9 +64,9 @@ Implemented end-to-end (API + React page + server-side RBAC on every route):
 - Auth/RBAC — register, login, logout, session auth with CSRF, roles `admin` / `staff` / `user`, login rate limiting
 - Sections & lots — CRUD, SVG grid import, and a lot map editor
 - SVG cemetery map — traced layout, pan/zoom/fly-to, status colouring, reserve-from-map
-- Reservations — submission, admin/staff approval restricted to pending rows, transactional lot claim; approval is what moves a lot from `reserved` to `occupied`, and rejecting or deleting one returns the plot unless a burial record already claims it
+- Reservations — submission, admin/staff approval restricted to pending rows, transactional lot claim; approval is what moves a lot from `reserved` to `occupied`, and rejecting or deleting one returns the plot only when no other pending/approved reservation or burial record holds it; a reservation with payments cannot be deleted
 - Payments — manual recording (cash / GCash / bank transfer / cheque / other) against a reservation, with a derived `reservations.payment_status` (`unpaid` / `partial` / `paid`); recording a payment does not gate approval; staff/admin record, a visitor sees their own payments; revenue stat on the dashboard and a payments report. No online gateway
-- Burial records, notifications, debounced search/filters, reports, dashboards, audit trail
+- Burial records (capped at the lot's capacity, cremations excepted; recording one marks the lot `occupied`), notifications, debounced search/filters, reports, dashboards, audit trail
 - Backup/restore — admin-only SQL export/import, audit-logged
 
 Payments were re-added on request (they had been cut after the early sprints). `reservations.payment_status` is derived from the `payments` rows via `Payment::recomputeStatus` and stored, so it must be recomputed whenever a payment changes or a reservation's `total_amount` changes.

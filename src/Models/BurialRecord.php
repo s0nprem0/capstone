@@ -9,6 +9,20 @@ class BurialRecord extends Model
     protected static string $table = 'burial_records';
     protected static string $primaryKey = 'burial_id';
 
+    /**
+     * Burials taking a grave slot in a lot. Cremated remains do not use a
+     * slot, so they are not counted against the lot's capacity.
+     */
+    public static function slotsUsed(int $lotId, ?int $exceptId = null): int
+    {
+        $stmt = self::db()->prepare(
+            "SELECT COUNT(*) FROM `burial_records`
+             WHERE `lot_id` = :lot_id AND `burial_type` <> 'cremation' AND `burial_id` <> :except"
+        );
+        $stmt->execute(['lot_id' => $lotId, 'except' => $exceptId ?? 0]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function search(array $filters): array
     {
         $where = [];

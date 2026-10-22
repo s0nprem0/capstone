@@ -11,6 +11,14 @@ class Lot extends Model
     protected static string $table = 'cemetery_lots';
     protected static string $primaryKey = 'lot_id';
 
+    /** Interments a plot holds, by lot_type; also the most slots one reservation can take. */
+    public const CAPACITY = ['single' => 1, 'double' => 2, 'family' => 4];
+
+    public static function capacity(array $lot): int
+    {
+        return self::CAPACITY[$lot['lot_type']] ?? 1;
+    }
+
     /**
      * Lot geometry as numbers.
      *
@@ -144,6 +152,17 @@ class Lot extends Model
     {
         $stmt = self::db()->prepare(
             "SELECT COUNT(*) FROM `reservations`
+             WHERE `lot_id` = :id AND `approved_status` IN ('pending', 'approved')"
+        );
+        $stmt->execute(['id' => $id]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** Most slots any pending or approved reservation takes in a lot. */
+    public static function largestLiveReservation(int $id): int
+    {
+        $stmt = self::db()->prepare(
+            "SELECT COALESCE(MAX(`number_of_slots`), 0) FROM `reservations`
              WHERE `lot_id` = :id AND `approved_status` IN ('pending', 'approved')"
         );
         $stmt->execute(['id' => $id]);

@@ -67,12 +67,22 @@ class BurialRecordController
         Auth::requireRole(['admin', 'staff']);
         $input = $this->router->input();
 
-        $deceasedName = trim($input['deceased_fullname'] ?? '');
+        $deceasedName = trim((string) ($input['deceased_fullname'] ?? ''));
         $lotId = (int) ($input['lot_id'] ?? 0);
-        $burialDate = $input['burial_date'] ?? '';
+        $burialDate = (string) ($input['burial_date'] ?? '');
 
         if ($deceasedName === '' || $lotId <= 0 || $burialDate === '') {
             Response::json(['error' => 'deceased_fullname, lot_id, and burial_date are required'], 422);
+            return;
+        }
+
+        $dates = ['burial_date' => $burialDate];
+        foreach (['date_of_birth', 'date_of_death'] as $field) {
+            $dates[$field] = !empty($input[$field]) ? (string) $input[$field] : null;
+        }
+        $dateError = self::dateError($dates);
+        if ($dateError !== null) {
+            Response::json(['error' => $dateError], 422);
             return;
         }
 
@@ -96,6 +106,10 @@ class BurialRecordController
             Response::json(['error' => 'A burial record requires a reserved or occupied lot; this lot is ' . $lot['status']], 422);
             return;
         }
+        if ($burialType !== 'cremation' && BurialRecord::slotsUsed($lotId) >= Lot::capacity($lot)) {
+            Response::json(['error' => self::fullError($lot)], 422);
+            return;
+        }
 
         $intermentStatus = $input['interment_status'] ?? 'scheduled';
         if (!in_array($intermentStatus, ['scheduled', 'interred'], true)) {
@@ -105,8 +119,8 @@ class BurialRecordController
 
         $burialId = BurialRecord::create([
             'deceased_fullname' => $deceasedName,
-            'date_of_birth' => !empty($input['date_of_birth']) ? $input['date_of_birth'] : null,
-            'date_of_death' => !empty($input['date_of_death']) ? $input['date_of_death'] : null,
+            'date_of_birth' => $dates['date_of_birth'],
+            'date_of_death' => $dates['date_of_death'],
             'burial_date' => $burialDate,
             'lot_id' => $lotId,
             'burial_type' => $burialType,
@@ -114,6 +128,12 @@ class BurialRecordController
             'next_of_kin_phone' => !empty($input['next_of_kin_phone']) ? $input['next_of_kin_phone'] : null,
             'interment_status' => $intermentStatus,
         ]);
+
+        // Someone is laid to rest here, so the plot is occupied whatever state
+        // its reservation is in.
+        if ($lot['status'] !== 'occupied') {
+            Lot::occupy($lotId);
+        }
 
         AuditLog::record(Auth::id(), 'create', 'burial_records', $burialId);
         Response::json(BurialRecord::withDetails($burialId), 201);
@@ -198,8 +218,31 @@ class BurialRecordController
             $data['interment_status'] = $input['interment_status'];
         }
 
+        $merged = array_merge($record, $data);
+        $dateError = self::dateError([
+            'burial_date' => (string) $merged['burial_date'],
+            'date_of_birth' => $merged['date_of_birth'],
+            'date_of_death' => $merged['date_of_death'],
+        ]);
+        if ($dateError !== null) {
+            Response::json(['error' => $dateError], 422);
+            return;
+        }
+
+        $lotId = (int) $merged['lot_id'];
+        $lot = Lot::find($lotId);
+        $takesSlot = $merged['burial_type'] !== 'cremation';
+        $movedIn = $lotId !== (int) $record['lot_id'] || ($takesSlot && $record['burial_type'] === 'cremation');
+        if ($takesSlot && $movedIn && BurialRecord::slotsUsed($lotId, $id) >= Lot::capacity($lot)) {
+            Response::json(['error' => self::fullError($lot)], 422);
+            return;
+        }
+
         if ($data !== []) {
             BurialRecord::update($id, $data);
+            if ($lot['status'] !== 'occupied') {
+                Lot::occupy($lotId);
+            }
             AuditLog::record(Auth::id(), 'update', 'burial_records', $id);
         }
 
@@ -216,6 +259,40 @@ class BurialRecordController
         BurialRecord::delete($id);
         AuditLog::record(Auth::id(), 'delete', 'burial_records', $id);
         Response::json(['message' => 'Deleted']);
+    }
+
+    private static function fullError(array $lot): string
+    {
+        $capacity = Lot::capacity($lot);
+        return "Lot {$lot['lot_code']} is a {$lot['lot_type']} lot and already holds {$capacity} "
+            . ($capacity === 1 ? 'burial' : 'burials');
+    }
+
+    /**
+     * Real calendar dates, in order: born on or before death, buried on or
+     * after death. Birth and death are optional.
+     *
+     * @param array{burial_date: string, date_of_birth: ?string, date_of_death: ?string} $dates
+     */
+    private static function dateError(array $dates): ?string
+    {
+        foreach ($dates as $field => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+            if ($date === false || $date->format('Y-m-d') !== $value) {
+                return "{$field} must be a date in YYYY-MM-DD format";
+            }
+        }
+        ['date_of_birth' => $born, 'date_of_death' => $died, 'burial_date' => $buried] = $dates;
+        if ($born !== null && $died !== null && $born > $died) {
+            return 'date_of_birth must not be after date_of_death';
+        }
+        if ($died !== null && $buried < $died) {
+            return 'burial_date must not be before date_of_death';
+        }
+        return null;
     }
 
     private const PHONE_ERROR = 'next_of_kin_phone must be a phone number, e.g. 0917 123 4567';
