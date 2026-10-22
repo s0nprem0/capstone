@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
+use App\Core\Validate;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Notification;
@@ -145,7 +146,7 @@ class PaymentController
         }
         if (!$partial || array_key_exists('payment_date', $input)) {
             $date = (string) ($input['payment_date'] ?? '');
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            if (!Validate::date($date)) {
                 return ['error' => 'payment_date must be in YYYY-MM-DD format'];
             }
             $data['payment_date'] = $date;

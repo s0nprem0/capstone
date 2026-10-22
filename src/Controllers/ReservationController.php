@@ -8,11 +8,13 @@ use App\Config\Database;
 use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
+use App\Core\Validate;
 use App\Models\AuditLog;
 use App\Models\Lot;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\User;
 
 class ReservationController
 {
@@ -77,6 +79,30 @@ class ReservationController
             return;
         }
 
+        if (!Validate::date($date)) {
+            Response::json(['error' => 'reservation_date must be a date in YYYY-MM-DD format'], 422);
+            return;
+        }
+        // Staff encode bookings taken on paper, which can be dated earlier.
+        if (Auth::role() === 'user' && $date < Validate::today()) {
+            Response::json(['error' => 'reservation_date cannot be in the past'], 422);
+            return;
+        }
+
+        $purpose = $this->purpose($input['purpose'] ?? null);
+        if ($purpose === false) {
+            Response::json(['error' => self::PURPOSE_ERROR], 422);
+            return;
+        }
+
+        if (Auth::role() !== 'user') {
+            $client = User::find($userId);
+            if (!$client || $client['role'] !== 'user' || $client['status'] !== 'active') {
+                Response::json(['error' => 'user_id must be an active client account'], 422);
+                return;
+            }
+        }
+
         $pdo = Database::connection();
 
         try {
@@ -101,7 +127,7 @@ class ReservationController
                 'user_id' => $userId,
                 'lot_id' => $lotId,
                 'reservation_date' => $date,
-                'purpose' => $input['purpose'] ?? null,
+                'purpose' => $purpose,
                 'number_of_slots' => $slots,
                 'total_amount' => (float) ($lot['price'] * $slots),
                 'approved_status' => 'pending',
@@ -134,14 +160,19 @@ class ReservationController
         $data = [];
 
         if (isset($input['reservation_date']) && $input['reservation_date'] !== '') {
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $input['reservation_date'])) {
-                Response::json(['error' => 'reservation_date must be in YYYY-MM-DD format'], 422);
+            if (!Validate::date($input['reservation_date'])) {
+                Response::json(['error' => 'reservation_date must be a date in YYYY-MM-DD format'], 422);
                 return;
             }
             $data['reservation_date'] = $input['reservation_date'];
         }
         if (isset($input['purpose'])) {
-            $data['purpose'] = $input['purpose'] !== '' ? $input['purpose'] : null;
+            $purpose = $this->purpose($input['purpose']);
+            if ($purpose === false) {
+                Response::json(['error' => self::PURPOSE_ERROR], 422);
+                return;
+            }
+            $data['purpose'] = $purpose;
         }
         if (isset($input['number_of_slots'])) {
             $slots = (int) $input['number_of_slots'];
@@ -179,100 +210,121 @@ class ReservationController
     public function approve(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $reservation = Reservation::find($id);
-        if (!$reservation) {
-            Response::json(['error' => 'Not found'], 404);
-            return;
-        }
-        if ($reservation['approved_status'] !== 'pending') {
-            Response::json(['error' => 'Only pending reservations can be approved'], 422);
-            return;
-        }
-        Reservation::update($id, ['approved_status' => 'approved']);
-        // Approval is what claims the plot, so it is the point the lot stops
-        // being held and becomes owned by the client.
-        $lot = Lot::find((int) $reservation['lot_id']);
-        if ($lot && $lot['status'] === 'reserved') {
-            Lot::occupy((int) $lot['lot_id']);
-        }
-        AuditLog::record(Auth::id(), 'approve', 'reservations', $id);
-        Notification::createFor(
-            (int) $reservation['user_id'],
-            "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been approved.",
-            'reservation',
-            $id
-        );
-        Response::json(['message' => 'Reservation approved']);
+        $this->decide($id, 'approved');
     }
 
     public function reject(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $reservation = Reservation::find($id);
-        if (!$reservation) {
-            Response::json(['error' => 'Not found'], 404);
-            return;
-        }
-        if ($reservation['approved_status'] !== 'pending') {
-            Response::json(['error' => 'Only pending reservations can be rejected'], 422);
-            return;
-        }
-        Reservation::update($id, ['approved_status' => 'rejected']);
-        $this->releaseLot((int) $reservation['lot_id']);
-        AuditLog::record(Auth::id(), 'reject', 'reservations', $id);
-        Notification::createFor(
-            (int) $reservation['user_id'],
-            "Your reservation #{$id} for lot {$this->lotLabel((int) $reservation['lot_id'])} has been rejected.",
-            'reservation',
-            $id
-        );
-        Response::json(['message' => 'Reservation rejected']);
+        $this->decide($id, 'rejected');
     }
 
     public function destroy(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $reservation = Reservation::find($id);
-        if (!$reservation) {
-            Response::json(['error' => 'Not found'], 404);
-            return;
+        $pdo = Database::connection();
+
+        try {
+            $pdo->beginTransaction();
+            $reservation = Reservation::findForUpdate($id);
+            if (!$reservation) {
+                $pdo->rollBack();
+                Response::json(['error' => 'Not found'], 404);
+                return;
+            }
+            if (Payment::countForReservation($id) > 0) {
+                $pdo->rollBack();
+                Response::json(['error' => 'This reservation has recorded payments and cannot be deleted. Reject it instead, or have an administrator remove the payments first.'], 422);
+                return;
+            }
+            Reservation::delete($id);
+            // A rejected reservation already let go of its lot, which may since
+            // have been reserved by someone else.
+            if ($reservation['approved_status'] !== 'rejected') {
+                Lot::releaseIfFree((int) $reservation['lot_id']);
+            }
+            AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
-        if (Payment::countForReservation($id) > 0) {
-            Response::json(['error' => 'This reservation has recorded payments and cannot be deleted. Reject it instead, or have an administrator remove the payments first.'], 422);
-            return;
-        }
-        Reservation::delete($id);
-        // A rejected reservation already let go of its lot, which may since
-        // have been reserved by someone else.
-        if ($reservation['approved_status'] !== 'rejected') {
-            $this->releaseLot((int) $reservation['lot_id']);
-        }
-        AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
+
         Response::json(['message' => 'Deleted']);
     }
 
     /**
-     * Returns a lot to the available pool once nothing holds it: no other
-     * pending or approved reservation and no burial record. A lot with a
-     * burial against it is occupied whatever becomes of the reservation.
+     * Approve or reject a pending reservation. The row is locked first, so two
+     * staff deciding the same request at once cannot both act on it: the
+     * second waits, then sees it is no longer pending.
      */
-    private function releaseLot(int $lotId): void
+    private function decide(int $id, string $decision): void
     {
-        $lot = Lot::find($lotId);
-        if (!$lot) {
-            return;
-        }
+        $pdo = Database::connection();
 
-        if ((int) Lot::usage($lotId)['burials'] > 0) {
-            if ($lot['status'] !== 'occupied') {
-                Lot::occupy($lotId);
+        try {
+            $pdo->beginTransaction();
+            $reservation = Reservation::findForUpdate($id);
+            if (!$reservation) {
+                $pdo->rollBack();
+                Response::json(['error' => 'Not found'], 404);
+                return;
             }
-            return;
+            if ($reservation['approved_status'] !== 'pending') {
+                $pdo->rollBack();
+                Response::json(['error' => "Only pending reservations can be {$decision}"], 422);
+                return;
+            }
+
+            $lotId = (int) $reservation['lot_id'];
+            Reservation::update($id, ['approved_status' => $decision]);
+            if ($decision === 'approved') {
+                // Approval is what claims the plot, so it is the point the lot
+                // stops being held and becomes owned by the client.
+                $lot = Lot::findForUpdate($lotId);
+                if ($lot && $lot['status'] === 'reserved') {
+                    Lot::occupy($lotId);
+                }
+            } else {
+                Lot::releaseIfFree($lotId);
+            }
+
+            AuditLog::record(Auth::id(), $decision === 'approved' ? 'approve' : 'reject', 'reservations', $id);
+            Notification::createFor(
+                (int) $reservation['user_id'],
+                "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}.",
+                'reservation',
+                $id
+            );
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
 
-        if ($lot['status'] !== 'available' && Lot::liveReservations($lotId) === 0) {
-            Lot::update($lotId, ['status' => 'available']);
+        Response::json(['message' => 'Reservation ' . $decision]);
+    }
+
+    private const PURPOSE_ERROR = 'purpose must be text of at most 100 characters';
+
+    /** Trimmed purpose, null when blank, or false when it is not short text. */
+    private function purpose(mixed $value): string|false|null
+    {
+        if ($value === null) {
+            return null;
         }
+        if (!is_string($value)) {
+            return false;
+        }
+        $value = trim($value);
+        if (mb_strlen($value) > 100) {
+            return false;
+        }
+        return $value !== '' ? $value : null;
     }
 
     private function lotLabel(int $lotId): string

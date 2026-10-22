@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Core\Validate;
+
 class Payment extends Model
 {
     protected static string $table = 'payments';
@@ -38,7 +40,7 @@ class Payment extends Model
             $params['method'] = $filters['method'];
         }
         foreach (['from' => '>=', 'to' => '<='] as $key => $op) {
-            if (isset($filters[$key]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $filters[$key])) {
+            if (isset($filters[$key]) && Validate::date($filters[$key] ?? null)) {
                 $where[] = "p.payment_date {$op} :{$key}";
                 $params[$key] = $filters[$key];
             }

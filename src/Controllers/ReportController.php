@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
+use App\Core\Validate;
 use App\Config\Database;
 use App\Models\Payment;
 
@@ -269,8 +270,7 @@ class ReportController
                 $range[$key] = null;
                 continue;
             }
-            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-            if ($date === false || $date->format('Y-m-d') !== $value) {
+            if (!Validate::date($value)) {
                 Response::json(['error' => "{$key} must be a date in YYYY-MM-DD format"], 422);
                 return null;
             }

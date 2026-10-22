@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Core\Validate;
+
 class Reservation extends Model
 {
     protected static string $table = 'reservations';
     protected static string $primaryKey = 'reservation_id';
+
+    public static function findForUpdate(int $id): ?array
+    {
+        $stmt = self::db()->prepare("SELECT * FROM `reservations` WHERE `reservation_id` = :id FOR UPDATE");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
 
     public static function forUser(int $userId): array
     {
@@ -66,7 +75,7 @@ class Reservation extends Model
             $params['section_id'] = (int) $filters['section_id'];
         }
         foreach (['from' => '>=', 'to' => '<='] as $key => $op) {
-            if (isset($filters[$key]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $filters[$key])) {
+            if (isset($filters[$key]) && Validate::date($filters[$key] ?? null)) {
                 $where[] = "r.reservation_date {$op} :{$key}";
                 $params[$key] = $filters[$key];
             }

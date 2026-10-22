@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Core\Validate;
+
 class BurialRecord extends Model
 {
     protected static string $table = 'burial_records';
@@ -53,7 +55,7 @@ class BurialRecord extends Model
             $params['lot_id'] = (int) $filters['lot_id'];
         }
         foreach (['from' => '>=', 'to' => '<='] as $key => $op) {
-            if (isset($filters[$key]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $filters[$key])) {
+            if (isset($filters[$key]) && Validate::date($filters[$key] ?? null)) {
                 $where[] = "b.burial_date {$op} :{$key}";
                 $params[$key] = $filters[$key];
             }

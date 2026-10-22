@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
+use App\Core\Validate;
 use App\Models\AuditLog;
 use App\Models\BurialRecord;
 use App\Models\Lot;
@@ -165,7 +166,7 @@ class BurialRecordController
                     $data[$field] = null;
                     continue;
                 }
-                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input[$field])) {
+                if (!Validate::date($input[$field])) {
                     Response::json(['error' => "$field must be in YYYY-MM-DD format"], 422);
                     return;
                 }
@@ -173,7 +174,7 @@ class BurialRecordController
             }
         }
         if (array_key_exists('burial_date', $input)) {
-            if ($input['burial_date'] === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input['burial_date'])) {
+            if (!Validate::date($input['burial_date'])) {
                 Response::json(['error' => 'burial_date must be in YYYY-MM-DD format'], 422);
                 return;
             }
@@ -280,8 +281,7 @@ class BurialRecordController
             if ($value === null) {
                 continue;
             }
-            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-            if ($date === false || $date->format('Y-m-d') !== $value) {
+            if (!Validate::date($value)) {
                 return "{$field} must be a date in YYYY-MM-DD format";
             }
         }

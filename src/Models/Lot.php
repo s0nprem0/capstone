@@ -147,6 +147,31 @@ class Lot extends Model
         return $row ?: ['reservations' => 0, 'burials' => 0];
     }
 
+    /**
+     * Returns a lot to the available pool once nothing holds it: no pending or
+     * approved reservation and no burial record. A lot with a burial against
+     * it is occupied whatever becomes of its reservations. Locks the row, so
+     * call it inside the caller's transaction.
+     */
+    public static function releaseIfFree(int $id): void
+    {
+        $lot = self::findForUpdate($id);
+        if (!$lot) {
+            return;
+        }
+
+        if ((int) self::usage($id)['burials'] > 0) {
+            if ($lot['status'] !== 'occupied') {
+                self::occupy($id);
+            }
+            return;
+        }
+
+        if ($lot['status'] !== 'available' && self::liveReservations($id) === 0) {
+            self::update($id, ['status' => 'available']);
+        }
+    }
+
     /** Pending or approved reservations still holding a lot. */
     public static function liveReservations(int $id): int
     {
