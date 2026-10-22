@@ -32,7 +32,9 @@ class Auth
      * Resolved once per request. requireRole() and the guard that follows it
      * both need the caller, and without this each call re-read the same row.
      * Keying on the session id makes a login in the same request re-resolve,
-     * and a missing id short-circuits before any lookup.
+     * and a missing id short-circuits before any lookup. An account that has
+     * been deactivated resolves to no one, so its open sessions stop working
+     * on their next request instead of lasting until the browser closes.
      */
     public static function user(): ?array
     {
@@ -43,7 +45,7 @@ class Auth
 
         if (self::$resolvedId !== $id) {
             $user = User::find($id);
-            self::$resolved = $user ? User::publicUser($user) : null;
+            self::$resolved = $user && $user['status'] === 'active' ? User::publicUser($user) : null;
             self::$resolvedId = $id;
         }
 
@@ -52,12 +54,13 @@ class Auth
 
     public static function id(): ?int
     {
-        return Session::get('user_id');
+        $user = self::user();
+        return $user === null ? null : (int) $user['user_id'];
     }
 
     public static function check(): bool
     {
-        return self::id() !== null;
+        return self::user() !== null;
     }
 
     public static function guest(): bool

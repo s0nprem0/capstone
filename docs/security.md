@@ -129,6 +129,9 @@ Additional account-safety rules in `UserController`:
 
 The session ID is regenerated on login and registration. Logout clears
 `$_SESSION`, expires the cookie, and calls `session_destroy()`.
+`Auth::user()` re-reads the account on every request and treats an `inactive`
+account as signed out, so deactivating an account ends its open sessions on
+their next request.
 
 **Limitations:** there is no application-level idle or absolute timeout, and
 `session.use_strict_mode` is not set. A stolen cookie remains usable until the
