@@ -108,6 +108,16 @@ class ReservationController
         try {
             $pdo->beginTransaction();
 
+            // The client's row first, so two requests from the same visitor
+            // queue here and cannot both slip under the pending limit.
+            User::findForUpdate($userId);
+            $limit = Reservation::maxPending();
+            if (Auth::role() === 'user' && $limit > 0 && Reservation::pendingCount($userId) >= $limit) {
+                $pdo->rollBack();
+                Response::json(['error' => "You already have {$limit} reservations waiting for review. Wait for the office to approve or reject one before requesting another."], 422);
+                return;
+            }
+
             // Lock the lot row so concurrent requests cannot both claim it.
             $lot = Lot::findForUpdate($lotId);
             if (!$lot || $lot['status'] !== 'available') {

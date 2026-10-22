@@ -101,7 +101,8 @@ CREATE TABLE `reservations` (
   FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE CASCADE,
   KEY `idx_reservations_user` (`user_id`),
   KEY `idx_reservations_lot` (`lot_id`),
-  KEY `idx_reservations_date` (`reservation_date`)
+  KEY `idx_reservations_date` (`reservation_date`),
+  KEY `idx_reservations_status_created` (`approved_status`, `created_at`)
 ) ENGINE=InnoDB;
 
 -- 5. PAYMENTS

@@ -14,6 +14,13 @@ class User extends Model
         return self::findBy('email', $email);
     }
 
+    public static function findForUpdate(int $id): ?array
+    {
+        $stmt = self::db()->prepare("SELECT * FROM `users` WHERE `user_id` = :id FOR UPDATE");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
     public static function verifyPassword(array $user, string $password): bool
     {
         return password_verify($password, $user['password']);

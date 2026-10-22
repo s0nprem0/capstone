@@ -79,13 +79,15 @@ VALUES
   (17, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S58-010'),  '2026-09-05', 'Single plot',                      1, 45000.00, 'approved', '2026-09-05 10:00:00');
 
 -- Ids 18-20: still awaiting approval. These are what the dashboard queues up,
--- and their plots are held as reserved.
+-- and their plots are held as reserved. Dated from load time: an unpaid
+-- pending request expires after RESERVATION_HOLD_DAYS, so fixed past dates
+-- would be turned away on the first request.
 INSERT INTO `reservations`
   (`reservation_id`, `user_id`, `lot_id`, `reservation_date`, `purpose`, `number_of_slots`, `total_amount`, `approved_status`, `created_at`)
 VALUES
-  (18, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S67-010'),  '2026-09-10', 'Family plot, four members',  4, 180000.00,'pending', '2026-09-10 09:20:00'),
-  (19, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-020'),  '2026-09-18', 'Single plot',              1, 45000.00, 'pending', '2026-09-18 14:50:00'),
-  (20, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-092'),  '2026-09-24', 'Single plot for my sister', 1, 45000.00, 'pending', '2026-09-24 08:30:00');
+  (18, 4, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S67-010'),  CURRENT_DATE + INTERVAL 30 DAY, 'Family plot, four members',  4, 180000.00,'pending', NOW() - INTERVAL 3 DAY),
+  (19, 6, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-020'),  CURRENT_DATE + INTERVAL 14 DAY, 'Single plot',              1, 45000.00, 'pending', NOW() - INTERVAL 2 DAY),
+  (20, 7, (SELECT lot_id FROM cemetery_lots WHERE lot_code = 'S65-092'),  CURRENT_DATE + INTERVAL 7 DAY, 'Single plot for my sister', 1, 45000.00, 'pending', NOW() - INTERVAL 5 HOUR);
 
 -- Ids 21-22: rejected, which returned their plots to the available pool. They
 -- stay on the plots' history but must not be holding anything.

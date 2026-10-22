@@ -11,6 +11,90 @@ class Reservation extends Model
     protected static string $table = 'reservations';
     protected static string $primaryKey = 'reservation_id';
 
+    /** Pending requests one client may hold at once; 0 turns the limit off. */
+    public static function maxPending(): int
+    {
+        return max(0, (int) ($_ENV['RESERVATION_MAX_PENDING'] ?? 3));
+    }
+
+    /** Days an unpaid pending request holds its plot; 0 keeps holds forever. */
+    public static function holdDays(): int
+    {
+        return max(0, (int) ($_ENV['RESERVATION_HOLD_DAYS'] ?? 7));
+    }
+
+    public static function pendingCount(int $userId): int
+    {
+        $stmt = self::db()->prepare(
+            "SELECT COUNT(*) FROM `reservations` WHERE `user_id` = :id AND `approved_status` = 'pending'"
+        );
+        $stmt->execute(['id' => $userId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Turn away pending requests that have held a plot past the hold period
+     * without a payment, and put their plots back on the map. Without this a
+     * request nobody follows up keeps a plot off the market for good.
+     *
+     * Run on every API request rather than from cron, which XAMPP does not
+     * have; the lookup is one indexed query and usually finds nothing. A
+     * request with a payment against it is never expired: the family is
+     * already paying and staff decide it.
+     */
+    public static function expireStale(): void
+    {
+        $days = self::holdDays();
+        if ($days === 0) {
+            return;
+        }
+
+        $stmt = self::db()->prepare(
+            "SELECT r.`reservation_id` FROM `reservations` r
+             WHERE r.`approved_status` = 'pending'
+               AND r.`created_at` < NOW() - INTERVAL :days DAY
+               AND NOT EXISTS (SELECT 1 FROM `payments` p WHERE p.`reservation_id` = r.`reservation_id`)"
+        );
+        $stmt->bindValue(':days', $days, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $id) {
+            self::expire((int) $id, $days);
+        }
+    }
+
+    private static function expire(int $id, int $days): void
+    {
+        $pdo = self::db();
+        try {
+            $pdo->beginTransaction();
+            $reservation = self::findForUpdate($id);
+            // Re-checked under the lock: staff may have decided it, or recorded
+            // a payment, since the lookup.
+            if (!$reservation || $reservation['approved_status'] !== 'pending' || Payment::countForReservation($id) > 0) {
+                $pdo->rollBack();
+                return;
+            }
+            self::update($id, ['approved_status' => 'rejected']);
+            Lot::releaseIfFree((int) $reservation['lot_id']);
+            AuditLog::record(null, 'expire', 'reservations', $id);
+            $lot = Lot::find((int) $reservation['lot_id']);
+            Notification::createFor(
+                (int) $reservation['user_id'],
+                "Your reservation #{$id} for lot " . ($lot['lot_code'] ?? $reservation['lot_id'])
+                    . " expired after {$days} days without a payment, and the lot was released. Contact the office to book again.",
+                'reservation',
+                $id
+            );
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public static function findForUpdate(int $id): ?array
     {
         $stmt = self::db()->prepare("SELECT * FROM `reservations` WHERE `reservation_id` = :id FOR UPDATE");

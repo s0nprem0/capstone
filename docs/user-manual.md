@@ -114,6 +114,11 @@ status.
 The plot is immediately **held** for you (it turns amber on the map) while it
 waits for approval. You will be notified when it is approved or rejected.
 
+You can have up to **3** reservations waiting for approval at a time. A request
+with no payment recorded against it is held for **7 days**; after that it
+expires, the plot is released, and you are notified. Pay at the office within
+that time to keep the hold. (The office can change both limits.)
+
 ### My Reservations
 
 Open **My Reservations** to see your own reservations only. Each row shows the
@@ -155,7 +160,9 @@ or status, or filter by approval. For each **pending** reservation you can:
 - **Reject** — the plot is released back to **Available** and the client is
   notified. You will be asked to confirm.
 
-Only pending reservations can be approved or rejected.
+Only pending reservations can be approved or rejected. A pending request with
+no payment expires on its own after the hold period (7 days by default) and
+shows as rejected; recording any payment keeps it in your queue.
 
 ### Payments
 

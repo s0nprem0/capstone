@@ -20,6 +20,7 @@ use App\Controllers\ReportController;
 use App\Controllers\LotController;
 use App\Controllers\SectionController;
 use App\Controllers\BackupController;
+use App\Models\Reservation;
 
 $router = new Router();
 Session::start();
@@ -111,6 +112,13 @@ $router->post('/api/backup/import', [$backup, 'import']);
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 if (str_starts_with($uri, '/api/')) {
+    try {
+        Reservation::expireStale();
+    } catch (\Throwable $e) {
+        // Housekeeping must never take the API down with it.
+        error_log('[expire] ' . $e->getMessage());
+    }
+
     try {
         $router->dispatch();
     } catch (\TypeError $e) {
