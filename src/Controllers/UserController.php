@@ -105,8 +105,8 @@ class UserController
             Response::json(['error' => 'Forbidden'], 403);
             return;
         }
-        if ($role !== 'admin' && $user['role'] === 'admin') {
-            Response::json(['error' => 'Admin accounts can only be managed by an administrator'], 403);
+        if ($role === 'staff' && !$self && $user['role'] !== 'user') {
+            Response::json(['error' => 'Staff and admin accounts can only be managed by an administrator'], 403);
             return;
         }
 
@@ -114,7 +114,12 @@ class UserController
         $data = [];
 
         if (isset($input['fullname'])) {
-            $data['fullname'] = trim($input['fullname']);
+            $fullname = trim((string) $input['fullname']);
+            if ($fullname === '') {
+                Response::json(['error' => 'fullname cannot be empty'], 422);
+                return;
+            }
+            $data['fullname'] = $fullname;
         }
         if (isset($input['email'])) {
             $email = strtolower(trim($input['email']));
@@ -147,7 +152,7 @@ class UserController
             }
             $data['status'] = $input['status'];
         }
-        if (isset($input['role'])) {
+        if (isset($input['role']) && $input['role'] !== $user['role']) {
             if ($role === 'user') {
                 Response::json(['error' => 'Users cannot change their role'], 403);
                 return;
@@ -157,7 +162,7 @@ class UserController
                 Response::json(['error' => 'Invalid role'], 422);
                 return;
             }
-            if ($self && $input['role'] !== $user['role']) {
+            if ($self) {
                 Response::json(['error' => 'You cannot change your own role'], 422);
                 return;
             }

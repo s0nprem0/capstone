@@ -75,7 +75,7 @@ Still open: Documents, concession/ownership records, record-level notes and expi
 
 ## Roles & permissions (RBAC) — from the study
 - **Administrator** (`admin`): everything — manage user/staff accounts, roles, permissions, access levels; approve/reject reservations; manage sections and lots; generate reports; backup/restore; view audit logs.
-- **Staff** (`staff`): process reservations, manage burial records and payments, manage user accounts (view/update/status, non-admin only), generate reports including the audit log.
+- **Staff** (`staff`): process reservations, manage burial records and payments, manage visitor accounts (view/update/status; staff and admin accounts are admin-only), generate reports including the audit log.
 - **Visitor/Client** (`user`): register, log in, view public cemetery map, make reservations, track reservation status, manage their registration info.
 - **Public** (not logged in): view the cemetery map and plot statuses (available/reserved/occupied) and search interred memorials; must log in to reserve. No owner or next-of-kin details are exposed.
 

@@ -191,9 +191,7 @@ export default function Users() {
           {editing.user_id === me.user_id && (
             <p className="text-muted">You cannot change your own status or role.</p>
           )}
-          {!isAdmin && editing.role === 'admin' && (
-            <p className="text-muted">Admin accounts can only be managed by an administrator.</p>
-          )}
+
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={savingEdit}>
@@ -247,7 +245,7 @@ export default function Users() {
                 <td data-label="Status"><StatusBadge kind="account" value={u.status} /></td>
                 <td className="cell-actions">
                   <div className="table-actions">
-                    {(isAdmin || u.role !== 'admin') && (
+                    {(isAdmin || u.role === 'user' || u.user_id === me.user_id) && (
                       <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>Edit</button>
                     )}
                     {isAdmin && u.user_id !== me.user_id && (

@@ -73,7 +73,7 @@ experience; bypassing them gains nothing.
 | Create/update burial record | – | – | yes | yes | `BurialRecordController` |
 | Delete burial record | – | – | – | yes | `BurialRecordController::destroy` |
 | View users | – | own profile via `/auth/me` | yes | yes | `UserController` |
-| Update user | – | own profile only | non-admin accounts | all accounts | `UserController::update` |
+| Update user | – | own profile only | own profile and visitor accounts | all accounts | `UserController::update` |
 | Create/delete user, assign roles | – | – | – | yes | `UserController` |
 | View sections | – | – | yes | yes | `SectionController` |
 | Create/update/delete sections | – | – | – | yes | `SectionController` |
@@ -87,12 +87,15 @@ experience; bypassing them gains nothing.
 
 Additional account-safety rules in `UserController`:
 
-- Staff can see `admin` accounts in the user list but cannot edit them.
+- Staff can see staff and admin accounts in the user list but can edit only
+  their own and visitor (`user`) accounts, so one staff member cannot reset
+  another's password or deactivate them.
 - Only an administrator can change a role; nobody can change their own role.
 - Nobody can deactivate or delete their own account.
 - A user with reservations cannot be deleted; deactivate the account instead.
 - Changing your **own** password requires the current password. Staff/admin
-  password resets for another account do not.
+  password resets for another account do not; staff can reset only visitor
+  passwords.
 - Visitors can update only their own name, email, phone, and password.
 
 ## 4. Authentication
