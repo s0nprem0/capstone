@@ -107,7 +107,9 @@ CREATE TABLE `reservations` (
 -- 5. PAYMENTS
 -- Money recorded against a reservation. Recording a payment does not gate
 -- approval; it only tracks what has been paid against total_amount. Method is a
--- manual record of how it was taken (no online gateway).
+-- manual record of how it was taken (no online gateway). A reservation with
+-- payments cannot be deleted (RESTRICT), so money records are never lost as a
+-- side effect; only an administrator deletes a payment, one at a time.
 CREATE TABLE `payments` (
   `payment_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `reservation_id` INT UNSIGNED NOT NULL,
@@ -118,7 +120,7 @@ CREATE TABLE `payments` (
   `notes` VARCHAR(255) NULL,
   `recorded_by` INT UNSIGNED NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`reservation_id`) REFERENCES `reservations`(`reservation_id`) ON DELETE RESTRICT,
   FOREIGN KEY (`recorded_by`) REFERENCES `users`(`user_id`) ON DELETE SET NULL,
   KEY `idx_payments_reservation` (`reservation_id`),
   KEY `idx_payments_date` (`payment_date`)

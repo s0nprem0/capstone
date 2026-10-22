@@ -139,6 +139,17 @@ class Lot extends Model
         return $row ?: ['reservations' => 0, 'burials' => 0];
     }
 
+    /** Pending or approved reservations still holding a lot. */
+    public static function liveReservations(int $id): int
+    {
+        $stmt = self::db()->prepare(
+            "SELECT COUNT(*) FROM `reservations`
+             WHERE `lot_id` = :id AND `approved_status` IN ('pending', 'approved')"
+        );
+        $stmt->execute(['id' => $id]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function search(array $filters): array
     {
         $where = [];

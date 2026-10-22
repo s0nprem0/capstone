@@ -64,7 +64,7 @@ experience; bypassing them gains nothing.
 | View all reservations | – | – | yes | yes | `ReservationController::index` |
 | View own reservation | – | own only | yes | yes | `ReservationController::show` |
 | Create reservation | – | own only | any visitor | any visitor | `ReservationController::store` |
-| Update, approve, reject, delete reservation | – | – | yes | yes | `ReservationController` |
+| Update, approve, reject, delete reservation (delete only while it has no payments) | – | – | yes | yes | `ReservationController` |
 | View all payments | – | – | yes | yes | `PaymentController::index` |
 | View own payments | – | yes | – | – | `PaymentController::mine` |
 | Record/update payment | – | – | yes | yes | `PaymentController` |

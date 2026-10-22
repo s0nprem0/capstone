@@ -239,17 +239,24 @@ class ReservationController
             Response::json(['error' => 'Not found'], 404);
             return;
         }
+        if (Payment::countForReservation($id) > 0) {
+            Response::json(['error' => 'This reservation has recorded payments and cannot be deleted. Reject it instead, or have an administrator remove the payments first.'], 422);
+            return;
+        }
         Reservation::delete($id);
-        $this->releaseLot((int) $reservation['lot_id']);
+        // A rejected reservation already let go of its lot, which may since
+        // have been reserved by someone else.
+        if ($reservation['approved_status'] !== 'rejected') {
+            $this->releaseLot((int) $reservation['lot_id']);
+        }
         AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
         Response::json(['message' => 'Deleted']);
     }
 
     /**
-     * Returns a lot to the available pool once nothing holds it. A lot that was
-     * only held ('reserved'), or that this reservation approved into 'occupied'
-     * but no burial record has claimed, goes back; a lot with a burial against it
-     * is left alone.
+     * Returns a lot to the available pool once nothing holds it: no other
+     * pending or approved reservation and no burial record. A lot with a
+     * burial against it is occupied whatever becomes of the reservation.
      */
     private function releaseLot(int $lotId): void
     {
@@ -258,12 +265,14 @@ class ReservationController
             return;
         }
 
-        if ($lot['status'] === 'reserved') {
-            Lot::update($lotId, ['status' => 'available']);
+        if ((int) Lot::usage($lotId)['burials'] > 0) {
+            if ($lot['status'] !== 'occupied') {
+                Lot::occupy($lotId);
+            }
             return;
         }
 
-        if ($lot['status'] === 'occupied' && (int) Lot::usage($lotId)['burials'] === 0) {
+        if ($lot['status'] !== 'available' && Lot::liveReservations($lotId) === 0) {
             Lot::update($lotId, ['status' => 'available']);
         }
     }

@@ -62,6 +62,13 @@ class Payment extends Model
         return $stmt->fetch() ?: null;
     }
 
+    public static function countForReservation(int $reservationId): int
+    {
+        $stmt = self::db()->prepare("SELECT COUNT(*) FROM `payments` WHERE `reservation_id` = :id");
+        $stmt->execute(['id' => $reservationId]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public static function totalForReservation(int $reservationId): float
     {
         $stmt = self::db()->prepare(
