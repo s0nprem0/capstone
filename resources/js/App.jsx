@@ -16,7 +16,6 @@ const NewReservation = lazy(() => import('./pages/NewReservation'))
 const BurialRecords = lazy(() => import('./pages/BurialRecords'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const Reports = lazy(() => import('./pages/Reports'))
-const LedgerReview = lazy(() => import('./pages/LedgerReview'))
 const Cemetery = lazy(() => import('./pages/Cemetery'))
 const Users = lazy(() => import('./pages/Users'))
 const Sections = lazy(() => import('./pages/Sections'))
@@ -54,7 +53,6 @@ export default function App() {
                 <Route path="/staff/burial-records" element={<BurialRecords />} />
                 <Route path="/staff/users" element={<Users />} />
                 <Route path="/staff/reports" element={<Reports />} />
-                <Route path="/staff/ledger" element={<LedgerReview />} />
               </Route>
 
               <Route element={<RequireRole roles={['admin']} />}>
@@ -67,7 +65,6 @@ export default function App() {
                 <Route path="/admin/sections/editor" element={<SectionEditor />} />
                 <Route path="/admin/lots" element={<LotEditor />} />
                 <Route path="/admin/reports" element={<Reports />} />
-                <Route path="/admin/ledger" element={<LedgerReview />} />
                 <Route path="/admin/settings" element={<Settings />} />
               </Route>
             </Route>

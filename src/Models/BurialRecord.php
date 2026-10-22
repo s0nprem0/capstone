@@ -25,16 +25,6 @@ class BurialRecord extends Model
         return (int) $stmt->fetchColumn();
     }
 
-    /** A burial already filed on this lot under the same name. */
-    public static function duplicate(int $lotId, string $name): ?array
-    {
-        $stmt = self::db()->prepare(
-            "SELECT * FROM `burial_records` WHERE `lot_id` = :lot_id AND LOWER(`deceased_fullname`) = LOWER(:name) LIMIT 1"
-        );
-        $stmt->execute(['lot_id' => $lotId, 'name' => $name]);
-        return $stmt->fetch() ?: null;
-    }
-
     public static function search(array $filters): array
     {
         $where = [];

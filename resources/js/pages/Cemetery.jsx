@@ -494,12 +494,6 @@ export default function Cemetery() {
                                 <dd>{interment.next_of_kin_name}</dd>
                               </div>
                             )}
-                            {interment.source && (
-                              <div>
-                                <dt>Source</dt>
-                                <dd>{interment.source}</dd>
-                              </div>
-                            )}
                           </dl>
                         </div>
                       ))}

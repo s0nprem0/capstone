@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate upgrade map-data ledger-import demo fresh build verify-map setup php node mysql
+.PHONY: up down restart logs install migrate upgrade map-data demo fresh build verify-map setup php node mysql
 
 # Compose provider. `docker compose` also works under Podman Desktop, where the
 # docker CLI is a shim over podman-compose; override for a bare podman install:
@@ -60,11 +60,6 @@ upgrade:
 # Run after `make migrate`.
 map-data:
 	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/survey/lots.sql
-
-# Stages the handwritten-ledger transcription (database/ledger/, not in git)
-# for review on the Ledger review page. Run after map-data; safe to re-run.
-ledger-import:
-	$(DC) exec -T php php tools/ledger_import.php
 
 # Loads the demo dataset. Run after `make migrate` and `make map-data`, which
 # reset the database to the schema and the surveyed plots alone.

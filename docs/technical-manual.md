@@ -203,24 +203,13 @@ reproduces the whole database.
 | `next_of_kin_name` | VARCHAR(100) | nullable |
 | `next_of_kin_phone` | VARCHAR(15) | nullable |
 | `interment_status` | ENUM(scheduled, interred) | default `scheduled` |
-| `source` | VARCHAR(120) | nullable; where a record carried over from paper came from ("Ledger book 1, photo 57") |
 | `created_at` | DATETIME | |
 
 **lot_owners** — plots sold at the office rather than online: `owner_id`,
 `lot_id` (FK, RESTRICT), `plot` (sub-plot, e.g. `A`), `owner_name` (as the
-ledger writes it, co-owners separated by `/`), `payment_terms`
-ENUM(`cash`,`installment`,`F`), `notes`, `source`, `created_at`. Staff/admin
-only; an owner keeps the plot `occupied`.
-
-**ledger_rows** — the handwritten ledger staged for review (data migration):
-`row_id`, `row_key` (SHA-1 of the transcribed fields, unique, so re-imports
-skip staged rows), `kind` ENUM(`owner`,`burial`), `book` (`1`, `2`, or `old`
-for the first transcription), `photo`, `block_label`, `lot`, `plot`, `name`,
-`terms`, `date_text` (as written), `burial_date` (proposed from `date_text`),
-`notes`, `doubt` (the transcriber's `check` column), `lot_id` (matched plot),
-`status` ENUM(`pending`,`approved`,`rejected`), `review_note` (reject reason,
-or why a rule held a row back), `record_id` (the owner or burial it became),
-`reviewed_by`, `reviewed_at`.
+sales book writes it, co-owners separated by `/`), `payment_terms`
+ENUM(`cash`,`installment`,`F`), `notes`, `created_at`. Staff/admin only; an
+owner keeps the plot `occupied`.
 
 **notifications** — per-user messages: `notification_id`, `user_id` (FK),
 `message`, `type` ENUM(`reservation`,`system`), `is_read`, `created_at`.
@@ -246,33 +235,6 @@ or why a rule held a row back), `record_id` (the owner or burial it became),
 - A recorded owner (`lot_owners`) holds a plot `occupied` like a burial: the
   release after a rejected/deleted reservation leaves it alone, and it cannot
   be set back to available by hand. Removing the last owner releases it.
-
-### Ledger import (data migration)
-
-`make ledger-import` runs `tools/ledger_import.php`, which reads
-`database/ledger/book*/batch*_{owners,burials}.csv` (the format in
-`database/ledger/BRIEF.md`) and the first transcription in
-`database/ledger/old/`, and stages every line in `ledger_rows`. It prints, per
-file, how many rows were staged, already staged, unmatched, and undated. Safe
-to re-run.
-
-- **Plot match**: a label `Block N …` with a numeric lot L is plot
-  `SN-LLL` (Block 5 lot 1 = `S5-001`). Named estates, Extension blocks,
-  niches, lettered lots and blocks beyond the survey stay unmatched for staff.
-- **Dates**: `m-d-yy`, `m/d/yy`, `m-d-yyyy`; a two-digit year is 19yy from 95
-  (the cemetery opened in 1995) and 20yy up to this year; partial, impossible
-  or future dates are left for staff.
-- **Approval** (`LedgerController`) runs in a transaction with the plot row
-  locked and refuses: no plot, no burial date, a plot with a pending or approved
-  online reservation (a double sale for the office to settle), a duplicate
-  owner/burial already on the plot, and a burial beyond the plot's capacity.
-  The record gets `source` set, the plot becomes `occupied`, and both the
-  approval and the new record are audit-logged.
-- **Photos** are served to staff and admin only, by number, from
-  `LEDGER_DIR` (default `database/ledger`), never from `public/`.
-- A payment's `amount` must be positive; `reservations.payment_status` is derived
-  from the sum of its payments (`unpaid` / `partial` / `paid`) and recomputed on
-  every payment change and every reservation `total_amount` change.
 
 ## 7. API reference
 
@@ -312,11 +274,6 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/lots/{id}/owners` | admin, staff | Record an owner; refused if an online reservation holds the plot |
 | `POST /api/lot-owners/{id}` | admin, staff | Update |
 | `POST /api/lot-owners/{id}/delete` | admin | Releases the plot if nothing else holds it |
-| `GET /api/ledger` | admin, staff | Staged ledger rows; `status`, `kind`, `issue` (`clean`/`doubt`/`unmatched`/`undated`), `q`, `limit`, `offset` |
-| `POST /api/ledger/{id}` | admin, staff | Correct a pending row (`name`, `lot_code`, `plot`, `burial_date`, `terms`, `doubt`) |
-| `POST /api/ledger/{id}/approve`, `/reject` | admin, staff | Reject needs a `reason` |
-| `POST /api/ledger/approve-clean` | admin, staff | Approves up to 200 clean rows; returns those a rule held back |
-| `GET /api/ledger/photo?book=&n=` | admin, staff | The source photo (JPEG) |
 | `GET /api/notifications` | Auth | `{ notifications, unread_count }` |
 | `GET /api/notifications/unread-count` | Auth | `{ unread_count }` (lightweight badge poll) |
 | `POST /api/notifications/{id}/read` \| `/read-all` | Auth | |

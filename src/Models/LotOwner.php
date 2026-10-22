@@ -10,8 +10,8 @@ class LotOwner extends Model
     protected static string $primaryKey = 'owner_id';
 
     /**
-     * As the sales ledger marks them: CASH, installment, and "F", which the
-     * book uses without saying what it stands for; kept as written.
+     * As the office's sales book marks them: CASH, installment, and "F",
+     * which the book uses without saying what it stands for; kept as written.
      */
     public const TERMS = ['cash', 'installment', 'F'];
 

@@ -7,8 +7,7 @@ import Select from './Select'
 const EMPTY = { owner_name: '', plot: '', payment_terms: '', notes: '' }
 
 /**
- * Who holds a plot sold at the office (the ledger's sales, or one entered
- * here). Staff and admin only: owner names are personal data and the public
+ * Who holds a plot sold at the office rather than reserved online. Staff and admin only: owner names are personal data and the public
  * map shows a plot's status, never its owner. Removing an owner is admin only.
  */
 export default function PlotOwners({ lot, isAdmin, onChanged }) {
@@ -81,7 +80,6 @@ export default function PlotOwners({ lot, isAdmin, onChanged }) {
           {(o.payment_terms || o.notes) && (
             <p className="text-muted">{[label(OWNER_TERMS, o.payment_terms), o.notes].filter(Boolean).join(' · ')}</p>
           )}
-          {o.source && <p className="text-muted">{o.source}</p>}
           {!form && (
             <div className="table-actions">
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => open(o)}>Edit</button>

@@ -64,24 +64,12 @@ export const ACCOUNT_STATUS = {
   inactive: 'Inactive',
 }
 
-// How the handwritten sales ledger marks a sale. "F" is the book's own mark,
-// kept as written because nobody has said what it stands for.
+// How the office's sales book marks a sale. "F" is the book's own mark, kept
+// as written because nobody has said what it stands for.
 export const OWNER_TERMS = {
   cash: 'Cash',
   installment: 'Installment',
   F: 'F (as written)',
-}
-
-export const LEDGER_KINDS = {
-  owner: 'Sale',
-  burial: 'Interment',
-}
-
-export const LEDGER_ISSUES = {
-  clean: 'Ready to approve',
-  doubt: 'Transcriber unsure',
-  unmatched: 'No plot chosen',
-  undated: 'No burial date',
 }
 
 export const NOTIFICATION_TYPES = {

@@ -43,7 +43,6 @@ function roleNav(role) {
           { to: '/staff/reservations', label: 'Reservations' },
           { to: '/staff/payments', label: 'Payments' },
           { to: '/staff/burial-records', label: 'Burial Records' },
-          { to: '/staff/ledger', label: 'Ledger review' },
         ],
       },
       {
@@ -71,7 +70,6 @@ function roleNav(role) {
           { to: '/admin/reservations', label: 'Reservations' },
           { to: '/admin/payments', label: 'Payments' },
           { to: '/admin/burial-records', label: 'Burial Records' },
-          { to: '/admin/ledger', label: 'Ledger review' },
         ],
       },
       {

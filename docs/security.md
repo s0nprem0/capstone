@@ -21,7 +21,7 @@ Protected assets, in order of sensitivity:
 | Asset | Where it lives | Why it matters |
 | --- | --- | --- |
 | Account credentials | `users.password` (bcrypt hash), PHP session | Account takeover, staff/admin abuse |
-| Personal data | `users`, `reservations`, `payments`, `burial_records`, `lot_owners`, `ledger_rows`, `notifications`; the ledger transcription and photos in `database/ledger/` | Data Privacy Act of 2012 (RA 10173) obligations |
+| Personal data | `users`, `reservations`, `payments`, `burial_records`, `lot_owners`, `notifications` | Data Privacy Act of 2012 (RA 10173) obligations |
 | Cemetery records | `cemetery_sections`, `cemetery_lots`, `reservations`, `burial_records`, `lot_owners` | Financial and legal records; plot ownership |
 | Audit trail | `audit_logs`, `login_attempts` | Accountability and incident investigation |
 | Database backups | SQL export (download) | Contains all of the above, including password hashes |
@@ -76,7 +76,6 @@ experience; bypassing them gains nothing.
 | Delete burial record | – | – | – | yes | `BurialRecordController::destroy` |
 | View/record/update plot owners | – | – | yes | yes | `LotOwnerController` |
 | Remove plot owner | – | – | – | yes | `LotOwnerController::destroy` |
-| Review, correct, approve, reject ledger rows; view ledger photos | – | – | yes | yes | `LedgerController` |
 | View users | – | own profile via `/auth/me` | yes | yes | `UserController` |
 | Update user | – | own profile only | own profile and visitor accounts | all accounts | `UserController::update` |
 | Create/delete user, assign roles | – | – | – | yes | `UserController` |
@@ -244,8 +243,7 @@ Entries are written for:
 - create/update/delete on payments and burial records;
 - create/update/delete/import/regrid on lots and sections;
 - create/update/delete on users;
-- create/update/delete on plot owners; update/approve/reject on ledger rows
-  (an approval also logs the owner or burial it created);
+- create/update/delete on plot owners;
 - backup export, import, and failed imports.
 
 The audit report is available to **staff and administrators** at
@@ -297,10 +295,9 @@ Operational rules:
 | `users` | Full name, email, phone, bcrypt password hash, role, status |
 | `reservations` | User, plot, reservation date, free-text purpose, amount |
 | `payments` | Amount, method, reference number, notes, recording staff member |
-| `burial_records` | Deceased name, birth/death dates, burial date, plot, type, next-of-kin name and phone, paper source |
-| `lot_owners` | Owner and co-owner names as the ledger writes them, sub-plot, payment terms, notes |
-| `ledger_rows` | Transcribed owner and deceased names, dates, notes, reviewer |
-| `database/ledger/` (files, not in git) | Photos of the handwritten ledger, the transcription CSVs, and earlier database dumps with password hashes |
+| `burial_records` | Deceased name, birth/death dates, burial date, plot, type, next-of-kin name and phone |
+| `lot_owners` | Owner and co-owner names as the sales book writes them, sub-plot, payment terms, notes |
+| `database/ledger/` (local files, gitignored, not used by the app) | Photos and transcription notes of the handwritten sales book, and earlier database dumps with password hashes; keep off shared drives and delete after encoding |
 | `notifications` | Message text, recipient |
 | `audit_logs` | Actor, action, record ID, IP address, timestamp; changed values (which can include names, emails, phones and amounts) and the email tried on a failed login |
 | `login_attempts` | IP address, attempted email, timestamp |
@@ -315,8 +312,9 @@ notice):
   `GET /api/lots/{id}/memorials` return the deceased's name, date of death, plot
   code, and section for records whose interment status is `interred`. They do
   not return birth dates or next-of-kin details, and are capped at 50 results.
-- Every ledger interment a reviewer approves is filed as `interred`, so it
-  joins the public memorial search. Owners from the ledger are never public.
+- Interments encoded from the sales book are filed like any other, so those
+  marked `interred` join the public memorial search. Plot owners are never
+  public.
 
 **Minimization already in place:** the reservation draft in `localStorage`
 deliberately omits the free-text purpose; the app makes no analytics or

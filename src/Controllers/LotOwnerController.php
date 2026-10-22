@@ -131,7 +131,7 @@ class LotOwnerController
             Lot::releaseIfFree((int) $owner['lot_id']);
             AuditLog::record(Auth::id(), 'delete', 'lot_owners', $id, AuditLog::snapshot(
                 $owner,
-                ['lot_id', 'plot', 'owner_name', 'payment_terms', 'source']
+                ['lot_id', 'plot', 'owner_name', 'payment_terms']
             ));
             $pdo->commit();
         } catch (\Throwable $e) {

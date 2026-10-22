@@ -17,7 +17,6 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `login_attempts`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `notifications`;
-DROP TABLE IF EXISTS `ledger_rows`;
 DROP TABLE IF EXISTS `lot_owners`;
 DROP TABLE IF EXISTS `burial_records`;
 DROP TABLE IF EXISTS `reservations`;
@@ -141,9 +140,6 @@ CREATE TABLE `burial_records` (
   `next_of_kin_name` VARCHAR(100) NULL,
   `next_of_kin_phone` VARCHAR(15) NULL,
   `interment_status` ENUM('scheduled', 'interred') NOT NULL DEFAULT 'scheduled',
-  -- Where a record carried over from paper came from, e.g. "Ledger book 1,
-  -- photo 57", so staff can check it against the page. NULL when entered here.
-  `source` VARCHAR(120) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE CASCADE,
   KEY `idx_burials_deceased` (`deceased_fullname`),
@@ -196,10 +192,10 @@ CREATE TABLE `login_attempts` (
 
 -- 10. LOT_OWNERS
 -- Who holds a plot sold outside the online reservations: the office's paper
--- sales, carried over from the handwritten ledger or entered by staff. An
--- online reservation's client is recorded on the reservation instead. Only the
--- name as the book writes it ("O. Mojica / Hermie Reyes" for successive or
--- co-owners): these owners have no account. `plot` is the sub-plot of a
+-- sales, encoded by staff from the sales book. An online reservation's client
+-- is recorded on the reservation instead. Only the name as the book writes it
+-- ("O. Mojica / Hermie Reyes" for successive or co-owners): these owners have
+-- no account. `plot` is the sub-plot of a
 -- multi-plot lot ("A", "B-C"). RESTRICT: an owned plot cannot be deleted.
 CREATE TABLE `lot_owners` (
   `owner_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -208,47 +204,10 @@ CREATE TABLE `lot_owners` (
   `owner_name` VARCHAR(255) NOT NULL,
   `payment_terms` ENUM('cash', 'installment', 'F') NULL,
   `notes` VARCHAR(500) NULL,
-  `source` VARCHAR(120) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE RESTRICT,
   KEY `idx_lot_owners_lot` (`lot_id`),
   KEY `idx_lot_owners_name` (`owner_name`)
-) ENGINE=InnoDB;
-
--- 11. LEDGER_ROWS (data migration staging)
--- One transcribed line of the handwritten sales ledger, waiting for review
--- (tools/ledger_import.php loads them). Nothing here is a record yet: staff
--- check each row against its photo, and approving it creates the lot_owners or
--- burial_records row (record_id) on the surveyed plot it matched (lot_id).
--- row_key is a hash of the transcribed fields, so a re-import skips rows it
--- has already staged.
-CREATE TABLE `ledger_rows` (
-  `row_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `row_key` CHAR(40) NOT NULL,
-  `kind` ENUM('owner', 'burial') NOT NULL,
-  `book` VARCHAR(10) NOT NULL,
-  `photo` VARCHAR(50) NULL,
-  `block_label` VARCHAR(120) NOT NULL,
-  `lot` VARCHAR(20) NOT NULL,
-  `plot` VARCHAR(10) NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `terms` VARCHAR(20) NULL,
-  `date_text` VARCHAR(50) NULL,
-  `burial_date` DATE NULL,
-  `notes` VARCHAR(500) NULL,
-  `doubt` VARCHAR(500) NULL,
-  `lot_id` INT UNSIGNED NULL,
-  `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-  `review_note` VARCHAR(255) NULL,
-  `record_id` INT UNSIGNED NULL,
-  `reviewed_by` INT UNSIGNED NULL,
-  `reviewed_at` DATETIME NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY `uq_ledger_row_key` (`row_key`),
-  KEY `idx_ledger_status` (`status`, `kind`),
-  KEY `idx_ledger_lot` (`lot_id`),
-  FOREIGN KEY (`lot_id`) REFERENCES `cemetery_lots`(`lot_id`) ON DELETE SET NULL,
-  FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ===== Seed data =====
