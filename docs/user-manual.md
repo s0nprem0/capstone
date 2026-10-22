@@ -203,6 +203,40 @@ A burial can only be filed against a plot that is **Reserved** or **Occupied** â
 a free plot cannot host a burial. Use the search and the status/type dropdowns to
 find entries. **Delete** removes an entry permanently and asks for confirmation.
 
+### Plot owners (on the map)
+
+Open a plot on the **Cemetery Map**. Below its interment records, **Owners**
+lists who holds the plot when it was sold at the office rather than online,
+with the sub-plot, payment terms and where the record came from. Choose **Add an
+owner** to record a sale, or **Edit** on an owner. Recording an owner marks the
+plot **Occupied**. Only an administrator can **Remove** an owner. Owners are
+never shown to the public or to visitors.
+
+### Ledger review
+
+**Ledger review** holds the handwritten sales ledger, one line per row, waiting
+to be checked before it becomes a record. Each row shows the photo it was read
+from (choose **photo N** to open it), what the book says, the name, the
+surveyed plot it was matched to, the date or terms, and anything the
+transcriber was unsure of (in amber).
+
+For each row:
+
+1. Open its photo and compare.
+2. **Edit** to correct the name, choose the plot code (rows from named estates
+   such as Royale Court have no automatic match), set a burial date the book
+   wrote unclearly, and tick **I checked this against the photo** to clear the
+   transcriber's doubt.
+3. **Approve** records the owner on the plot, or files the interment in the
+   register; either marks the plot **Occupied**. **Reject** asks why (for
+   example "duplicate of row 12").
+
+**Approve ready rows** approves, 200 at a time, every row with a matched plot, a
+date and no doubt. A row the system refuses stays in the list with the reason:
+an online reservation already on the plot, the same person already recorded
+there, or a plot that is full for its type (change the plot's type in the Lot
+Editor if the book shows a family estate).
+
 ### Users
 
 Open **Users** to view accounts and their status. Search by name, email, phone,

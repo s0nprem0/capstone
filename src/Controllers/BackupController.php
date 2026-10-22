@@ -23,6 +23,8 @@ class BackupController
         'reservations',
         'payments',
         'burial_records',
+        'lot_owners',
+        'ledger_rows',
         'notifications',
         'audit_logs',
     ];

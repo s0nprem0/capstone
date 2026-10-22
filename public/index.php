@@ -20,6 +20,8 @@ use App\Controllers\ReportController;
 use App\Controllers\LotController;
 use App\Controllers\SectionController;
 use App\Controllers\BackupController;
+use App\Controllers\LedgerController;
+use App\Controllers\LotOwnerController;
 use App\Models\Reservation;
 
 $router = new Router();
@@ -37,6 +39,8 @@ $reports = new ReportController($router);
 $lots = new LotController($router);
 $sections = new SectionController($router);
 $backup = new BackupController($router);
+$ledger = new LedgerController($router);
+$owners = new LotOwnerController($router);
 
 $router->get('/api/map', [$map, 'map']);
 
@@ -99,6 +103,18 @@ $router->post('/api/lots/import-grid', [$lots, 'importGrid']);
 $router->post('/api/lots/regrid', [$lots, 'regrid']);
 $router->post('/api/lots/{id}', [$lots, 'update']);
 $router->post('/api/lots/{id}/delete', [$lots, 'destroy']);
+
+$router->get('/api/lots/{id}/owners', [$owners, 'index']);
+$router->post('/api/lots/{id}/owners', [$owners, 'store']);
+$router->post('/api/lot-owners/{id}', [$owners, 'update']);
+$router->post('/api/lot-owners/{id}/delete', [$owners, 'destroy']);
+
+$router->get('/api/ledger', [$ledger, 'index']);
+$router->get('/api/ledger/photo', [$ledger, 'photo']);
+$router->post('/api/ledger/approve-clean', [$ledger, 'approveClean']);
+$router->post('/api/ledger/{id}', [$ledger, 'update']);
+$router->post('/api/ledger/{id}/approve', [$ledger, 'approve']);
+$router->post('/api/ledger/{id}/reject', [$ledger, 'reject']);
 
 $router->get('/api/sections', [$sections, 'index']);
 $router->get('/api/sections/{id}', [$sections, 'show']);

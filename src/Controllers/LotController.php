@@ -217,8 +217,8 @@ class LotController
         // that record (reject, delete), or the next client could book it too.
         if (($input['status'] ?? null) === 'available' && $lot['status'] !== 'available') {
             $usage = Lot::usage($id);
-            if (Lot::liveReservations($id) > 0 || (int) $usage['burials'] > 0) {
-                Response::json(['error' => 'This lot is held by a pending or approved reservation or has a burial record, so it cannot be marked available. Reject or remove that record instead.'], 422);
+            if (Lot::liveReservations($id) > 0 || $usage['burials'] > 0 || $usage['owners'] > 0) {
+                Response::json(['error' => 'This lot is held by a pending or approved reservation, a burial record or a recorded owner, so it cannot be marked available. Reject or remove that record instead.'], 422);
                 return;
             }
         }
@@ -332,9 +332,9 @@ class LotController
             return;
         }
         $usage = Lot::usage($id);
-        if (($usage['reservations'] + $usage['burials']) > 0) {
+        if (($usage['reservations'] + $usage['burials'] + $usage['owners']) > 0) {
             Response::json([
-                'error' => 'This lot is linked to reservations or burial records and cannot be deleted.',
+                'error' => 'This lot is linked to reservations, burial records or owners and cannot be deleted.',
                 'usage' => $usage,
             ], 409);
             return;

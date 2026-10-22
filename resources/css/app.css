@@ -1639,6 +1639,67 @@ table.report-table {
   width: 160px;
 }
 
+/* Ledger review: what needs a reviewer's eye reads in the warning colour,
+   so a page of rows can be scanned for it. */
+.ledger-flag {
+  color: var(--color-warning-text);
+  font-weight: 600;
+}
+
+.ledger-notes {
+  max-width: 22rem;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+
+.ledger-photos {
+  white-space: nowrap;
+}
+
+.ledger-edit > td {
+  background: var(--color-bg);
+}
+
+.ledger-edit form {
+  display: grid;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+}
+
+.ledger-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 44px;
+  font-size: var(--text-sm);
+}
+
+/* Several interments or owners on one plot: ruled apart like register lines. */
+.plot-interment + .plot-interment,
+.plot-owner + .plot-owner {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.plot-owner .table-actions {
+  margin-top: var(--space-2xs);
+}
+
+.plot-owner-form {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.ledger-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
 /* What an audit entry changed can run long; let it wrap instead of widening
    the table past its panel. */
 .audit-details {

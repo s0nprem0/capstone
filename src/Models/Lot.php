@@ -134,24 +134,25 @@ class Lot extends Model
         return $stmt->fetchAll();
     }
 
-    /** Count of reservations/burials attached to a lot (deletion guard). */
+    /** Count of reservations, burials and recorded owners attached to a lot (deletion guard). */
     public static function usage(int $id): array
     {
         $stmt = self::db()->prepare(
             "SELECT
                 (SELECT COUNT(*) FROM `reservations` r WHERE r.`lot_id` = ?) AS `reservations`,
-                (SELECT COUNT(*) FROM `burial_records` b WHERE b.`lot_id` = ?) AS `burials`"
+                (SELECT COUNT(*) FROM `burial_records` b WHERE b.`lot_id` = ?) AS `burials`,
+                (SELECT COUNT(*) FROM `lot_owners` o WHERE o.`lot_id` = ?) AS `owners`"
         );
-        $stmt->execute([$id, $id]);
+        $stmt->execute([$id, $id, $id]);
         $row = $stmt->fetch();
-        return $row ?: ['reservations' => 0, 'burials' => 0];
+        return array_map('intval', $row ?: ['reservations' => 0, 'burials' => 0, 'owners' => 0]);
     }
 
     /**
      * Returns a lot to the available pool once nothing holds it: no pending or
-     * approved reservation and no burial record. A lot with a burial against
-     * it is occupied whatever becomes of its reservations. Locks the row, so
-     * call it inside the caller's transaction.
+     * approved reservation, no burial record and no recorded owner. A lot with
+     * a burial or an owner against it is occupied whatever becomes of its
+     * reservations. Locks the row, so call it inside the caller's transaction.
      */
     public static function releaseIfFree(int $id): void
     {
@@ -160,7 +161,8 @@ class Lot extends Model
             return;
         }
 
-        if ((int) self::usage($id)['burials'] > 0) {
+        $usage = self::usage($id);
+        if ($usage['burials'] > 0 || $usage['owners'] > 0) {
             if ($lot['status'] !== 'occupied') {
                 self::occupy($id);
             }

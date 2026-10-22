@@ -8,6 +8,7 @@ import CemeterySvgMap, { sectionColor } from '../components/CemeterySvgMap'
 import Loading from '../components/Loading'
 import MapSearch from '../components/MapSearch'
 import PlotPicker from '../components/PlotPicker'
+import PlotOwners from '../components/PlotOwners'
 import Select from '../components/Select'
 import Blank from '../components/Blank'
 import { nearestSection } from '../lib/sections'
@@ -56,11 +57,16 @@ export default function Cemetery() {
   const { query, people } = match
   const graves = useMemo(() => new Set(people.map((p) => String(p.lot_id))), [people])
 
-  useEffect(() => {
+  // Re-run after recording an owner here: that takes the plot off the market,
+  // and the mutation has already dropped the cached map.
+  const loadMap = () =>
     api('/api/map').then(({ ok, data }) => {
       if (ok) setMapData(data)
       else setError(data?.error || 'Failed to load map data')
     })
+
+  useEffect(() => {
+    loadMap()
   }, [])
 
   // Tabs, counts and the map all follow the active filter. The linked plot is
@@ -94,16 +100,17 @@ export default function Cemetery() {
     [allLots, lotParam]
   )
 
-  // The interment record filed against the selected plot. /api/burial-records is
-  // staff and admin only, and the map itself is public -- so this is fetched
-  // only for those roles. A public map must not disclose who lies in a plot.
-  const [interment, setInterment] = useState(null)
+  // The interment records filed against the selected plot -- a family plot
+  // holds several. /api/burial-records is staff and admin only, and the map
+  // itself is public -- so this is fetched only for those roles. A public map
+  // must not disclose next of kin.
+  const [interments, setInterments] = useState([])
   const [intermentLoading, setIntermentLoading] = useState(false)
   const canSeeInterments = user?.role === 'staff' || user?.role === 'admin'
 
   useEffect(() => {
     if (!canSeeInterments || !selectedLot) {
-      setInterment(null)
+      setInterments([])
       return undefined
     }
     let current = true
@@ -111,7 +118,7 @@ export default function Cemetery() {
     api(`/api/burial-records?lot_id=${selectedLot.lot_id}`)
       .then(({ ok, data }) => {
         if (!current) return
-        setInterment(ok && Array.isArray(data) && data.length ? data[0] : null)
+        setInterments(ok && Array.isArray(data) ? data : [])
       })
       .finally(() => current && setIntermentLoading(false))
     return () => { current = false }
@@ -458,14 +465,14 @@ export default function Cemetery() {
                     </div>
                   )}
 
-                  {/* The interment record, printed inside the plot's own entry.
+                  {/* The interment records, printed inside the plot's own entry.
                       Staff and admin only -- see the fetch above. */}
                   {canSeeInterments && (
                     <div className="plot-doc plot-doc--filed">
-                      <p className="plot-doc-label">Interment record</p>
+                      <p className="plot-doc-label">{interments.length > 1 ? `Interment records (${interments.length})` : 'Interment record'}</p>
                       {intermentLoading && <p className="text-muted">Checking the register…</p>}
-                      {!intermentLoading && interment && (
-                        <>
+                      {!intermentLoading && interments.map((interment) => (
+                        <div key={interment.burial_id} className="plot-interment">
                           <p className="plot-doc-name">{interment.deceased_fullname}</p>
                           {(interment.date_of_birth || interment.date_of_death) && (
                             <p className="plot-doc-years">{lifespan(interment.date_of_birth, interment.date_of_death)}</p>
@@ -487,13 +494,23 @@ export default function Cemetery() {
                                 <dd>{interment.next_of_kin_name}</dd>
                               </div>
                             )}
+                            {interment.source && (
+                              <div>
+                                <dt>Source</dt>
+                                <dd>{interment.source}</dd>
+                              </div>
+                            )}
                           </dl>
-                        </>
-                      )}
-                      {!intermentLoading && !interment && (
+                        </div>
+                      ))}
+                      {!intermentLoading && interments.length === 0 && (
                         <p className="text-muted">No interment is filed against this plot.</p>
                       )}
                     </div>
+                  )}
+
+                  {canSeeInterments && (
+                    <PlotOwners lot={selectedLot} isAdmin={user.role === 'admin'} onChanged={loadMap} />
                   )}
                 </>
               )}
