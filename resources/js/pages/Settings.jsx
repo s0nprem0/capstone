@@ -87,7 +87,11 @@ export default function Settings() {
       <div className="form-card section-block">
         <h3>Restore</h3>
         <Notice notice={restore.notice} />
-        <p className="text-muted">Restore from a backup file. This overwrites all current data with the backup.</p>
+        <p className="text-muted">
+          Restore from a backup file downloaded above. This overwrites all current data with the backup, except
+          the audit log, which keeps its full history. If the restore fails partway, the database is put back as
+          it was.
+        </p>
 
         {/* The native file input cannot be styled to match; it stays in the
             page, focusable and labelled, behind a button-styled label. */}

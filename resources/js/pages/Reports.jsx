@@ -30,12 +30,32 @@ const periodText = (from, to) => {
   return from === to ? longDate(from) : `${longDate(from)} to ${longDate(to)}`
 }
 
+const shown = (v) => (v === null || v === '' ? '(none)' : String(v))
+
+// An entry's details as one line: "status: pending → approved; amount: …" for
+// an update, "lot_code: S3-001; amount: 5000" for a create or delete.
+const describeDetails = (raw) => {
+  if (!raw) return ''
+  let details
+  try {
+    details = typeof raw === 'string' ? JSON.parse(raw) : raw
+  } catch {
+    return String(raw)
+  }
+  if (details.changes) {
+    return Object.entries(details.changes).map(([field, [from, to]]) => `${field}: ${shown(from)} → ${shown(to)}`).join('; ')
+  }
+  return Object.entries(details.record || details).map(([field, value]) => `${field}: ${shown(value)}`).join('; ')
+}
+
 const AUDIT_COLUMNS = [
   { label: 'When', value: (l) => l.created_at },
   { label: 'User', value: (l) => l.user_name || 'System' },
   { label: 'Action', value: (l) => l.action },
   { label: 'Table', value: (l) => l.table_name },
   { label: 'Record', value: (l) => l.record_id },
+  { label: 'Details', value: (l) => describeDetails(l.details) },
+  { label: 'IP address', value: (l) => l.ip_address },
 ]
 
 /**
@@ -262,7 +282,7 @@ export default function Reports() {
                   <table className="table report-table">
                     <caption className="visually-hidden">Audit log</caption>
                     <thead>
-                      <tr><th>When</th><th>User</th><th>Action</th><th>Table</th><th>Record</th></tr>
+                      <tr><th>When</th><th>User</th><th>Action</th><th>Table</th><th>Record</th><th>Details</th></tr>
                     </thead>
                     <tbody>
                       {audit.items.map((l) => (
@@ -272,6 +292,7 @@ export default function Reports() {
                           <td>{l.action}</td>
                           <td>{l.table_name}</td>
                           <td>{l.record_id ? `#${l.record_id}` : <Blank />}</td>
+                          <td className="audit-details">{describeDetails(l.details) || <Blank />}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -279,7 +300,7 @@ export default function Reports() {
                 </div>
               )}
               {audit.total > audit.items.length && (
-                <button type="button" className="btn btn-secondary btn-sm no-print" onClick={showMoreAudit} disabled={auditBusy}>
+                <button type="button" className="btn btn-secondary btn-sm no-print report-more" onClick={showMoreAudit} disabled={auditBusy}>
                   {auditBusy ? 'Loading...' : `Show ${Math.min(200, audit.total - audit.items.length)} more`}
                 </button>
               )}

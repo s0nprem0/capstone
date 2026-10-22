@@ -77,7 +77,7 @@ class Reservation extends Model
             }
             self::update($id, ['approved_status' => 'rejected']);
             Lot::releaseIfFree((int) $reservation['lot_id']);
-            AuditLog::record(null, 'expire', 'reservations', $id);
+            AuditLog::record(null, 'expire', 'reservations', $id, AuditLog::changes($reservation, ['approved_status' => 'rejected']));
             $lot = Lot::find((int) $reservation['lot_id']);
             Notification::createFor(
                 (int) $reservation['user_id'],

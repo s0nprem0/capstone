@@ -76,7 +76,10 @@ class PaymentController
         ]);
 
         Payment::recomputeStatus($reservationId);
-        AuditLog::record(Auth::id(), 'create', 'payments', $id);
+        AuditLog::record(Auth::id(), 'create', 'payments', $id, AuditLog::snapshot(
+            ['reservation_id' => $reservationId] + $fields['data'],
+            ['reservation_id', 'amount', 'method', 'payment_date', 'reference_no']
+        ));
         $this->notify($reservation, $fields['data']['amount']);
 
         Response::json(Payment::withDetails($id), 201);
@@ -100,7 +103,7 @@ class PaymentController
         if ($fields['data'] !== []) {
             Payment::update($id, $fields['data']);
             Payment::recomputeStatus((int) $payment['reservation_id']);
-            AuditLog::record(Auth::id(), 'update', 'payments', $id);
+            AuditLog::record(Auth::id(), 'update', 'payments', $id, AuditLog::changes($payment, $fields['data']));
         }
 
         Response::json(Payment::withDetails($id));
@@ -116,7 +119,10 @@ class PaymentController
         }
         Payment::delete($id);
         Payment::recomputeStatus((int) $payment['reservation_id']);
-        AuditLog::record(Auth::id(), 'delete', 'payments', $id);
+        AuditLog::record(Auth::id(), 'delete', 'payments', $id, AuditLog::snapshot(
+            $payment,
+            ['reservation_id', 'amount', 'method', 'payment_date', 'reference_no', 'recorded_by']
+        ));
         Response::json(['message' => 'Deleted']);
     }
 

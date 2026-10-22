@@ -47,8 +47,10 @@ Boundaries where input must never be trusted:
   header, JSON body, query string, and uploaded file.
 - **PHP → MySQL** (`App\Models\*`): all SQL is parameterized; identifiers come
   from code, never from request values.
-- **Admin → backup/restore**: an administrator can upload SQL that is executed
-  as the application's database user. This is a privileged, high-impact action.
+- **Admin → backup/restore**: an administrator can upload a backup that is
+  executed as the application's database user. Only the statement shapes the
+  export writes are accepted (section 11), but it is still a privileged,
+  high-impact action.
 - **Public internet → deployment**: TLS termination, firewall, and service
   exposure are deployment responsibilities (section 13).
 
@@ -225,23 +227,31 @@ CSP once the Vite asset graph and inline styles are audited.
 
 ## 10. Audit logging
 
-`audit_logs` records the actor (`user_id`), action, table, record ID, and
-timestamp. Entries are written for:
+`audit_logs` records the actor (`user_id`), action, table, record ID, client IP
+address, timestamp, and `details`: for an update, each changed field as an
+old/new pair; for a create or delete, the fields that identify the row (a
+deleted payment keeps its amount, method and reservation). Password hashes and
+traced map outlines are recorded only as "changed" (`AuditLog::MASKED`).
+Entries are written for:
 
-- registration (actor null), login, and logout;
+- registration (actor null), login, logout, and failed logins (actor null,
+  with the email that was tried);
+- expiry of an unpaid pending reservation (actor null);
 - create/update/approve/reject/delete on reservations;
 - create/update/delete on payments and burial records;
 - create/update/delete/import/regrid on lots and sections;
 - create/update/delete on users;
-- backup export and import.
+- backup export, import, and failed imports.
 
 The audit report is available to **staff and administrators** at
-`GET /api/reports/audit-logs` (most recent 200, with an optional date range).
-There is no delete or edit endpoint for audit rows.
+`GET /api/reports/audit-logs` (an optional date range, paged with `limit` and
+`offset`; the Reports page exports every page to CSV). There is no delete or
+edit endpoint for audit rows, and a restore does not touch them (section 11).
 
-**Limitations:** failed logins live only in `login_attempts`; the audit trail
-does not include IP address, user agent, or before/after values. Add these if an
-investigation needs to reconstruct who changed what.
+**Limitations:** the user agent is not recorded. An entry names its actor by
+`user_id`, so after a restore that changes who holds an ID, older entries show
+the name of the account that holds it now. Anyone with direct database access
+can still edit the table; for tamper evidence, ship the log off the host.
 
 ## 11. Backup and restore
 
@@ -249,12 +259,19 @@ investigation needs to reconstruct who changed what.
   audit-logged.
 - The export is a SQL dump of every table, including **password hashes and
   personal data**. Store and transfer it as sensitive material.
-- Import accepts a file upload or a raw request body up to 50 MB, splits it into
-  statements, and executes each with `PDO::exec()` as the application's database
-  user. It is not restricted to the app's own dump format.
-- Restore is **not transactional**; a failure part-way leaves the database
-  partially applied. Restore failures currently include the raw PDO message in
-  the JSON response, which can disclose schema details.
+- Import accepts a file upload or a raw request body up to 50 MB. The file must
+  start with the export's header line, and every statement must be one the
+  export writes (`SET NAMES`, `SET FOREIGN_KEY_CHECKS`, `DROP TABLE IF EXISTS`,
+  `CREATE TABLE`, `INSERT INTO`); anything else rejects the whole file before
+  a statement runs.
+- Statements for `audit_logs` are skipped, so a restore can neither erase nor
+  rewrite the audit trail; the live log is kept as it is.
+- MySQL commits DDL on its own, so a restore cannot be one transaction. The
+  current database is dumped first; if a statement fails part-way, that dump is
+  played back and the response says the database was put back. Only if the
+  play-back itself fails is the database left partial (HTTP 500), and the
+  admin must restore the last good file. Error details go to the server log,
+  not the response.
 - `login_attempts` is not in the export's fixed table order but is included via
   the `SHOW TABLES` fallback.
 
@@ -262,8 +279,8 @@ Operational rules:
 
 - Treat a backup file as a credential: encrypt it at rest, restrict who can
   download it, and delete old copies on a schedule.
-- Only restore SQL you produced or have reviewed. A malicious or mistaken file
-  can drop tables or insert arbitrary accounts.
+- Only restore backups you produced or have reviewed. A file in the export
+  format can still drop tables or insert arbitrary accounts.
 - Prefer restoring from the `mysql` client against a separate maintenance user
   during a maintenance window, rather than through the web endpoint.
 - Test a restore on a copy before relying on the backup.
@@ -277,7 +294,7 @@ Operational rules:
 | `payments` | Amount, method, reference number, notes, recording staff member |
 | `burial_records` | Deceased name, birth/death dates, burial date, plot, type, next-of-kin name and phone |
 | `notifications` | Message text, recipient |
-| `audit_logs` | Actor, action, record ID, timestamp |
+| `audit_logs` | Actor, action, record ID, IP address, timestamp; changed values (which can include names, emails, phones and amounts) and the email tried on a failed login |
 | `login_attempts` | IP address, attempted email, timestamp |
 
 **Public disclosures** (by design, but must be covered by the site's privacy
@@ -353,8 +370,7 @@ The repository defaults are for local development only. Before deploying:
 | No idle/absolute session timeout | Stolen cookie stays valid until logout/browser close | Set server-side timeout |
 | `Secure` cookie depends on `$_SERVER['HTTPS']` | Missing flag behind a misconfigured proxy | Deploy with correct HTTPS detection |
 | No HSTS or script-level CSP | Weaker transport/clickjacking hardening | XFO/CSP frame denial in place; add at deployment |
-| Backup import executes arbitrary SQL as the app DB user | Full database compromise if an admin account is abused | Admin-only, CSRF-protected, 50 MB cap; review files, use least privilege |
-| Restore errors echo PDO messages | Schema disclosure to an admin session | Return a generic message (planned fix) |
+| Backup import runs export-format SQL as the app DB user | A crafted file can replace any table's data if an admin account is abused | Admin-only, CSRF-protected, 50 MB cap, statement allowlist, audit log preserved; review files, use least privilege |
 | Public memorial search exposes deceased names, dates, and plots | Privacy exposure beyond the family | Intentional feature; requires privacy notice and policy |
 | No retention/erasure workflow | Indefinite retention of personal data | Manual operations; define a schedule |
 | No encryption at rest | Disk/host compromise exposes data | Host disk encryption recommended |

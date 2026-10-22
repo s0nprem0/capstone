@@ -144,7 +144,10 @@ class ReservationController
             ]);
 
             Lot::reserve($lotId);
-            AuditLog::record(Auth::id(), 'create', 'reservations', $reservationId);
+            AuditLog::record(Auth::id(), 'create', 'reservations', $reservationId, AuditLog::snapshot(
+                ['user_id' => $userId, 'lot_code' => $lot['lot_code'], 'number_of_slots' => $slots, 'total_amount' => (float) ($lot['price'] * $slots)],
+                ['user_id', 'lot_code', 'number_of_slots', 'total_amount']
+            ));
 
             $pdo->commit();
         } catch (\Throwable $e) {
@@ -211,7 +214,7 @@ class ReservationController
             Reservation::update($id, $data);
             // total_amount may have moved, so the stored payment_status is stale.
             Payment::recomputeStatus($id);
-            AuditLog::record(Auth::id(), 'update', 'reservations', $id);
+            AuditLog::record(Auth::id(), 'update', 'reservations', $id, AuditLog::changes($reservation, $data));
         }
 
         Response::json(Reservation::withLot($id));
@@ -253,7 +256,10 @@ class ReservationController
             if ($reservation['approved_status'] !== 'rejected') {
                 Lot::releaseIfFree((int) $reservation['lot_id']);
             }
-            AuditLog::record(Auth::id(), 'delete', 'reservations', $id);
+            AuditLog::record(Auth::id(), 'delete', 'reservations', $id, AuditLog::snapshot(
+                $reservation,
+                ['user_id', 'lot_id', 'reservation_date', 'approved_status', 'total_amount']
+            ));
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -301,7 +307,13 @@ class ReservationController
                 Lot::releaseIfFree($lotId);
             }
 
-            AuditLog::record(Auth::id(), $decision === 'approved' ? 'approve' : 'reject', 'reservations', $id);
+            AuditLog::record(
+                Auth::id(),
+                $decision === 'approved' ? 'approve' : 'reject',
+                'reservations',
+                $id,
+                AuditLog::changes($reservation, ['approved_status' => $decision])
+            );
             Notification::createFor(
                 (int) $reservation['user_id'],
                 "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}.",

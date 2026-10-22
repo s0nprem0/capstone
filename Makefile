@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate map-data demo fresh build verify-map setup php node mysql
+.PHONY: up down restart logs install migrate upgrade map-data demo fresh build verify-map setup php node mysql
 
 # Compose provider. `docker compose` also works under Podman Desktop, where the
 # docker CLI is a shim over podman-compose; override for a bare podman install:
@@ -46,6 +46,12 @@ build:
 
 migrate:
 	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
+
+# Applies one in-place upgrade to an existing database, keeping its data:
+#   make upgrade FILE=database/upgrades/2026-10-22-integrity-and-audit.sql
+upgrade:
+	@test -n "$(FILE)" || (echo "usage: make upgrade FILE=database/upgrades/<file>.sql" && exit 1)
+	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < $(FILE)
 
 # Loads the surveyed map: the 70 sections and the 6769 plots traced off the plan
 # in public/traces/survey-lines.png. Kept out of schema.sql because it is

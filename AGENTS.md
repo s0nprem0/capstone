@@ -67,7 +67,7 @@ Implemented end-to-end (API + React page + server-side RBAC on every route):
 - Reservations — submission, admin/staff approval restricted to pending rows, transactional lot claim; approval is what moves a lot from `reserved` to `occupied`, and rejecting or deleting one returns the plot only when no other pending/approved reservation or burial record holds it; a reservation with payments cannot be deleted; a visitor may hold `RESERVATION_MAX_PENDING` (3) pending requests, and an unpaid pending request expires after `RESERVATION_HOLD_DAYS` (7)
 - Payments — manual recording (cash / GCash / bank transfer / cheque / other) against a reservation, with a derived `reservations.payment_status` (`unpaid` / `partial` / `paid`); recording a payment does not gate approval; staff/admin record, a visitor sees their own payments; revenue stat on the dashboard and a payments report. No online gateway
 - Burial records (capped at the lot's capacity, cremations excepted; recording one marks the lot `occupied`), notifications, debounced search/filters, reports, dashboards, audit trail
-- Backup/restore — admin-only SQL export/import, audit-logged
+- Backup/restore — admin-only SQL export/import, audit-logged; import accepts only the export's own statements, never touches `audit_logs`, and plays back a pre-restore dump if it fails partway
 
 Payments were re-added on request (they had been cut after the early sprints). `reservations.payment_status` is derived from the `payments` rows via `Payment::recomputeStatus` and stored, so it must be recomputed whenever a payment changes or a reservation's `total_amount` changes.
 
@@ -120,9 +120,9 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 - Session auth with `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS, and ID regeneration on login. CSRF token required on every `POST` except login/register.
 - Input validation/sanitization on client and server; uniqueness checks prevent duplicate users and double-booked lots.
 - Security headers (`Core/Headers`): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies. HSTS and script/style CSP are deployment TODOs.
-- Audit trail for logins, logouts, and every create/update/approve/reject/delete; readable by staff and admins.
+- Audit trail for logins, failed logins, logouts, and every create/update/approve/reject/delete, with the client IP and the changed values (`AuditLog::changes`/`snapshot`; secrets masked); readable by staff and admins. Schema changes to an existing database ship as `database/upgrades/*.sql` (`make upgrade FILE=...`) alongside `schema.sql`.
 - Minimize collected personal data; restrict access by role; document public disclosures (map statuses, memorial search); define retention/erasure before deployment.
-- Backup/restore is admin-only and audit-logged; import executes arbitrary SQL as the app DB user, so review files and use a least-privilege DB account.
+- Backup/restore is admin-only and audit-logged; import runs export-format SQL (an allowlist of statement shapes) as the app DB user, so review files and use a least-privilege DB account.
 
 ## Conventions & quality bar
 - PHP: `declare(strict_types=1)`, PSR-4 `App\`, existing style.

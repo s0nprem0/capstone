@@ -100,6 +100,9 @@ class AuthController
         }
 
         RateLimiter::recordFailure($ip, $email);
+        // login_attempts is cleared on the next success, so the lasting record
+        // of a failed sign-in is here.
+        AuditLog::record(null, 'login_failed', 'users', null, ['email' => mb_substr($email, 0, 100)]);
         Response::json(['error' => 'Invalid credentials or inactive account'], 401);
     }
 

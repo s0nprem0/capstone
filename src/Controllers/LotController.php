@@ -279,7 +279,7 @@ class LotController
 
         if ($data !== []) {
             Lot::update($id, $data);
-            AuditLog::record(Auth::id(), 'update', 'cemetery_lots', $id);
+            AuditLog::record(Auth::id(), 'update', 'cemetery_lots', $id, AuditLog::changes($lot, $data));
         }
 
         Response::json(Lot::find($id));
@@ -356,7 +356,7 @@ class LotController
             return;
         }
         Lot::delete($id);
-        AuditLog::record(Auth::id(), 'delete', 'cemetery_lots', $id);
+        AuditLog::record(Auth::id(), 'delete', 'cemetery_lots', $id, AuditLog::snapshot($lot, ['lot_code', 'section_id', 'lot_type', 'status']));
         Response::json(['message' => 'Deleted']);
     }
 

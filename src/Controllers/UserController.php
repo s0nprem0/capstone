@@ -78,7 +78,10 @@ class UserController
             'status' => $status,
         ]);
 
-        AuditLog::record(Auth::id(), 'create', 'users', $userId);
+        AuditLog::record(Auth::id(), 'create', 'users', $userId, AuditLog::snapshot(
+            ['email' => $email, 'role' => $role, 'status' => $status],
+            ['email', 'role', 'status']
+        ));
         Response::json(['user' => User::publicUser(User::find($userId))], 201);
     }
 
@@ -185,7 +188,7 @@ class UserController
 
         if ($data !== []) {
             User::update($id, $data);
-            AuditLog::record(Auth::id(), 'update', 'users', $id);
+            AuditLog::record(Auth::id(), 'update', 'users', $id, AuditLog::changes($user, $data));
         }
 
         Response::json(['user' => User::publicUser(User::find($id))]);
@@ -208,7 +211,7 @@ class UserController
             return;
         }
         User::delete($id);
-        AuditLog::record(Auth::id(), 'delete', 'users', $id);
+        AuditLog::record(Auth::id(), 'delete', 'users', $id, AuditLog::snapshot($user, ['fullname', 'email', 'role']));
         Response::json(['message' => 'Deleted']);
     }
 }

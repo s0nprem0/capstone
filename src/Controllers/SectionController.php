@@ -165,7 +165,7 @@ class SectionController
 
         if ($data !== []) {
             CemeterySection::update($id, $data);
-            AuditLog::record(Auth::id(), 'update', 'cemetery_sections', $id);
+            AuditLog::record(Auth::id(), 'update', 'cemetery_sections', $id, AuditLog::changes($section, $data));
         }
 
         Response::json(CemeterySection::find($id));
@@ -191,7 +191,7 @@ class SectionController
         }
 
         CemeterySection::delete($id);
-        AuditLog::record(Auth::id(), 'delete', 'cemetery_sections', $id);
+        AuditLog::record(Auth::id(), 'delete', 'cemetery_sections', $id, AuditLog::snapshot($section, ['section_name', 'section_number', 'location']));
         Response::json(['message' => 'Deleted']);
     }
 }

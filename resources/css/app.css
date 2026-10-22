@@ -1639,6 +1639,18 @@ table.report-table {
   width: 160px;
 }
 
+/* What an audit entry changed can run long; let it wrap instead of widening
+   the table past its panel. */
+.audit-details {
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+  font-size: 0.875em;
+}
+
+.report-more {
+  margin-top: var(--space-sm);
+}
+
 .register-head-actions {
   display: flex;
   flex-wrap: wrap;

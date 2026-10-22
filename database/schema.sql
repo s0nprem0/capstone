@@ -168,6 +168,11 @@ CREATE TABLE `audit_logs` (
   `action` VARCHAR(100) NOT NULL,
   `table_name` VARCHAR(50) NOT NULL,
   `record_id` INT UNSIGNED NULL,
+  -- Where the request came from, and what it did: the changed fields as
+  -- old/new pairs for an update, or the identifying fields of a created or
+  -- deleted row. Password hashes are never written here (AuditLog::MASKED).
+  `ip_address` VARCHAR(45) NULL,
+  `details` JSON NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE SET NULL,
   KEY `idx_audit_user` (`user_id`),

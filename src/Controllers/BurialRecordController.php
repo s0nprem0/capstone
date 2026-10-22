@@ -136,7 +136,10 @@ class BurialRecordController
             Lot::occupy($lotId);
         }
 
-        AuditLog::record(Auth::id(), 'create', 'burial_records', $burialId);
+        AuditLog::record(Auth::id(), 'create', 'burial_records', $burialId, AuditLog::snapshot(
+            ['deceased_fullname' => $deceasedName, 'lot_code' => $lot['lot_code'], 'burial_date' => $burialDate],
+            ['deceased_fullname', 'lot_code', 'burial_date']
+        ));
         Response::json(BurialRecord::withDetails($burialId), 201);
     }
 
@@ -244,7 +247,7 @@ class BurialRecordController
             if ($lot['status'] !== 'occupied') {
                 Lot::occupy($lotId);
             }
-            AuditLog::record(Auth::id(), 'update', 'burial_records', $id);
+            AuditLog::record(Auth::id(), 'update', 'burial_records', $id, AuditLog::changes($record, $data));
         }
 
         Response::json(BurialRecord::withDetails($id));
@@ -253,12 +256,16 @@ class BurialRecordController
     public function destroy(int $id): void
     {
         Auth::requireRole(['admin']);
-        if (!BurialRecord::find($id)) {
+        $record = BurialRecord::withDetails($id);
+        if (!$record) {
             Response::json(['error' => 'Not found'], 404);
             return;
         }
         BurialRecord::delete($id);
-        AuditLog::record(Auth::id(), 'delete', 'burial_records', $id);
+        AuditLog::record(Auth::id(), 'delete', 'burial_records', $id, AuditLog::snapshot(
+            $record,
+            ['deceased_fullname', 'date_of_death', 'burial_date', 'lot_code', 'interment_status']
+        ));
         Response::json(['message' => 'Deleted']);
     }
 
