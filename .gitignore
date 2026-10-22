@@ -19,3 +19,9 @@ __pycache__/
 
 # transient output from browser verification runs
 .playwright-mcp/
+
+# The handwritten-ledger transcription: real owners' and the deceased's names,
+# photos of the book, and database dumps (password hashes). Personal data under
+# the Data Privacy Act; it never goes to the repository.
+database/ledger/
+database/ledger.sql
