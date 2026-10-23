@@ -67,6 +67,7 @@ export default function Reservations() {
     { label: 'Plot', value: (r) => r.lot_code },
     { label: 'Section', value: (r) => r.section_name },
     ...(isStaffView ? [{ label: 'Client', value: (r) => r.user_name }] : []),
+    { label: 'Purpose', value: (r) => r.purpose },
     { label: 'Reservation date', value: (r) => r.reservation_date },
     { label: 'Slots', value: (r) => Number(r.number_of_slots) },
     { label: 'Approval', value: (r) => label(APPROVAL_STATUS, r.approved_status) },
@@ -147,8 +148,14 @@ export default function Reservations() {
                     <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">{r.lot_code}</Link>
                     <span className="text-muted"> #{r.reservation_id}</span>
                     <span className="cell-sub">{r.section_name}</span>
+                    {!isStaffView && r.purpose && <span className="cell-sub">For: {r.purpose}</span>}
                   </td>
-                  {isStaffView && <td data-label="Client">{r.user_name}</td>}
+                  {isStaffView && (
+                    <td data-label="Client">
+                      {r.user_name}
+                      {r.purpose && <span className="cell-sub">For: {r.purpose}</span>}
+                    </td>
+                  )}
                   <td data-label="Date">{longDate(r.reservation_date)}</td>
                   <td data-label="Slots" className="num">{r.number_of_slots}</td>
                   <td data-label="Approval">
