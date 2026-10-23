@@ -86,13 +86,22 @@ class AuthController
         $password = $input['password'] ?? '';
         $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 
-        if (RateLimiter::blocked($ip)) {
-            Response::json(['error' => 'Too many failed login attempts. Try again in 15 minutes.'], 429);
+        // A blank form is a mistake, not a guess, so it is not counted.
+        if ($email === '' || !is_string($password) || $password === '') {
+            Response::json(['error' => 'Enter your email and password.'], 422);
+            return;
+        }
+
+        if (RateLimiter::blocked($ip, $email)) {
+            Response::json([
+                'error' => 'Too many failed sign-in attempts. Wait ' . RateLimiter::WINDOW_MINUTES
+                    . ' minutes, then try again, or ask the cemetery office to reset your password.',
+            ], 429);
             return;
         }
 
         if (Auth::attempt($email, $password)) {
-            RateLimiter::clear($ip);
+            RateLimiter::clear($ip, $email);
             $userId = Auth::id();
             AuditLog::record($userId, 'login', 'users', $userId);
             Response::json(['user' => Auth::user()]);
@@ -103,7 +112,24 @@ class AuthController
         // login_attempts is cleared on the next success, so the lasting record
         // of a failed sign-in is here.
         AuditLog::record(null, 'login_failed', 'users', null, ['email' => mb_substr($email, 0, 100)]);
-        Response::json(['error' => 'Invalid credentials or inactive account'], 401);
+
+        // Only someone who knows the password learns the account is switched
+        // off, so this says nothing to a guesser that "incorrect" would not.
+        $user = User::findByEmail($email);
+        if ($user && $user['status'] !== 'active' && User::verifyPassword($user, $password)) {
+            Response::json(['error' => 'This account has been deactivated. Contact the cemetery office to restore it.'], 403);
+            return;
+        }
+
+        $left = RateLimiter::remaining($ip, $email);
+        $error = 'Incorrect email or password.';
+        if ($left === 0) {
+            $error .= ' Sign-in for this account is paused for ' . RateLimiter::WINDOW_MINUTES . ' minutes.';
+        } elseif ($left <= 2) {
+            $error .= " {$left} " . ($left === 1 ? 'attempt' : 'attempts') . ' left before sign-in is paused for '
+                . RateLimiter::WINDOW_MINUTES . ' minutes.';
+        }
+        Response::json(['error' => $error], 401);
     }
 
     public function logout(): void

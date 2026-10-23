@@ -246,7 +246,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/map` | Public | All sections + lots with SVG geometry and status counts |
 | `GET /api/csrf-token` | Public | Returns `{ csrf_token }` |
 | `POST /api/auth/register` | Public | Creates a `user`; signs them in |
-| `POST /api/auth/login` | Public | Rate-limited → 429 after 5 failures / 15 min |
+| `POST /api/auth/login` | Public | Rate-limited → 429 after 5 failures per account (20 per IP) / 15 min |
 | `POST /api/auth/logout` | Auth | Ends the session |
 | `GET /api/auth/me` | Auth | Current user |
 | `GET /api/users`, `GET /api/users/{id}` | admin, staff | Public fields only |
@@ -322,9 +322,9 @@ inventory, deployment checklist, and accepted risks, is
   profile. Nobody may change their own role, deactivate their own account, or
   delete themselves. A visitor can read only their own reservation; `mine`
   endpoints filter by `Auth::id()`.
-- **Rate limiting** — 5 failed logins per IP per 15 minutes (`login_attempts`),
-  then `429`. The limit is per IP only; registration and public search are not
-  throttled.
+- **Rate limiting** — 5 failed logins per account from one IP, or 20 per IP,
+  per 15 minutes (`login_attempts`), then `429`. Blank fields are a `422` and
+  are not counted; registration and public search are not throttled.
 - **Input validation & uniqueness** — server-side, per endpoint (unique email,
   unique `lot_code`, valid dates/enums, capacity, coordinates). All SQL is
   parameterized with emulated prepares disabled.

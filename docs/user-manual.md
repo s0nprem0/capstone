@@ -298,8 +298,9 @@ Backups and restores are recorded in the audit log.
 
 | Problem | What to do |
 | --- | --- |
-| "Invalid credentials or inactive account" | Check the email and password. If it still fails, your account may be deactivated — ask an administrator. |
-| "Too many failed login attempts" | Wait 15 minutes and try again. |
+| "Incorrect email or password" | Check the email and password. The message warns you when only 1 or 2 tries are left. |
+| "This account has been deactivated" | Ask the cemetery office to reactivate it. |
+| "Too many failed sign-in attempts" | Wait 15 minutes and try again, or ask the office to reset your password. Other accounts on the same computer are not affected. |
 | "Lot is not available" | Someone else reserved it first. Choose another plot. |
 | "Lot capacity exceeded" | Reduce the number of slots to the maximum shown for that plot type. |
 | "A burial record requires a reserved or occupied lot" | Reserve and get the plot approved before filing a burial. |

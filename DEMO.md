@@ -44,7 +44,7 @@ one admin, and an empty queue.
 | Visitor | `lito.garcia@demo.test` | `demo1234` |
 
 `corazon.lim@demo.test` exists but is inactive — logging in as them returns
-"Invalid credentials or inactive account", which is the point.
+"This account has been deactivated", which is the point.
 
 All demo accounts share one password so nothing has to be memorised on the spot.
 

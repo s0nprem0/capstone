@@ -110,15 +110,20 @@ Additional account-safety rules in `UserController`:
   registration starts a session.
 - **Login** (`POST /api/auth/login`) verifies the bcrypt hash with
   `password_verify()` and requires `users.status = 'active'`. A success
-  regenerates the session ID and clears failed attempts for that IP.
+  regenerates the session ID and clears failed attempts for that account from
+  that IP. A blank email or password is a `422` and is not counted.
 - **Logout** (`POST /api/auth/logout`) writes an audit entry and destroys the
   session and its cookie.
-- **Throttling** (`App\Core\RateLimiter`): 5 failed attempts per IP address in a
-  rolling 15-minute window, tracked in `login_attempts`. The sixth attempt in
-  the window answers HTTP 429.
-- **Failure messages**: login answers the same generic message for a wrong
-  password and an inactive/unknown account, avoiding account enumeration at the
-  login form. Registration does disclose whether an email is already registered.
+- **Throttling** (`App\Core\RateLimiter`): 5 failed attempts on one account from
+  one IP address, or 20 from one IP address across all accounts, in a rolling
+  15-minute window, tracked in `login_attempts`. The next attempt answers HTTP
+  429. Keying on the account keeps one clerk's typos from locking out every desk
+  behind the office's shared address.
+- **Failure messages**: login answers the same "Incorrect email or password"
+  for a wrong password and an unknown account, avoiding account enumeration at
+  the login form, and warns when 2 or fewer attempts remain. A deactivated
+  account is named only when the correct password is given, which tells a
+  guesser nothing. Registration does disclose whether an email is already registered.
 - **No password reset, email verification, or MFA** is implemented. There is no
   self-service recovery; an administrator or staff member resets the password.
 
@@ -372,7 +377,7 @@ The repository defaults are for local development only. Before deploying:
 | No MFA | A stolen password is enough to sign in | Rate limiting only; planned for deployment |
 | No password reset or email verification | No self-service recovery; addresses unverified | Admin/staff reset; document process |
 | Password minimum is 8 characters, no complexity rule | Weak passwords possible | bcrypt hashing; consider a stronger policy |
-| Login throttling is per IP only | Shared NAT can lock out a group; distributed attacks bypass it | 5/15 min window; add per-account throttling |
+| Login throttling is per IP (per account, plus a per-address ceiling) | Distributed attacks across many addresses bypass it | 5 per account / 20 per address per 15 min; add per-account throttling across addresses |
 | Registration and public memorial search are not rate-limited | Account spam and name/plot scraping | Add throttling and monitoring |
 | Registration reveals whether an email exists | Account enumeration | Generic login message; consider a neutral registration response |
 | No idle/absolute session timeout | Stolen cookie stays valid until logout/browser close | Set server-side timeout |
