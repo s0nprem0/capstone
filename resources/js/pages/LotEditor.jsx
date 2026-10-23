@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import ConfirmButton from '../components/ConfirmButton'
+import Combobox from '../components/Combobox'
 import Select from '../components/Select'
 import Icon from '../components/Icon'
+import OccupancyBar from '../components/OccupancyBar'
+import PlotPicker from '../components/PlotPicker'
 import ZoomControls from '../components/ZoomControls'
 import { STATUS_COLORS } from '../components/CemeterySvgMap'
 import { MAP_VIEWBOX } from '../map/tracePaths'
@@ -91,6 +94,8 @@ export default function LotEditor() {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState(null)
   const [reference, setReference] = useState(readReference)
+  const [lotFind, setLotFind] = useState('')
+  const [lotStatus, setLotStatus] = useState('all')
 
   const svgRef = useRef(null)
   const rafRef = useRef(null)
@@ -108,6 +113,39 @@ export default function LotEditor() {
   const setVbBoth = useCallback((next) => {
     vbRef.current = next
     setVb(next)
+  }, [])
+
+  // Keep the map snapshot in step with edits. Switching sections re-seeds the
+  // visible list from that snapshot, so without this a lot snapped back to its
+  // old position the moment you looked at another section and returned.
+  const mergeSnapshot = useCallback((rows) => {
+    const list = (Array.isArray(rows) ? rows : [rows]).filter(Boolean)
+    if (list.length === 0) return
+    const byId = new Map(list.map((row) => [String(row.lot_id), row]))
+    setMapData((prev) =>
+      prev && {
+        ...prev,
+        sections: prev.sections.map((s) => ({
+          ...s,
+          lots: (s.lots || []).map((l) => {
+            const next = byId.get(String(l.lot_id))
+            return next ? { ...l, ...next } : l
+          }),
+        })),
+      }
+    )
+  }, [])
+
+  const dropSnapshot = useCallback((lotId) => {
+    setMapData((prev) =>
+      prev && {
+        ...prev,
+        sections: prev.sections.map((s) => ({
+          ...s,
+          lots: (s.lots || []).filter((l) => String(l.lot_id) !== String(lotId)),
+        })),
+      }
+    )
   }, [])
 
   const updateReference = (patch) => {
@@ -166,10 +204,11 @@ export default function LotEditor() {
           return res ? { ...l, ...res.data } : l
         })
       )
+      mergeSnapshot(results.filter((r) => r.ok && r.data?.lot_id).map((r) => r.data))
       flashSaved()
     }
     setSaving(false)
-  }, [flashSaved])
+  }, [flashSaved, mergeSnapshot])
 
   const queueSave = useCallback(() => {
     clearTimeout(saveTimerRef.current)
@@ -185,13 +224,14 @@ export default function LotEditor() {
     const { ok, data } = await api(`/api/lots/${entry.lotId}`, { method: 'POST', body: entry.prev })
     if (ok) {
       setLots((prev) => prev.map((l) => (l.lot_id === entry.lotId ? { ...l, ...data } : l)))
+      mergeSnapshot(data)
       flashSaved()
     } else {
       setError(data?.error || 'Undo failed')
     }
     undoRef.current = null
     setUndoStamp(null)
-  }, [flashSaved])
+  }, [flashSaved, mergeSnapshot])
 
   const zoomAt = useCallback(
     (px, py, factor) => {
@@ -271,6 +311,9 @@ export default function LotEditor() {
     setLots(sectionRow.lots || [])
     setSelectedId(null)
     setForm(null)
+    // A plot search is scoped to one section (codes are section-prefixed), so
+    // carrying it across would only ever show an empty list.
+    setLotFind('')
   }, [sectionRow?.section_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fly to the section when it (or the data) changes. Framed on the section's
@@ -294,20 +337,53 @@ export default function LotEditor() {
     const [x, y, w, h] = parseViewBox(sec.viewBox)
     const pad = Math.max(60, w * 0.15, h * 0.15)
     flyTo([x - pad, y - pad, w + pad * 2, h + pad * 2])
-  }, [focusKey, mapData]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [focusKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedLot = lots.find((l) => l.lot_id === selectedId) || null
 
-  // An aspect-correct frame around a rectangle. Height is derived from the pane's
-  // own aspect so the view does not letterbox, and a minimum width keeps a small
-  // target from filling the screen with itself.
+  const sectionCounts = useMemo(() => {
+    const counts = Object.fromEntries(PLOT_STATUSES.map((status) => [status, 0]))
+    lots.forEach((lot) => {
+      if (counts[lot.status] !== undefined) counts[lot.status]++
+    })
+    return counts
+  }, [lots])
+
+  const visibleLots = useMemo(() => {
+    const q = lotFind.trim().toLowerCase()
+    return lots.filter((lot) => {
+      const passesStatus = lotStatus === 'all' || lot.status === lotStatus
+      const passesFind = !q || `${lot.lot_code} ${lot.block || ''}`.toLowerCase().includes(q)
+      return passesStatus && passesFind
+    })
+  }, [lots, lotFind, lotStatus])
+
+  const sectionOptions = useMemo(
+    () =>
+      (mapData?.sections || []).map((sec) => {
+        const secLots = sec.lots || []
+        const available = secLots.filter((l) => l.status === 'available').length
+        return {
+          value: String(sec.section_id),
+          label: sec.section_name,
+          description: `${secLots.length} plot${secLots.length === 1 ? '' : 's'} · ${available} available`,
+        }
+      }),
+    [mapData]
+  )
+
+  // An aspect-correct frame around a rectangle. The pane's own aspect decides
+  // the height, both the target's width and height are fitted, and a minimum
+  // width keeps a small target from filling the screen with itself.
   const frameBox = (x0, y0, x1, y1, { pad = 0, minWidth = 0 } = {}) => {
     const el = svgRef.current
     const rect = el?.getBoundingClientRect()
     const aspect = rect && rect.height > 0 ? rect.width / rect.height : 4096 / 3072
     const cx = (x0 + x1) / 2
     const cy = (y0 + y1) / 2
-    const width = Math.max(minWidth, x1 - x0 + pad * 2)
+    // Both dimensions have to fit: a perimeter section is a tall, narrow strip,
+    // and sizing from its width alone left most of it off the bottom of the map.
+    const width = Math.max(minWidth, x1 - x0 + pad * 2, (y1 - y0 + pad * 2) * aspect)
     const height = width / aspect
     return [cx - width / 2, cy - height / 2, width, height]
   }
@@ -461,6 +537,7 @@ export default function LotEditor() {
     })
     if (ok) {
       setLots((prev) => prev.map((l) => (l.lot_id === selectedId ? { ...l, ...data } : l)))
+      mergeSnapshot(data)
       flashSaved()
     } else {
       setError(data?.error || 'Failed to save lot')
@@ -474,6 +551,7 @@ export default function LotEditor() {
     if (ok) {
       setLots((prev) => prev.map((l) => (l.lot_id === selectedId ? { ...l, ...data } : l)))
       setForm((f) => (f ? { ...f, status: data.status } : f))
+      mergeSnapshot(data)
       flashSaved()
     } else {
       setError(data?.error || 'Failed to update status')
@@ -517,6 +595,8 @@ export default function LotEditor() {
           ),
         }
       )
+      setLotFind('')
+      setLotStatus('all')
       setSelectedId(data.lot_id)
       setForm(fromLot(data))
       flashSaved()
@@ -531,6 +611,7 @@ export default function LotEditor() {
     const { ok, data } = await api(`/api/lots/${selectedId}/delete`, { method: 'POST' })
     if (ok) {
       setLots((prev) => prev.filter((l) => l.lot_id !== selectedId))
+      dropSnapshot(selectedId)
       setSelectedId(null)
       setForm(null)
       flashSaved()
@@ -609,104 +690,153 @@ export default function LotEditor() {
         </p>
       )}
 
-      <div className="editor-chips">
-        <div className="editor-chips-list">
-          {(mapData?.sections || []).map((sec) => (
-            <button
-              key={sec.section_id}
-              type="button"
-              className={`editor-chip${sec.section_id === sectionId ? ' editor-chip--active' : ''}`}
-              onClick={() => setSectionId(sec.section_id)}
-              title={`Show ${sec.section_name} lots`}
-            >
-              {sec.section_name}
-            </button>
-          ))}
-        </div>
-        <span className="editor-title">
-          {sectionRow
-            ? `${sectionRow.section_name} · ${lots.length} lot${lots.length === 1 ? '' : 's'}`
-            : 'Loading sections…'}
-        </span>
-      </div>
-
-      {sectionRow && (
-        <div className="lot-reference-tools">
-          <div className="lot-reference-find">
-            <Select
-              label="Find a lot"
-              value={selectedId ?? ''}
-              onChange={(v) => focusLot(String(v))}
-              placeholder={`Choose a lot in ${sectionRow.section_name}`}
-              options={lots.map((lot) => ({ value: String(lot.lot_id), label: lot.lot_code }))}
-            />
-          </div>
-          <label className="lot-reference-toggle">
-            <input
-              type="checkbox"
-              checked={reference.visible}
-              onChange={(e) => updateReference({ visible: e.target.checked })}
-            />
-            Survey reference
-          </label>
-          <label className="lot-reference-opacity">
-            Scan opacity
-            <input
-              type="range"
-              min="0.1"
-              max="1"
-              step="0.05"
-              value={reference.opacity}
-              disabled={!reference.visible}
-              onChange={(e) => updateReference({ opacity: Number(e.target.value) })}
-            />
-            <output>{Math.round(reference.opacity * 100)}%</output>
-          </label>
-          <details className="lot-reference-align">
-            <summary>Align scan</summary>
-            <div className="lot-reference-grid">
-              {[
-                ['Scale X', 'scaleX', 0.5, 1.5, 0.001],
-                ['Scale Y', 'scaleY', 0.5, 1.5, 0.001],
-                ['Rotation', 'rotation', -10, 10, 0.01],
-                ['Offset X', 'offsetX', -800, 800, 1],
-                ['Offset Y', 'offsetY', -800, 800, 1],
-              ].map(([label, key, min, max, step]) => (
-                <label key={key}>
-                  {label}
-                  <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    step={step}
-                    value={reference[key]}
-                    onChange={(e) => {
-                      const value = e.target.valueAsNumber
-                      if (Number.isFinite(value)) updateReference({ [key]: Math.min(max, Math.max(min, value)) })
-                    }}
-                  />
-                </label>
-              ))}
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setReference({ ...DEFAULT_REFERENCE })
-                  saveReference({ ...DEFAULT_REFERENCE })
-                }}
-              >
-                Reset scan alignment
-              </button>
-            </div>
-            <p className="text-muted">Alignment is saved in this browser only. Lot edits are saved to the database.</p>
-          </details>
-        </div>
-      )}
-
       {!mapData && <p className="text-muted">Loading map…</p>}
 
       {mapData && (
-        <div className="map-layout">
+        <div className="map-panes">
+          <aside className="map-rail lot-editor-rail" aria-label="Lot editor controls">
+            <div className="map-rail-group lot-rail-section">
+              <Combobox
+                label="Section"
+                value={sectionId ?? ''}
+                onChange={(value) => setSectionId(Number(value))}
+                options={sectionOptions}
+                placeholder="Search sections…"
+                emptyText="No section matches."
+              />
+              {sectionRow && (
+                <div className="lot-section-summary">
+                  <OccupancyBar large counts={sectionCounts} />
+                  <p className="cell-sub">
+                    {lots.length.toLocaleString()} plot{lots.length === 1 ? '' : 's'} ·{' '}
+                    {sectionCounts.available} available
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="map-rail-group lot-rail-find">
+              <label className="lot-find-label">
+                Find a plot
+                <input
+                  className="search-input"
+                  type="search"
+                  placeholder="Lot code or block…"
+                  value={lotFind}
+                  onChange={(e) => setLotFind(e.target.value)}
+                />
+              </label>
+              <div className="map-filters" role="group" aria-label="Filter plots by status">
+                {['all', ...PLOT_STATUSES].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={lotStatus === status ? 'chip chip--active' : 'chip'}
+                    aria-pressed={lotStatus === status}
+                    onClick={() => setLotStatus(status)}
+                  >
+                    {status === 'all'
+                      ? `All (${lots.length})`
+                      : `${LOT_STATUS[status]} (${sectionCounts[status] || 0})`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="map-rail-group lot-rail-plots">
+              <p className="panel-heading" id="lot-plots-heading">
+                Plots <span className="lot-rail-count">{visibleLots.length}</span>
+              </p>
+              <PlotPicker
+                lots={visibleLots}
+                selectedId={selectedId}
+                onSelect={(lot) => focusLot(String(lot.lot_id))}
+                labelledBy="lot-plots-heading"
+                showSection={false}
+                emptyMessage={
+                  lots.length === 0
+                    ? 'No plots in this section yet. Use Add lot to place the first one.'
+                    : 'No plot matches this search or filter.'
+                }
+              />
+            </div>
+
+            <details className="map-rail-group lot-scan">
+              <summary className="panel-heading">Survey reference</summary>
+              <div className="lot-scan-body">
+                <label className="lot-reference-toggle">
+                  <input
+                    type="checkbox"
+                    checked={reference.visible}
+                    onChange={(e) => updateReference({ visible: e.target.checked })}
+                  />
+                  Show survey scan
+                </label>
+                <label className="lot-reference-opacity">
+                  <span>Scan opacity</span>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.05"
+                    value={reference.opacity}
+                    disabled={!reference.visible}
+                    onChange={(e) => updateReference({ opacity: Number(e.target.value) })}
+                  />
+                  <output>{Math.round(reference.opacity * 100)}%</output>
+                </label>
+                <details className="lot-reference-align">
+                  <summary>Align scan</summary>
+                  <div className="lot-reference-grid">
+                    {[
+                      ['Scale X', 'scaleX', 0.5, 1.5, 0.001],
+                      ['Scale Y', 'scaleY', 0.5, 1.5, 0.001],
+                      ['Rotation', 'rotation', -10, 10, 0.01],
+                      ['Offset X', 'offsetX', -800, 800, 1],
+                      ['Offset Y', 'offsetY', -800, 800, 1],
+                    ].map(([label, key, min, max, step]) => (
+                      <label key={key}>
+                        {label}
+                        <input
+                          type="number"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={reference[key]}
+                          onChange={(e) => {
+                            const value = e.target.valueAsNumber
+                            if (Number.isFinite(value)) updateReference({ [key]: Math.min(max, Math.max(min, value)) })
+                          }}
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setReference({ ...DEFAULT_REFERENCE })
+                        saveReference({ ...DEFAULT_REFERENCE })
+                      }}
+                    >
+                      Reset scan alignment
+                    </button>
+                  </div>
+                  <p className="text-muted">Alignment is saved in this browser only. Lot edits are saved to the database.</p>
+                </details>
+              </div>
+            </details>
+
+            <div className="map-rail-group map-rail-legend">
+              <p className="panel-heading">Legend</p>
+              <div className="map-legend">
+                <span><i className="swatch swatch--available" aria-hidden="true" /> Available</span>
+                <span><i className="swatch swatch--reserved" aria-hidden="true" /> Reserved</span>
+                <span><i className="swatch swatch--occupied" aria-hidden="true" /> Occupied</span>
+              </div>
+            </div>
+          </aside>
+
+          <div className="map-layout">
           <div className="map-svg-wrap">
             <svg
               ref={svgRef}
@@ -830,7 +960,7 @@ export default function LotEditor() {
           </div>
 
           {selectedLot && form && (
-            <aside className="map-detail">
+            <aside className="map-detail map-detail--editor">
               <h3>Edit lot {form.lot_code || selectedLot.lot_code}</h3>
 
               <p className="text-muted editor-coords">
@@ -904,14 +1034,9 @@ export default function LotEditor() {
               </form>
             </aside>
           )}
+          </div>
         </div>
       )}
-
-      <div className="map-legend lot-editor-legend">
-        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.available }} /> Available</span>
-        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.reserved }} /> Reserved</span>
-        <span><i className="dot" aria-hidden="true" style={{ background: STATUS_COLORS.occupied }} /> Occupied</span>
-      </div>
     </div>
   )
 }
