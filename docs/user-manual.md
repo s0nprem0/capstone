@@ -235,12 +235,16 @@ account cannot sign in). Admin accounts can only be managed by an administrator.
 ### Reports
 
 Open **Reports** and choose a period — **This month**, **Last month**,
-**This year**, **All time**, or your own **From** and **To** dates. The page shows,
-for that period:
+**This year**, **All time**, or your own **From** and **To** dates. **This month**
+and **This year** cover the whole month or year, including dates still to come.
+The page shows, for that period:
 
-- **Reservations received** — by approval status, and the value booked.
+- **Reservations received** — by approval status (including requests the client
+  cancelled), and the value booked.
 - **Payments collected** — the total and a breakdown by method.
-- **Interments** — scheduled and interred.
+- **Interments** — scheduled and interred. When interments are scheduled
+  outside the period, the total still to happen is shown beneath, matching the
+  dashboard.
 - **Plot availability** — as of today, for the whole cemetery and by section.
 - **Audit log** — system activity in the period, with **Export CSV**.
 

@@ -226,6 +226,11 @@ class ReportController
             $burials[$row['interment_status']] = (int) $row['count'];
             $burials['total'] += (int) $row['count'];
         }
+        // Every interment still to happen, whatever its date: the figure the
+        // dashboard shows, so the two can be reconciled.
+        $burials['scheduled_all'] = (int) $db->query(
+            "SELECT COUNT(*) FROM burial_records WHERE interment_status = 'scheduled'"
+        )->fetchColumn();
 
         $sections = $db->query(
             "SELECT s.section_id, s.section_name,
