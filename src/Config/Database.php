@@ -26,6 +26,11 @@ class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]);
+
+            // An offset rather than the zone name: XAMPP's MySQL ships without
+            // the time zone tables that named zones need.
+            self::$pdo->prepare('SET time_zone = :offset')
+                ->execute(['offset' => (new \DateTimeImmutable())->format('P')]);
         }
 
         return self::$pdo;

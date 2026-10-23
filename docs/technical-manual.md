@@ -78,7 +78,7 @@ file may be absent; `DB_*` still come from the environment, e.g. compose).
 | `DB_DATABASE` | Database name | `cemetery_db` |
 | `DB_USERNAME` | MySQL user | `cemetery_user` |
 | `DB_PASSWORD` | MySQL password | `secret` |
-| `APP_TIMEZONE` | Cemetery time zone, used for "today" in date checks (PHP runs in UTC) | `Asia/Manila` |
+| `APP_TIMEZONE` | Cemetery time zone for PHP and each MySQL connection: "today" in date checks, `created_at`, audit and notification times | `Asia/Manila` |
 | `RESERVATION_MAX_PENDING` | Pending requests one visitor may hold at once; `0` = no limit | `3` |
 | `RESERVATION_HOLD_DAYS` | Days an unpaid pending request holds its plot before it expires (checked on every API request); `0` = never | `7` |
 | `APP_ENV`, `APP_DEBUG` | Reserved environment flags; the app does not read them (errors are always generic, details go to the server log) | `local`, `true` |
