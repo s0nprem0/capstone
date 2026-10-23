@@ -3254,6 +3254,10 @@ textarea:disabled {
   font-weight: 400;
 }
 
+.panel-note {
+  margin: 0 0 var(--space-md);
+}
+
 .dash-panel .figure-list {
   margin: 0;
 }

@@ -63,7 +63,7 @@ The left-hand menu changes with your role:
 | You are… | The menu offers |
 | --- | --- |
 | Not signed in | Cemetery Map, Sign In |
-| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, Account settings, Notifications |
+| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, My Payments, Account settings, Notifications |
 | Staff | Dashboard, Cemetery Map, Notifications, Reservations, Payments, Burial Records, Users, Reports |
 | Administrator | everything Staff has, plus Sections, Lots, and Settings |
 
@@ -128,6 +128,15 @@ it on the map. While a request is still **Pending** and nothing has been paid,
 you can **Cancel** it; the plot is released to other visitors. Once a payment is
 recorded, ask the office to cancel it so the payment can be settled. Use the search box or the **All approvals** dropdown to narrow the
 list.
+
+### My Payments
+
+Open **My Payments** to see what the office has recorded against your
+reservations. **Balance** shows the total booked, what has been paid, and what is
+still due, with one line per reservation. **Payment history** lists each payment
+with its date, amount, method, and reference. Payments are made at the office —
+cash, GCash, bank transfer, or cheque; mention your reservation number. Use
+**Print** or **Export CSV** for your own records.
 
 ### Account settings
 

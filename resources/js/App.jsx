@@ -12,6 +12,7 @@ const Register = lazy(() => import('./pages/Register'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Reservations = lazy(() => import('./pages/Reservations'))
 const Payments = lazy(() => import('./pages/Payments'))
+const MyPayments = lazy(() => import('./pages/MyPayments'))
 const NewReservation = lazy(() => import('./pages/NewReservation'))
 const BurialRecords = lazy(() => import('./pages/BurialRecords'))
 const Notifications = lazy(() => import('./pages/Notifications'))
@@ -43,6 +44,7 @@ export default function App() {
               <Route element={<RequireRole roles={['user']} />}>
                 <Route path="/visitor/reserve" element={<NewReservation />} />
                 <Route path="/visitor/reservations" element={<Reservations />} />
+                <Route path="/visitor/payments" element={<MyPayments />} />
                 <Route path="/visitor/profile" element={<Profile />} />
               </Route>
 

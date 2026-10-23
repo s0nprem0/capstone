@@ -19,7 +19,10 @@ function roleNav(role) {
       },
       {
         heading: 'My Records',
-        items: [{ to: '/visitor/reservations', label: 'My Reservations' }],
+        items: [
+          { to: '/visitor/reservations', label: 'My Reservations' },
+          { to: '/visitor/payments', label: 'My Payments' },
+        ],
       },
       {
         heading: 'Account',
