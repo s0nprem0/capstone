@@ -17,6 +17,22 @@ class Reservation extends Model
         return max(0, (int) ($_ENV['RESERVATION_MAX_PENDING'] ?? 3));
     }
 
+    /**
+     * When an unpaid pending request will expire, by the same rule
+     * expireStale() applies; null once it is decided, paid, or holds never
+     * expire. Computed in SQL so it shares NOW()'s clock with the expiry.
+     */
+    private const HOLD_UNTIL = "CASE WHEN r.approved_status = 'pending' AND :hold_a > 0
+                     AND NOT EXISTS (SELECT 1 FROM payments hp WHERE hp.reservation_id = r.reservation_id)
+                 THEN r.created_at + INTERVAL :hold_b DAY END AS hold_until";
+
+    /** @return array{hold_a: int, hold_b: int} */
+    private static function holdParams(): array
+    {
+        $days = self::holdDays();
+        return ['hold_a' => $days, 'hold_b' => $days];
+    }
+
     /** Days an unpaid pending request holds its plot; 0 keeps holds forever. */
     public static function holdDays(): int
     {
@@ -106,14 +122,15 @@ class Reservation extends Model
     {
         $stmt = self::db()->prepare(
             "SELECT r.*, l.lot_code, s.section_name,
-                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
+                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid,
+                    " . self::HOLD_UNTIL . "
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
              WHERE r.user_id = :user_id
              ORDER BY r.reservation_id DESC"
         );
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute(['user_id' => $userId] + self::holdParams());
         return $stmt->fetchAll();
     }
 
@@ -121,14 +138,15 @@ class Reservation extends Model
     {
         $stmt = self::db()->prepare(
             "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email,
-                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
+                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid,
+                    " . self::HOLD_UNTIL . "
              FROM reservations r
              JOIN cemetery_lots l ON l.lot_id = r.lot_id
              JOIN cemetery_sections s ON s.section_id = l.section_id
              JOIN users u ON u.user_id = r.user_id
              WHERE r.reservation_id = :id"
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['id' => $id] + self::holdParams());
         return $stmt->fetch() ?: null;
     }
 
@@ -166,7 +184,8 @@ class Reservation extends Model
         }
 
         $sql = "SELECT r.*, l.lot_code, s.section_name, u.fullname AS user_name, u.email AS user_email,
-                       COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid
+                       COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id = r.reservation_id), 0) AS amount_paid,
+                    " . self::HOLD_UNTIL . "
                 FROM reservations r
                 JOIN cemetery_lots l ON l.lot_id = r.lot_id
                 JOIN cemetery_sections s ON s.section_id = l.section_id
@@ -177,7 +196,7 @@ class Reservation extends Model
         $sql .= ' ORDER BY r.reservation_id DESC';
 
         $stmt = self::db()->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute($params + self::holdParams());
         return $stmt->fetchAll();
     }
 }

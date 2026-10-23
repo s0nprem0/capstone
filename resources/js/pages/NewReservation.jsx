@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import PlotPicker from '../components/PlotPicker'
 import Select from '../components/Select'
 import { nearestSection } from '../lib/sections'
-import { LOT_TYPES, label, localISO, money } from '../lib/terms'
+import { LOT_TYPES, label, localISO, longDateTime, money } from '../lib/terms'
 
 const SLOT_CAPACITY = { single: 1, double: 2, family: 4 }
 const EMPTY_FORM = { lot_id: '', reservation_date: '', purpose: '', number_of_slots: 1 }
@@ -177,7 +177,7 @@ export default function NewReservation() {
     })
     setSubmitting(false)
     if (ok) {
-      setSubmitted({ id: data.reservation_id, lot: selectedLot, near: nearSection })
+      setSubmitted({ id: data.reservation_id, lot: selectedLot, near: nearSection, holdUntil: data.hold_until })
       writeDraft(user.user_id, EMPTY_FORM)
       startOver()
     } else if (status === 422 && data?.error === 'Lot is not available') {
@@ -194,7 +194,7 @@ export default function NewReservation() {
   }
 
   if (submitted) {
-    const { id, lot, near } = submitted
+    const { id, lot, near, holdUntil } = submitted
     return (
       <div>
         <h2>Reserve a Lot</h2>
@@ -217,6 +217,13 @@ export default function NewReservation() {
             <li>
               Payment is arranged with the cemetery office by cash, GCash, bank transfer or cheque.
               Mention reservation #{id} so it is recorded against this plot.
+              {holdUntil && (
+                <>
+                  {' '}
+                  <strong>Make a payment by {longDateTime(holdUntil)}</strong> to keep the hold. An unpaid
+                  request is released after that so the plot can go to someone else.
+                </>
+              )}
             </li>
           </ol>
           <div className="form-actions">

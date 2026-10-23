@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
 import StatusBadge from '../components/StatusBadge'
 import ExportActions from '../components/ExportActions'
-import { APPROVAL_STATUS, PAYMENT_STATUS, label, longDate, money } from '../lib/terms'
+import { APPROVAL_STATUS, PAYMENT_STATUS, label, longDate, longDateTime, money } from '../lib/terms'
 
 export default function Reservations() {
   const { user } = useAuth()
@@ -147,7 +147,14 @@ export default function Reservations() {
                   {isStaffView && <td data-label="Client">{r.user_name}</td>}
                   <td data-label="Date">{longDate(r.reservation_date)}</td>
                   <td data-label="Slots" className="num">{r.number_of_slots}</td>
-                  <td data-label="Approval"><StatusBadge kind="approval" value={r.approved_status} /></td>
+                  <td data-label="Approval">
+                    <StatusBadge kind="approval" value={r.approved_status} />
+                    {r.hold_until && (
+                      <span className="cell-sub">
+                        {isStaffView ? 'Expires' : 'Held until'} {longDateTime(r.hold_until)} unless paid
+                      </span>
+                    )}
+                  </td>
                   <td data-label="Payment">
                     <StatusBadge kind="payment" value={r.payment_status} />
                     <span className="cell-sub">
