@@ -169,9 +169,11 @@ The dashboard gives a quick picture of the cemetery:
 Open **Reservations** for the full queue. Search by lot, client, section, date,
 or status, or filter by approval. For each **pending** reservation you can:
 
-- **Approve** — the plot becomes **Occupied** and the client is notified.
+- **Approve** — the plot becomes **Occupied** and the client is notified. You
+  are asked to confirm first, since a decision cannot be changed afterwards.
 - **Reject** — the plot is released back to **Available** and the client is
-  notified. You will be asked to confirm.
+  notified. You can add a short reason (up to 150 characters); it is included
+  in the client's notification and the audit log.
 
 Only pending reservations can be approved or rejected. A pending request with
 no payment expires on its own after the hold period (7 days by default) and

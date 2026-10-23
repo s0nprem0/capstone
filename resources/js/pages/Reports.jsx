@@ -52,7 +52,9 @@ const describeDetails = (raw) => {
     return String(raw)
   }
   if (details.changes) {
-    return Object.entries(details.changes).map(([field, [from, to]]) => `${field}: ${shown(from)} → ${shown(to)}`).join('; ')
+    const changed = Object.entries(details.changes).map(([field, [from, to]]) => `${field}: ${shown(from)} → ${shown(to)}`)
+    if (details.reason) changed.push(`reason: ${details.reason}`)
+    return changed.join('; ')
   }
   return Object.entries(details.record || details).map(([field, value]) => `${field}: ${shown(value)}`).join('; ')
 }

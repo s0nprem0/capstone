@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
@@ -44,10 +44,10 @@ export default function Reservations() {
   const cancellable = (r) => r.approved_status === 'pending' && Number(r.amount_paid) === 0
   const showActions = shown.some((r) => (isStaffView ? r.approved_status === 'pending' : cancellable(r)))
 
-  const decide = async (r, action) => {
+  const decide = async (r, action, body) => {
     clear()
     setBusy(`${r.reservation_id}:${action}`)
-    const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST' })
+    const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST', body })
     setBusy(null)
     if (ok) {
       const done = { approve: 'approved', reject: 'rejected', cancel: 'cancelled. The plot is available to others again' }
@@ -180,19 +180,21 @@ export default function Reservations() {
                     <td className="cell-actions no-print">
                       {r.approved_status === 'pending' && (
                         <div className="table-actions">
-                          <button
-                            className="btn btn-primary btn-sm"
-                            disabled={!!busy}
-                            onClick={() => decide(r, 'approve')}
-                          >
-                            {busy === `${r.reservation_id}:approve` ? 'Working...' : 'Approve'}
-                          </button>
                           <ConfirmButton
-                            label="Reject"
-                            danger
-                            onConfirm={() => decide(r, 'reject')}
+                            label="Approve"
+                            className="btn btn-primary btn-sm"
+                            confirmLabel="Approve"
+                            dismissLabel="Not yet"
+                            disabled={!!busy}
+                            onConfirm={() => decide(r, 'approve')}
+                            busy={busy === `${r.reservation_id}:approve`}
+                            message={`Approve #${r.reservation_id} for ${r.user_name}? ${r.lot_code} becomes occupied. This cannot be undone.`}
+                          />
+                          <RejectButton
+                            reservation={r}
+                            disabled={!!busy}
                             busy={busy === `${r.reservation_id}:reject`}
-                            message="Reject this reservation? The lot will be released."
+                            onReject={(reason) => decide(r, 'reject', reason ? { reason } : undefined)}
                           />
                         </div>
                       )}
@@ -206,5 +208,53 @@ export default function Reservations() {
       </div>
       )}
     </div>
+  )
+}
+
+// Reject with an optional reason, which goes to the client in their
+// notification: "rejected" alone leaves them guessing whether to try again.
+function RejectButton({ reservation: r, onReject, busy, disabled }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const inputRef = useRef(null)
+  const triggerRef = useRef(null)
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
+  }, [open])
+
+  const close = () => {
+    setOpen(false)
+    setReason('')
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  if (!open) {
+    return (
+      <button type="button" ref={triggerRef} className="btn btn-secondary btn-sm" disabled={disabled} onClick={() => setOpen(true)}>
+        Reject
+      </button>
+    )
+  }
+
+  return (
+    <form
+      className="confirm-inline reject-form"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        await onReject(reason.trim())
+        close()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') close()
+      }}
+    >
+      <label className="reject-reason">
+        <span className="confirm-message">Reject #{r.reservation_id}? {r.lot_code} is released. Reason for the client (optional)</span>
+        <input ref={inputRef} value={reason} maxLength={150} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Plot set aside for road widening" />
+      </label>
+      <button type="submit" className="btn btn-danger btn-sm" disabled={busy}>{busy ? 'Working...' : 'Reject'}</button>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={close}>Keep pending</button>
+    </form>
   )
 }

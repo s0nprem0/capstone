@@ -242,7 +242,14 @@ class ReservationController
     public function reject(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $this->decide($id, 'rejected');
+        $reason = $this->router->input()['reason'] ?? null;
+        // 150 so the notification carrying it fits notifications.message (255).
+        if ($reason !== null && (!is_string($reason) || mb_strlen(trim($reason)) > 150)) {
+            Response::json(['error' => 'reason must be text of at most 150 characters'], 422);
+            return;
+        }
+        $reason = $reason !== null && trim($reason) !== '' ? trim($reason) : null;
+        $this->decide($id, 'rejected', $reason);
     }
 
     /**
@@ -342,7 +349,7 @@ class ReservationController
      * staff deciding the same request at once cannot both act on it: the
      * second waits, then sees it is no longer pending.
      */
-    private function decide(int $id, string $decision): void
+    private function decide(int $id, string $decision, ?string $reason = null): void
     {
         $pdo = Database::connection();
 
@@ -373,16 +380,15 @@ class ReservationController
                 Lot::releaseIfFree($lotId);
             }
 
-            AuditLog::record(
-                Auth::id(),
-                $decision === 'approved' ? 'approve' : 'reject',
-                'reservations',
-                $id,
-                AuditLog::changes($reservation, ['approved_status' => $decision])
-            );
+            $details = AuditLog::changes($reservation, ['approved_status' => $decision]);
+            if ($reason !== null) {
+                $details['reason'] = $reason;
+            }
+            AuditLog::record(Auth::id(), $decision === 'approved' ? 'approve' : 'reject', 'reservations', $id, $details);
             Notification::createFor(
                 (int) $reservation['user_id'],
-                "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}.",
+                "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}."
+                    . ($reason !== null ? " Reason: {$reason}" : ''),
                 'reservation',
                 $id
             );

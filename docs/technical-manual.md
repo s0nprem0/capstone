@@ -260,7 +260,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/reservations/{id}` | Auth | Own, or staff/admin |
 | `POST /api/reservations` | user, staff, admin | Create; claims the plot transactionally |
 | `POST /api/reservations/{id}` | admin, staff | Update date/purpose/slots/amount |
-| `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only |
+| `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only; reject takes an optional `reason` (≤ 150 chars) sent to the client |
 | `POST /api/reservations/{id}/cancel` | user (own) | Pending and unpaid only |
 | `POST /api/reservations/{id}/delete` | admin, staff | Releases the plot |
 | `GET /api/payments` | admin, staff | List; filter by `reservation_id`, `q`, `method`, `from`, `to` |
