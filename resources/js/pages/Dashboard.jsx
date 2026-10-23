@@ -33,12 +33,12 @@ export default function Dashboard() {
   const queue = stats
     ? [
         {
-          to: `/${user.role}/reservations`,
+          to: `/${user.role}/reservations?approval=pending`,
           label: 'Reservations awaiting approval',
           count: stats.reservations.pending,
         },
         {
-          to: `/${user.role}/burial-records`,
+          to: `/${user.role}/burial-records?interment=scheduled`,
           label: 'Interments scheduled',
           count: stats.burials.pending,
         },

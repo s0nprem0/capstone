@@ -27,7 +27,11 @@ export default function BurialRecords() {
   // Deep links from the map arrive as ?q=<lot code>; the existing search
   // already matches lot codes, so there is no second filter to maintain.
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [interment, setInterment] = useState('')
+  // ?interment=scheduled is the dashboard's "Interments scheduled" link.
+  const [interment, setInterment] = useState(() => {
+    const wanted = searchParams.get('interment')
+    return wanted && INTERMENT_STATUS[wanted] ? wanted : ''
+  })
   const [type, setType] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)

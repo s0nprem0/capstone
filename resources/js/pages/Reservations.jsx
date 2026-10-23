@@ -19,7 +19,11 @@ export default function Reservations() {
   // Deep links from the map arrive as ?q=<lot code>. The existing search
   // already matches lot codes, so there is no second filter to maintain.
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [approval, setApproval] = useState('')
+  // ?approval=pending is the dashboard's "awaiting approval" link.
+  const [approval, setApproval] = useState(() => {
+    const wanted = searchParams.get('approval')
+    return wanted && APPROVAL_STATUS[wanted] ? wanted : ''
+  })
   const [busy, setBusy] = useState(null)
   const { notice, succeed, fail, clear } = useNotice()
   const q = useDebounced(search)
