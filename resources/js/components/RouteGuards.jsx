@@ -13,7 +13,10 @@ export function RequireRole({ roles }) {
 
   if (loading) return <Loading />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
-  if (roles && !roles.includes(user.role)) return <Navigate to={homePath(user.role)} replace />
+  // Said, not silent: being moved without a word reads as a broken link.
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to={homePath(user.role)} state={{ denied: location.pathname }} replace />
+  }
 
   return <Outlet />
 }

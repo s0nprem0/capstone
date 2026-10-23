@@ -92,7 +92,9 @@ CREATE TABLE `reservations` (
   `purpose` VARCHAR(100) NULL,
   `number_of_slots` INT UNSIGNED NOT NULL DEFAULT 1,
   `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `approved_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  -- 'cancelled' is the client withdrawing a pending request themselves;
+  -- 'rejected' is the office declining it (or the hold expiring).
+  `approved_status` ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
   -- Derived from the payments recorded against the reservation (see
   -- Payment::recomputeStatus). Stored rather than computed on read so the
   -- reservations list and reports do not each add a subquery.
@@ -211,6 +213,8 @@ CREATE TABLE `lot_owners` (
 ) ENGINE=InnoDB;
 
 -- ===== Seed data =====
+-- Cemetery time, as the app's connections use (APP_TIMEZONE, Asia/Manila).
+SET time_zone = '+08:00';
 -- Default admin (password: admin123)
 INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`) VALUES
   ('System Administrator', 'admin@cemetery.test', '09170000001', '$2y$10$By0J7o/86O1M19BODiwRGOq6EcnSjZehzxdQVrDiEOe1lW2tTA2Rq', 'admin', 'active');

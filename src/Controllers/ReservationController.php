@@ -149,6 +149,19 @@ class ReservationController
                 ['user_id', 'lot_code', 'number_of_slots', 'total_amount']
             ));
 
+            // A request staff encode themselves needs no one told about it.
+            if (Auth::role() === 'user') {
+                $client = Auth::user()['fullname'] ?? 'a visitor';
+                foreach (User::officeIds() as $officeId) {
+                    Notification::createFor(
+                        $officeId,
+                        "New reservation #{$reservationId} for lot {$this->lotLabel($lotId)} from {$client} is waiting for review.",
+                        'reservation',
+                        $reservationId
+                    );
+                }
+            }
+
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -229,7 +242,67 @@ class ReservationController
     public function reject(int $id): void
     {
         Auth::requireRole(['admin', 'staff']);
-        $this->decide($id, 'rejected');
+        $reason = $this->router->input()['reason'] ?? null;
+        // 150 so the notification carrying it fits notifications.message (255).
+        if ($reason !== null && (!is_string($reason) || mb_strlen(trim($reason)) > 150)) {
+            Response::json(['error' => 'reason must be text of at most 150 characters'], 422);
+            return;
+        }
+        $reason = $reason !== null && trim($reason) !== '' ? trim($reason) : null;
+        $this->decide($id, 'rejected', $reason);
+    }
+
+    /**
+     * The client withdrawing their own request. Only while it is pending and
+     * nothing has been paid: money taken has to be settled at the office.
+     */
+    public function cancel(int $id): void
+    {
+        Auth::requireRole(['user']);
+        $pdo = Database::connection();
+
+        try {
+            $pdo->beginTransaction();
+            $reservation = Reservation::findForUpdate($id);
+            if (!$reservation || (int) $reservation['user_id'] !== Auth::id()) {
+                $pdo->rollBack();
+                Response::json(['error' => 'Not found'], 404);
+                return;
+            }
+            if ($reservation['approved_status'] !== 'pending') {
+                $pdo->rollBack();
+                Response::json(['error' => 'Only a reservation still waiting for review can be cancelled.'], 422);
+                return;
+            }
+            if (Payment::countForReservation($id) > 0) {
+                $pdo->rollBack();
+                Response::json(['error' => 'A payment has been recorded for this reservation. Contact the cemetery office to cancel it and settle the payment.'], 422);
+                return;
+            }
+
+            $lotId = (int) $reservation['lot_id'];
+            Reservation::update($id, ['approved_status' => 'cancelled']);
+            Lot::releaseIfFree($lotId);
+            AuditLog::record(Auth::id(), 'cancel', 'reservations', $id, AuditLog::changes($reservation, ['approved_status' => 'cancelled']));
+
+            $client = Auth::user()['fullname'] ?? 'The client';
+            foreach (User::officeIds() as $officeId) {
+                Notification::createFor(
+                    $officeId,
+                    "{$client} cancelled reservation #{$id} for lot {$this->lotLabel($lotId)}. The plot is available again.",
+                    'reservation',
+                    $id
+                );
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+
+        Response::json(['message' => 'Reservation cancelled']);
     }
 
     public function destroy(int $id): void
@@ -251,9 +324,9 @@ class ReservationController
                 return;
             }
             Reservation::delete($id);
-            // A rejected reservation already let go of its lot, which may since
-            // have been reserved by someone else.
-            if ($reservation['approved_status'] !== 'rejected') {
+            // A rejected or cancelled reservation already let go of its lot,
+            // which may since have been reserved by someone else.
+            if (!in_array($reservation['approved_status'], ['rejected', 'cancelled'], true)) {
                 Lot::releaseIfFree((int) $reservation['lot_id']);
             }
             AuditLog::record(Auth::id(), 'delete', 'reservations', $id, AuditLog::snapshot(
@@ -276,7 +349,7 @@ class ReservationController
      * staff deciding the same request at once cannot both act on it: the
      * second waits, then sees it is no longer pending.
      */
-    private function decide(int $id, string $decision): void
+    private function decide(int $id, string $decision, ?string $reason = null): void
     {
         $pdo = Database::connection();
 
@@ -307,16 +380,15 @@ class ReservationController
                 Lot::releaseIfFree($lotId);
             }
 
-            AuditLog::record(
-                Auth::id(),
-                $decision === 'approved' ? 'approve' : 'reject',
-                'reservations',
-                $id,
-                AuditLog::changes($reservation, ['approved_status' => $decision])
-            );
+            $details = AuditLog::changes($reservation, ['approved_status' => $decision]);
+            if ($reason !== null) {
+                $details['reason'] = $reason;
+            }
+            AuditLog::record(Auth::id(), $decision === 'approved' ? 'approve' : 'reject', 'reservations', $id, $details);
             Notification::createFor(
                 (int) $reservation['user_id'],
-                "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}.",
+                "Your reservation #{$id} for lot {$this->lotLabel($lotId)} has been {$decision}."
+                    . ($reason !== null ? " Reason: {$reason}" : ''),
                 'reservation',
                 $id
             );

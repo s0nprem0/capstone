@@ -75,10 +75,10 @@ export default function Payments() {
 
   const balanceOf = (r) => Number(r.total_amount) - Number(r.amount_paid)
 
-  // Only what can still take a payment: owing a balance and not rejected.
+  // Only what can still take a payment: owing a balance and not rejected or cancelled.
   // The one being edited stays listed whatever its state, so it can show.
   const reservationOptions = reservations
-    .filter((r) => String(r.reservation_id) === form.reservation_id || (balanceOf(r) > 0 && r.approved_status !== 'rejected'))
+    .filter((r) => String(r.reservation_id) === form.reservation_id || (balanceOf(r) > 0 && !['rejected', 'cancelled'].includes(r.approved_status)))
     .map((r) => ({
       value: String(r.reservation_id),
       label: `#${r.reservation_id} · ${r.lot_code} · ${r.user_name}`,

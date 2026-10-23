@@ -96,7 +96,7 @@ The current schema uses `users` / `cemetery_sections` / `cemetery_lots` / `reser
 RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{id}`, POST create, POST `{id}` update, POST `{id}/delete`). To add:
 - `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
 - `/api/burial-records` CRUD
-- `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject`
+- `/api/reservations/{id}/approve`, `/api/reservations/{id}/reject`, `/api/reservations/{id}/cancel` (the client's own pending, unpaid request)
 - `/api/payments` CRUD (`mine` for a visitor's own), staff/admin records
 - `/api/notifications` (mine, mark read)
 - `/api/reports/*` (reservations, burial-records, availability, payments, audit-logs, summary; `summary` and `audit-logs` take an optional `from`/`to` date range)
@@ -121,7 +121,7 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 - Session auth with `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS, and ID regeneration on login. CSRF token required on every `POST` except login/register.
 - Input validation/sanitization on client and server; uniqueness checks prevent duplicate users and double-booked lots.
 - Security headers (`Core/Headers`): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies. HSTS and script/style CSP are deployment TODOs.
-- Audit trail for logins, failed logins, logouts, and every create/update/approve/reject/delete, with the client IP and the changed values (`AuditLog::changes`/`snapshot`; secrets masked); readable by staff and admins. Schema changes to an existing database ship as `database/upgrades/*.sql` (`make upgrade FILE=...`) alongside `schema.sql`.
+- Audit trail for logins, failed logins, logouts, and every create/update/approve/reject/cancel/delete, with the client IP and the changed values (`AuditLog::changes`/`snapshot`; secrets masked); readable by staff and admins. Schema changes to an existing database ship as `database/upgrades/*.sql` (`make upgrade FILE=...`) alongside `schema.sql`.
 - Minimize collected personal data; restrict access by role; document public disclosures (map statuses, memorial search); define retention/erasure before deployment.
 - Backup/restore is admin-only and audit-logged; import runs export-format SQL (an allowlist of statement shapes) as the app DB user, so review files and use a least-privilege DB account.
 

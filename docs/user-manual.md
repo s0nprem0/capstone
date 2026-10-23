@@ -63,7 +63,7 @@ The left-hand menu changes with your role:
 | You are… | The menu offers |
 | --- | --- |
 | Not signed in | Cemetery Map, Sign In |
-| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, Account settings, Notifications |
+| Visitor / Client | Cemetery Map, Reserve a Lot, My Reservations, My Payments, Account settings, Notifications |
 | Staff | Dashboard, Cemetery Map, Notifications, Reservations, Payments, Burial Records, Users, Reports |
 | Administrator | everything Staff has, plus Sections, Lots, and Settings |
 
@@ -124,8 +124,19 @@ that time to keep the hold. (The office can change both limits.)
 Open **My Reservations** to see your own reservations only. Each row shows the
 ID, plot, section, date, number of slots, amount, approval status, and **payment
 status** (with how much has been paid of the total). Choose the plot code to see
-it on the map. Use the search box or the **All approvals** dropdown to narrow the
+it on the map. While a request is still **Pending** and nothing has been paid,
+you can **Cancel** it; the plot is released to other visitors. Once a payment is
+recorded, ask the office to cancel it so the payment can be settled. Use the search box or the **All approvals** dropdown to narrow the
 list.
+
+### My Payments
+
+Open **My Payments** to see what the office has recorded against your
+reservations. **Balance** shows the total booked, what has been paid, and what is
+still due, with one line per reservation. **Payment history** lists each payment
+with its date, amount, method, and reference. Payments are made at the office —
+cash, GCash, bank transfer, or cheque; mention your reservation number. Use
+**Print** or **Export CSV** for your own records.
 
 ### Account settings
 
@@ -136,7 +147,9 @@ Your role and account status can only be changed by an administrator.
 ### Notifications
 
 The **Notifications** item shows a small number when you have unread messages.
-Open it to read them. Choose **Mark read** on a single message or **Mark all
+Visitors hear about decisions, payments and expired holds; staff and
+administrators are told whenever a visitor submits a new reservation. Open it to
+read them, and choose a message's plot code to jump to that reservation. Choose **Mark read** on a single message or **Mark all
 read** at the top.
 
 ## 5. Staff
@@ -156,9 +169,11 @@ The dashboard gives a quick picture of the cemetery:
 Open **Reservations** for the full queue. Search by lot, client, section, date,
 or status, or filter by approval. For each **pending** reservation you can:
 
-- **Approve** — the plot becomes **Occupied** and the client is notified.
+- **Approve** — the plot becomes **Occupied** and the client is notified. You
+  are asked to confirm first, since a decision cannot be changed afterwards.
 - **Reject** — the plot is released back to **Available** and the client is
-  notified. You will be asked to confirm.
+  notified. You can add a short reason (up to 150 characters); it is included
+  in the client's notification and the audit log.
 
 Only pending reservations can be approved or rejected. A pending request with
 no payment expires on its own after the hold period (7 days by default) and
@@ -222,12 +237,16 @@ account cannot sign in). Admin accounts can only be managed by an administrator.
 ### Reports
 
 Open **Reports** and choose a period — **This month**, **Last month**,
-**This year**, **All time**, or your own **From** and **To** dates. The page shows,
-for that period:
+**This year**, **All time**, or your own **From** and **To** dates. **This month**
+and **This year** cover the whole month or year, including dates still to come.
+The page shows, for that period:
 
-- **Reservations received** — by approval status, and the value booked.
+- **Reservations received** — by approval status (including requests the client
+  cancelled), and the value booked.
 - **Payments collected** — the total and a breakdown by method.
-- **Interments** — scheduled and interred.
+- **Interments** — scheduled and interred. When interments are scheduled
+  outside the period, the total still to happen is shown beneath, matching the
+  dashboard.
 - **Plot availability** — as of today, for the whole cemetery and by section.
 - **Audit log** — system activity in the period, with **Export CSV**.
 
@@ -274,10 +293,18 @@ Open **Settings**.
 
 - **Backup** — choose **Download Backup (.sql)** to save a full copy of the
   database (structure and data) to your computer. Keep it somewhere safe.
+- **Records in the database** — how many accounts, plots, reservations,
+  payments, burials, owners and notifications are stored, and when the last
+  backup was taken.
 - **Restore** — choose a `.sql` backup file, then **Restore Backup** and confirm.
   **This replaces all current data with the backup** and cannot be undone.
+- **Reset records** — clears every reservation, payment, burial record, plot
+  owner and notification and makes every plot available, for example before
+  going live after training. Accounts, sections, plots and the audit log stay.
+  Enter your password, type `RESET`, and confirm. **Download a backup first**;
+  only restoring it undoes a reset.
 
-Backups and restores are recorded in the audit log.
+Backups, restores and resets are recorded in the audit log.
 
 ## 7. Common tasks — quick reference
 
@@ -298,8 +325,9 @@ Backups and restores are recorded in the audit log.
 
 | Problem | What to do |
 | --- | --- |
-| "Invalid credentials or inactive account" | Check the email and password. If it still fails, your account may be deactivated — ask an administrator. |
-| "Too many failed login attempts" | Wait 15 minutes and try again. |
+| "Incorrect email or password" | Check the email and password. The message warns you when only 1 or 2 tries are left. |
+| "This account has been deactivated" | Ask the cemetery office to reactivate it. |
+| "Too many failed sign-in attempts" | Wait 15 minutes and try again, or ask the office to reset your password. Other accounts on the same computer are not affected. |
 | "Lot is not available" | Someone else reserved it first. Choose another plot. |
 | "Lot capacity exceeded" | Reduce the number of slots to the maximum shown for that plot type. |
 | "A burial record requires a reserved or occupied lot" | Reserve and get the plot approved before filing a burial. |

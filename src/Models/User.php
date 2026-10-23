@@ -21,6 +21,15 @@ class User extends Model
         return $stmt->fetch() ?: null;
     }
 
+    /** @return int[] the active staff and administrator accounts */
+    public static function officeIds(): array
+    {
+        $stmt = self::db()->query(
+            "SELECT `user_id` FROM `users` WHERE `role` IN ('admin', 'staff') AND `status` = 'active'"
+        );
+        return array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
     public static function verifyPassword(array $user, string $password): bool
     {
         return password_verify($password, $user['password']);

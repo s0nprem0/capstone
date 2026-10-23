@@ -78,7 +78,7 @@ file may be absent; `DB_*` still come from the environment, e.g. compose).
 | `DB_DATABASE` | Database name | `cemetery_db` |
 | `DB_USERNAME` | MySQL user | `cemetery_user` |
 | `DB_PASSWORD` | MySQL password | `secret` |
-| `APP_TIMEZONE` | Cemetery time zone, used for "today" in date checks (PHP runs in UTC) | `Asia/Manila` |
+| `APP_TIMEZONE` | Cemetery time zone for PHP and each MySQL connection: "today" in date checks, `created_at`, audit and notification times | `Asia/Manila` |
 | `RESERVATION_MAX_PENDING` | Pending requests one visitor may hold at once; `0` = no limit | `3` |
 | `RESERVATION_HOLD_DAYS` | Days an unpaid pending request holds its plot before it expires (checked on every API request); `0` = never | `7` |
 | `APP_ENV`, `APP_DEBUG` | Reserved environment flags; the app does not read them (errors are always generic, details go to the server log) | `local`, `true` |
@@ -172,7 +172,7 @@ reproduces the whole database.
 | `purpose` | VARCHAR(100) | nullable |
 | `number_of_slots` | INT UNSIGNED | ≤ lot capacity |
 | `total_amount` | DECIMAL(10,2) | stated value |
-| `approved_status` | ENUM(pending, approved, rejected) | default `pending` |
+| `approved_status` | ENUM(pending, approved, rejected, cancelled) | default `pending`; `cancelled` = withdrawn by the client |
 | `payment_status` | ENUM(unpaid, partial, paid) | derived from payments; default `unpaid` |
 | `created_at` | DATETIME | |
 
@@ -227,8 +227,10 @@ owner keeps the plot `occupied`.
   when nothing live touches it.
 - Reserving locks the row (`SELECT … FOR UPDATE`) inside a transaction, so two
   requests cannot both claim a plot.
-- Approving a reservation moves the plot `reserved → occupied`; rejecting or
-  deleting one returns the plot unless a burial already claims it.
+- Approving a reservation moves the plot `reserved → occupied`; rejecting,
+  cancelling or deleting one returns the plot unless a burial already claims it.
+- A client can cancel only their own pending reservation, and only while no
+  payment is recorded against it; staff and admins are notified.
 - `number_of_slots` cannot exceed the plot type's capacity (single 1 / double 2 /
   family 4).
 - A burial record requires a `reserved` or `occupied` plot.
@@ -246,7 +248,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/map` | Public | All sections + lots with SVG geometry and status counts |
 | `GET /api/csrf-token` | Public | Returns `{ csrf_token }` |
 | `POST /api/auth/register` | Public | Creates a `user`; signs them in |
-| `POST /api/auth/login` | Public | Rate-limited → 429 after 5 failures / 15 min |
+| `POST /api/auth/login` | Public | Rate-limited → 429 after 5 failures per account (20 per IP) / 15 min |
 | `POST /api/auth/logout` | Auth | Ends the session |
 | `GET /api/auth/me` | Auth | Current user |
 | `GET /api/users`, `GET /api/users/{id}` | admin, staff | Public fields only |
@@ -258,7 +260,8 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `GET /api/reservations/{id}` | Auth | Own, or staff/admin |
 | `POST /api/reservations` | user, staff, admin | Create; claims the plot transactionally |
 | `POST /api/reservations/{id}` | admin, staff | Update date/purpose/slots/amount |
-| `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only |
+| `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only; reject takes an optional `reason` (≤ 150 chars) sent to the client |
+| `POST /api/reservations/{id}/cancel` | user (own) | Pending and unpaid only |
 | `POST /api/reservations/{id}/delete` | admin, staff | Releases the plot |
 | `GET /api/payments` | admin, staff | List; filter by `reservation_id`, `q`, `method`, `from`, `to` |
 | `GET /api/payments/mine` | Auth | A visitor's own payments |
@@ -293,6 +296,8 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/sections/{id}/delete` | admin | Empty, unlocked sections only |
 | `GET /api/backup/export` | admin | SQL dump download, audit-logged |
 | `POST /api/backup/import` | admin | Restore from uploaded/`php://input` SQL |
+| `GET /api/backup/summary` | admin | Record counts; last backup/restore/reset times |
+| `POST /api/backup/reset` | admin | `{ password, confirm: "RESET" }`; clears transactional records, keeps accounts, plots and the audit log |
 
 **Status codes.** `200` ok · `201` created · `304` not modified (conditional GET)
 · `400` bad request · `401` unauthenticated · `403` forbidden · `404` not found ·
@@ -322,9 +327,9 @@ inventory, deployment checklist, and accepted risks, is
   profile. Nobody may change their own role, deactivate their own account, or
   delete themselves. A visitor can read only their own reservation; `mine`
   endpoints filter by `Auth::id()`.
-- **Rate limiting** — 5 failed logins per IP per 15 minutes (`login_attempts`),
-  then `429`. The limit is per IP only; registration and public search are not
-  throttled.
+- **Rate limiting** — 5 failed logins per account from one IP, or 20 per IP,
+  per 15 minutes (`login_attempts`), then `429`. Blank fields are a `422` and
+  are not counted; registration and public search are not throttled.
 - **Input validation & uniqueness** — server-side, per endpoint (unique email,
   unique `lot_code`, valid dates/enums, capacity, coordinates). All SQL is
   parameterized with emulated prepares disabled.
@@ -335,7 +340,7 @@ inventory, deployment checklist, and accepted risks, is
   Accept-Encoding` when compressing. HSTS and a script/style CSP are not set.
   JSON `GET` responses add `Cache-Control: private, no-cache` and an `ETag`.
 - **Audit trail** — `audit_logs` records registration, logins, logouts, and
-  every create/update/approve/reject/delete, plus lot/section imports, regrids,
+  every create/update/approve/reject/cancel/delete, plus lot/section imports, regrids,
   and backup export/import. The report is readable by **staff and admins**.
 - **Public read endpoints** — `/api/map`, `/api/lots*`, `/api/memorials` (and
   `/api/lots/{id}/memorials`) require no session. The map includes reserved and
@@ -408,6 +413,11 @@ spreadsheet never runs user-entered text as a formula.
 - **Import** (`POST /api/backup/import`, admin) reads an uploaded file or raw
   body, splits it into statements while honouring quotes and comments, and
   executes them. Capped at 50 MB.
+- **Reset** (`POST /api/backup/reset`, admin) deletes `payments`,
+  `notifications`, `burial_records`, `lot_owners`, `reservations` and
+  `login_attempts` and sets every lot `available`, in one transaction (row
+  deletes, unlike a restore's DDL, can roll back). Needs the admin's password
+  and `confirm: "RESET"`.
 
 `database/schema.sql` remains the authoritative definition — a fresh
 `make migrate` reproduces the schema and seed regardless of any backup.

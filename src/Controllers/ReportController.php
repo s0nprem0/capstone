@@ -29,6 +29,7 @@ class ReportController
         $pending = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'pending'")->fetchColumn();
         $approved = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'approved'")->fetchColumn();
         $rejected = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'rejected'")->fetchColumn();
+        $cancelled = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'cancelled'")->fetchColumn();
 
         $items = $db->query(
             "SELECT r.reservation_id, r.reservation_date, r.total_amount, r.approved_status,
@@ -44,6 +45,7 @@ class ReportController
             'pending' => (int) $pending,
             'approved' => (int) $approved,
             'rejected' => (int) $rejected,
+            'cancelled' => (int) $cancelled,
             'items' => $items,
         ]);
     }
@@ -191,7 +193,7 @@ class ReportController
              FROM reservations {$where} GROUP BY approved_status"
         );
         $stmt->execute($params);
-        $reservations = ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'total' => 0, 'value' => 0.0];
+        $reservations = ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'cancelled' => 0, 'total' => 0, 'value' => 0.0];
         foreach ($stmt->fetchAll() as $row) {
             $reservations[$row['approved_status']] = (int) $row['count'];
             $reservations['total'] += (int) $row['count'];
@@ -224,6 +226,11 @@ class ReportController
             $burials[$row['interment_status']] = (int) $row['count'];
             $burials['total'] += (int) $row['count'];
         }
+        // Every interment still to happen, whatever its date: the figure the
+        // dashboard shows, so the two can be reconciled.
+        $burials['scheduled_all'] = (int) $db->query(
+            "SELECT COUNT(*) FROM burial_records WHERE interment_status = 'scheduled'"
+        )->fetchColumn();
 
         $sections = $db->query(
             "SELECT s.section_id, s.section_name,

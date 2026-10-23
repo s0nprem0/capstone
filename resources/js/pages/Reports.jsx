@@ -9,9 +9,18 @@ import OccupancyBar from '../components/OccupancyBar'
 import Blank from '../components/Blank'
 import { PAYMENT_METHODS, label, localISO, longDate, longDateTime, money } from '../lib/terms'
 
-// Each preset is a [from, to] pair; '' leaves that end open.
+// Each preset is a [from, to] pair; '' leaves that end open. "This month" and
+// "This year" run to the period's last day, not today: an interment scheduled
+// next week belongs to this month's figures, and stopping at today dropped it
+// while the dashboard still counted it.
 const PRESETS = {
-  month: { label: 'This month', range: (d) => [localISO(new Date(d.getFullYear(), d.getMonth(), 1)), localISO(d)] },
+  month: {
+    label: 'This month',
+    range: (d) => [
+      localISO(new Date(d.getFullYear(), d.getMonth(), 1)),
+      localISO(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
+    ],
+  },
   last: {
     label: 'Last month',
     range: (d) => [
@@ -19,7 +28,7 @@ const PRESETS = {
       localISO(new Date(d.getFullYear(), d.getMonth(), 0)),
     ],
   },
-  year: { label: 'This year', range: (d) => [localISO(new Date(d.getFullYear(), 0, 1)), localISO(d)] },
+  year: { label: 'This year', range: (d) => [localISO(new Date(d.getFullYear(), 0, 1)), localISO(new Date(d.getFullYear(), 11, 31))] },
   all: { label: 'All time', range: () => ['', ''] },
 }
 
@@ -43,7 +52,9 @@ const describeDetails = (raw) => {
     return String(raw)
   }
   if (details.changes) {
-    return Object.entries(details.changes).map(([field, [from, to]]) => `${field}: ${shown(from)} → ${shown(to)}`).join('; ')
+    const changed = Object.entries(details.changes).map(([field, [from, to]]) => `${field}: ${shown(from)} → ${shown(to)}`)
+    if (details.reason) changed.push(`reason: ${details.reason}`)
+    return changed.join('; ')
   }
   return Object.entries(details.record || details).map(([field, value]) => `${field}: ${shown(value)}`).join('; ')
 }
@@ -180,6 +191,7 @@ export default function Reports() {
               <Tile label="Pending" value={summary.reservations.pending} />
               <Tile label="Approved" value={summary.reservations.approved} />
               <Tile label="Rejected" value={summary.reservations.rejected} />
+              <Tile label="Cancelled" value={summary.reservations.cancelled} />
               <Tile label="Value booked" value={money(summary.reservations.value)} />
             </div>
           </section>
@@ -214,7 +226,11 @@ export default function Reports() {
               <h3 id="r-bur">Interments <Link className="report-link no-print" to={`${base}/burial-records`}>Register</Link></h3>
               <div className="stat-row">
                 <Tile label="In period" value={summary.burials.total} />
-                <Tile label="Scheduled" value={summary.burials.scheduled} />
+                <Tile
+                  label="Scheduled in period"
+                  value={summary.burials.scheduled}
+                  sub={summary.burials.scheduled_all !== summary.burials.scheduled ? `${summary.burials.scheduled_all} scheduled in all` : null}
+                />
                 <Tile label="Interred" value={summary.burials.interred} />
               </div>
             </section>
@@ -312,11 +328,12 @@ export default function Reports() {
   )
 }
 
-function Tile({ label: text, value }) {
+function Tile({ label: text, value, sub }) {
   return (
     <div className="stat-tile">
       <p className="stat-label">{text}</p>
       <p className="stat-value">{value}</p>
+      {sub && <p className="stat-sub">{sub}</p>}
     </div>
   )
 }

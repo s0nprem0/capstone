@@ -9,6 +9,7 @@ use App\Core\Auth;
 use App\Core\Response;
 use App\Core\Router;
 use App\Models\AuditLog;
+use App\Models\User;
 use PDO;
 use PDOException;
 
@@ -47,6 +48,86 @@ class BackupController
         echo $dump;
 
         AuditLog::record(Auth::id(), 'backup_export', 'database', null, ['bytes' => strlen($dump)]);
+    }
+
+    /** What the database holds, and when it was last backed up or restored. */
+    public function summary(): void
+    {
+        Auth::requireRole(['admin']);
+        $db = Database::connection();
+        $count = fn (string $sql): int => (int) $db->query($sql)->fetchColumn();
+        $lastStmt = $db->prepare("SELECT MAX(created_at) FROM audit_logs WHERE action = :action");
+        $last = function (string $action) use ($lastStmt): ?string {
+            $lastStmt->execute(['action' => $action]);
+            return $lastStmt->fetchColumn() ?: null;
+        };
+
+        $roles = ['admin' => 0, 'staff' => 0, 'user' => 0];
+        foreach ($db->query("SELECT role, COUNT(*) AS n FROM users GROUP BY role")->fetchAll() as $row) {
+            $roles[$row['role']] = (int) $row['n'];
+        }
+
+        Response::json([
+            'users' => $roles,
+            'sections' => $count("SELECT COUNT(*) FROM cemetery_sections"),
+            'lots' => $count("SELECT COUNT(*) FROM cemetery_lots"),
+            'reservations' => $count("SELECT COUNT(*) FROM reservations"),
+            'payments' => $count("SELECT COUNT(*) FROM payments"),
+            'burial_records' => $count("SELECT COUNT(*) FROM burial_records"),
+            'lot_owners' => $count("SELECT COUNT(*) FROM lot_owners"),
+            'notifications' => $count("SELECT COUNT(*) FROM notifications"),
+            'audit_logs' => $count("SELECT COUNT(*) FROM audit_logs"),
+            'last_backup' => $last('backup_export'),
+            'last_restore' => $last('backup_import'),
+            'last_reset' => $last('reset'),
+        ]);
+    }
+
+    /**
+     * Clear the cemetery's records back to an empty register: reservations,
+     * payments, burials, owners, notifications and sign-in attempts go, and
+     * every plot is available again. Accounts, sections and plots stay, and so
+     * does the audit log, which records the reset itself.
+     *
+     * The administrator's own password and a typed confirmation are required,
+     * since one click here cannot be undone except by restoring a backup.
+     */
+    public function reset(): void
+    {
+        Auth::requireRole(['admin']);
+        $input = $this->router->input();
+
+        if (($input['confirm'] ?? '') !== 'RESET') {
+            Response::json(['error' => 'Type RESET to confirm.'], 422);
+            return;
+        }
+        $admin = User::find((int) Auth::id());
+        $password = $input['password'] ?? '';
+        if (!$admin || !is_string($password) || !User::verifyPassword($admin, $password)) {
+            Response::json(['error' => 'Your password is incorrect, so nothing was reset.'], 422);
+            return;
+        }
+
+        $pdo = Database::connection();
+        $cleared = [];
+        try {
+            $pdo->beginTransaction();
+            // Children before parents, so no foreign key is left pointing at a
+            // row already gone.
+            foreach (['payments', 'notifications', 'burial_records', 'lot_owners', 'reservations', 'login_attempts'] as $table) {
+                $cleared[$table] = $pdo->exec("DELETE FROM `{$table}`");
+            }
+            $cleared['lots_released'] = $pdo->exec("UPDATE `cemetery_lots` SET `status` = 'available' WHERE `status` <> 'available'");
+            AuditLog::record(Auth::id(), 'reset', 'database', null, $cleared);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+
+        Response::json(['message' => 'Records reset', 'cleared' => $cleared]);
     }
 
     /**

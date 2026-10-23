@@ -61,6 +61,7 @@ $router->post('/api/reservations', [$reservations, 'store']);
 $router->post('/api/reservations/{id}', [$reservations, 'update']);
 $router->post('/api/reservations/{id}/approve', [$reservations, 'approve']);
 $router->post('/api/reservations/{id}/reject', [$reservations, 'reject']);
+$router->post('/api/reservations/{id}/cancel', [$reservations, 'cancel']);
 $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
 
 $router->get('/api/payments', [$payments, 'index']);
@@ -115,6 +116,8 @@ $router->post('/api/sections/{id}/delete', [$sections, 'destroy']);
 
 $router->get('/api/backup/export', [$backup, 'export']);
 $router->post('/api/backup/import', [$backup, 'import']);
+$router->get('/api/backup/summary', [$backup, 'summary']);
+$router->post('/api/backup/reset', [$backup, 'reset']);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 

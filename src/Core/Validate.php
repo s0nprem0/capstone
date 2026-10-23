@@ -23,9 +23,10 @@ class Validate
     }
 
     /**
-     * Today at the cemetery, not on the server: PHP runs in UTC, eight hours
-     * behind Manila, so a visitor booking in the morning would otherwise be
-     * told today is in the past.
+     * Today at the cemetery, not on the server. bootstrap.php already sets
+     * PHP's zone; naming it here keeps this right if that is ever skipped,
+     * since a visitor booking in the morning would otherwise be told today
+     * is in the past.
      */
     public static function today(): string
     {

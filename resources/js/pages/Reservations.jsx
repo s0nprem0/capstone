@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
 import StatusBadge from '../components/StatusBadge'
 import ExportActions from '../components/ExportActions'
-import { APPROVAL_STATUS, PAYMENT_STATUS, label, longDate, money } from '../lib/terms'
+import { APPROVAL_STATUS, PAYMENT_STATUS, label, longDate, longDateTime, money } from '../lib/terms'
 
 export default function Reservations() {
   const { user } = useAuth()
@@ -19,7 +19,11 @@ export default function Reservations() {
   // Deep links from the map arrive as ?q=<lot code>. The existing search
   // already matches lot codes, so there is no second filter to maintain.
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [approval, setApproval] = useState('')
+  // ?approval=pending is the dashboard's "awaiting approval" link.
+  const [approval, setApproval] = useState(() => {
+    const wanted = searchParams.get('approval')
+    return wanted && APPROVAL_STATUS[wanted] ? wanted : ''
+  })
   const [busy, setBusy] = useState(null)
   const { notice, succeed, fail, clear } = useNotice()
   const q = useDebounced(search)
@@ -31,7 +35,7 @@ export default function Reservations() {
   const { items: reservations, loaded, error, reload } = useList(base, { q }, 'Failed to load reservations')
 
   const counts = useMemo(() => {
-    const c = { pending: 0, approved: 0, rejected: 0 }
+    const c = { pending: 0, approved: 0, rejected: 0, cancelled: 0 }
     reservations.forEach((r) => {
       if (c[r.approved_status] !== undefined) c[r.approved_status]++
     })
@@ -39,15 +43,19 @@ export default function Reservations() {
   }, [reservations])
 
   const shown = approval ? reservations.filter((r) => r.approved_status === approval) : reservations
-  const showActions = isStaffView && shown.some((r) => r.approved_status === 'pending')
+  // A client may withdraw a request only while it waits and nothing is paid;
+  // money taken is settled at the office.
+  const cancellable = (r) => r.approved_status === 'pending' && Number(r.amount_paid) === 0
+  const showActions = shown.some((r) => (isStaffView ? r.approved_status === 'pending' : cancellable(r)))
 
-  const decide = async (r, action) => {
+  const decide = async (r, action, body) => {
     clear()
     setBusy(`${r.reservation_id}:${action}`)
-    const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST' })
+    const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST', body })
     setBusy(null)
     if (ok) {
-      succeed(`Reservation #${r.reservation_id} for ${r.lot_code} ${action === 'approve' ? 'approved' : 'rejected'}.`)
+      const done = { approve: 'approved', reject: 'rejected', cancel: 'cancelled. The plot is available to others again' }
+      succeed(`Reservation #${r.reservation_id} for ${r.lot_code} ${done[action]}.`)
       reload()
     } else {
       fail(data?.error || 'Action failed')
@@ -59,6 +67,7 @@ export default function Reservations() {
     { label: 'Plot', value: (r) => r.lot_code },
     { label: 'Section', value: (r) => r.section_name },
     ...(isStaffView ? [{ label: 'Client', value: (r) => r.user_name }] : []),
+    { label: 'Purpose', value: (r) => r.purpose },
     { label: 'Reservation date', value: (r) => r.reservation_date },
     { label: 'Slots', value: (r) => Number(r.number_of_slots) },
     { label: 'Approval', value: (r) => label(APPROVAL_STATUS, r.approved_status) },
@@ -139,34 +148,64 @@ export default function Reservations() {
                     <Link to={`/?lot=${r.lot_id}`} title="Show on the cemetery map">{r.lot_code}</Link>
                     <span className="text-muted"> #{r.reservation_id}</span>
                     <span className="cell-sub">{r.section_name}</span>
+                    {!isStaffView && r.purpose && <span className="cell-sub">For: {r.purpose}</span>}
                   </td>
-                  {isStaffView && <td data-label="Client">{r.user_name}</td>}
+                  {isStaffView && (
+                    <td data-label="Client">
+                      {r.user_name}
+                      {r.purpose && <span className="cell-sub">For: {r.purpose}</span>}
+                    </td>
+                  )}
                   <td data-label="Date">{longDate(r.reservation_date)}</td>
                   <td data-label="Slots" className="num">{r.number_of_slots}</td>
-                  <td data-label="Approval"><StatusBadge kind="approval" value={r.approved_status} /></td>
+                  <td data-label="Approval">
+                    <StatusBadge kind="approval" value={r.approved_status} />
+                    {r.hold_until && (
+                      <span className="cell-sub">
+                        {isStaffView ? 'Expires' : 'Held until'} {longDateTime(r.hold_until)} unless paid
+                      </span>
+                    )}
+                  </td>
                   <td data-label="Payment">
                     <StatusBadge kind="payment" value={r.payment_status} />
                     <span className="cell-sub">
                       {money(r.amount_paid)} of {money(r.total_amount)}
                     </span>
                   </td>
-                  {showActions && (
+                  {showActions && !isStaffView && (
+                    <td className="cell-actions no-print">
+                      {cancellable(r) && (
+                        <ConfirmButton
+                          label="Cancel"
+                          danger
+                          confirmLabel="Cancel reservation"
+                          dismissLabel="Keep it"
+                          onConfirm={() => decide(r, 'cancel')}
+                          busy={busy === `${r.reservation_id}:cancel`}
+                          message={`Cancel your request for ${r.lot_code}? The plot is released to other visitors.`}
+                        />
+                      )}
+                    </td>
+                  )}
+                  {showActions && isStaffView && (
                     <td className="cell-actions no-print">
                       {r.approved_status === 'pending' && (
                         <div className="table-actions">
-                          <button
-                            className="btn btn-primary btn-sm"
-                            disabled={!!busy}
-                            onClick={() => decide(r, 'approve')}
-                          >
-                            {busy === `${r.reservation_id}:approve` ? 'Working...' : 'Approve'}
-                          </button>
                           <ConfirmButton
-                            label="Reject"
-                            danger
-                            onConfirm={() => decide(r, 'reject')}
+                            label="Approve"
+                            className="btn btn-primary btn-sm"
+                            confirmLabel="Approve"
+                            dismissLabel="Not yet"
+                            disabled={!!busy}
+                            onConfirm={() => decide(r, 'approve')}
+                            busy={busy === `${r.reservation_id}:approve`}
+                            message={`Approve #${r.reservation_id} for ${r.user_name}? ${r.lot_code} becomes occupied. This cannot be undone.`}
+                          />
+                          <RejectButton
+                            reservation={r}
+                            disabled={!!busy}
                             busy={busy === `${r.reservation_id}:reject`}
-                            message="Reject this reservation? The lot will be released."
+                            onReject={(reason) => decide(r, 'reject', reason ? { reason } : undefined)}
                           />
                         </div>
                       )}
@@ -180,5 +219,53 @@ export default function Reservations() {
       </div>
       )}
     </div>
+  )
+}
+
+// Reject with an optional reason, which goes to the client in their
+// notification: "rejected" alone leaves them guessing whether to try again.
+function RejectButton({ reservation: r, onReject, busy, disabled }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const inputRef = useRef(null)
+  const triggerRef = useRef(null)
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
+  }, [open])
+
+  const close = () => {
+    setOpen(false)
+    setReason('')
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  if (!open) {
+    return (
+      <button type="button" ref={triggerRef} className="btn btn-secondary btn-sm" disabled={disabled} onClick={() => setOpen(true)}>
+        Reject
+      </button>
+    )
+  }
+
+  return (
+    <form
+      className="confirm-inline reject-form"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        await onReject(reason.trim())
+        close()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') close()
+      }}
+    >
+      <label className="reject-reason">
+        <span className="confirm-message">Reject #{r.reservation_id}? {r.lot_code} is released. Reason for the client (optional)</span>
+        <input ref={inputRef} value={reason} maxLength={150} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Plot set aside for road widening" />
+      </label>
+      <button type="submit" className="btn btn-danger btn-sm" disabled={busy}>{busy ? 'Working...' : 'Reject'}</button>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={close}>Keep pending</button>
+    </form>
   )
 }

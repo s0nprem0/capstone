@@ -24,6 +24,10 @@
 
 USE `cemetery_db`;
 
+-- Cemetery time, as the app's connections use (APP_TIMEZONE, Asia/Manila), so
+-- the NOW()-relative pending requests below hold the times they will show.
+SET time_zone = '+08:00';
+
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE `login_attempts`;
 TRUNCATE TABLE `audit_logs`;

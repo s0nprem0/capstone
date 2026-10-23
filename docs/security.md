@@ -67,6 +67,7 @@ experience; bypassing them gains nothing.
 | View own reservation | – | own only | yes | yes | `ReservationController::show` |
 | Create reservation | – | own only | any visitor | any visitor | `ReservationController::store` |
 | Update, approve, reject, delete reservation (delete only while it has no payments) | – | – | yes | yes | `ReservationController` |
+| Cancel reservation (pending, no payments) | – | own only | – | – | `ReservationController::cancel` |
 | View all payments | – | – | yes | yes | `PaymentController::index` |
 | View own payments | – | yes | – | – | `PaymentController::mine` |
 | Record/update payment | – | – | yes | yes | `PaymentController` |
@@ -86,7 +87,7 @@ experience; bypassing them gains nothing.
 | Create/delete/import/regrid plots | – | – | – | yes | `LotController` |
 | Dashboard and reports | – | – | yes | yes | `StatsController`, `ReportController` |
 | Audit-log report | – | – | yes | yes | `ReportController::auditLogs` |
-| Backup export/import | – | – | – | yes | `BackupController` |
+| Backup export/import, record summary, reset records | – | – | – | yes | `BackupController` |
 | Own notifications | – | yes | yes | yes | `NotificationController` |
 
 Additional account-safety rules in `UserController`:
@@ -110,15 +111,20 @@ Additional account-safety rules in `UserController`:
   registration starts a session.
 - **Login** (`POST /api/auth/login`) verifies the bcrypt hash with
   `password_verify()` and requires `users.status = 'active'`. A success
-  regenerates the session ID and clears failed attempts for that IP.
+  regenerates the session ID and clears failed attempts for that account from
+  that IP. A blank email or password is a `422` and is not counted.
 - **Logout** (`POST /api/auth/logout`) writes an audit entry and destroys the
   session and its cookie.
-- **Throttling** (`App\Core\RateLimiter`): 5 failed attempts per IP address in a
-  rolling 15-minute window, tracked in `login_attempts`. The sixth attempt in
-  the window answers HTTP 429.
-- **Failure messages**: login answers the same generic message for a wrong
-  password and an inactive/unknown account, avoiding account enumeration at the
-  login form. Registration does disclose whether an email is already registered.
+- **Throttling** (`App\Core\RateLimiter`): 5 failed attempts on one account from
+  one IP address, or 20 from one IP address across all accounts, in a rolling
+  15-minute window, tracked in `login_attempts`. The next attempt answers HTTP
+  429. Keying on the account keeps one clerk's typos from locking out every desk
+  behind the office's shared address.
+- **Failure messages**: login answers the same "Incorrect email or password"
+  for a wrong password and an unknown account, avoiding account enumeration at
+  the login form, and warns when 2 or fewer attempts remain. A deactivated
+  account is named only when the correct password is given, which tells a
+  guesser nothing. Registration does disclose whether an email is already registered.
 - **No password reset, email verification, or MFA** is implemented. There is no
   self-service recovery; an administrator or staff member resets the password.
 
@@ -239,12 +245,13 @@ Entries are written for:
 - registration (actor null), login, logout, and failed logins (actor null,
   with the email that was tried);
 - expiry of an unpaid pending reservation (actor null);
-- create/update/approve/reject/delete on reservations;
+- create/update/approve/reject/cancel/delete on reservations;
 - create/update/delete on payments and burial records;
 - create/update/delete/import/regrid on lots and sections;
 - create/update/delete on users;
 - create/update/delete on plot owners;
-- backup export, import, and failed imports.
+- backup export, import, failed imports, and record resets (with the counts
+  cleared).
 
 The audit report is available to **staff and administrators** at
 `GET /api/reports/audit-logs` (an optional date range, paged with `limit` and
@@ -277,6 +284,14 @@ can still edit the table; for tamper evidence, ship the log off the host.
   not the response.
 - `login_attempts` is not in the export's fixed table order but is included via
   the `SHOW TABLES` fallback.
+- `POST /api/backup/reset` (admin) deletes reservations, payments, burial
+  records, plot owners, notifications and sign-in attempts, and sets every plot
+  available, in one transaction. It requires the administrator's own password
+  and the typed word `RESET`; users, sections, plots and `audit_logs` are kept,
+  and the reset is logged with the counts it cleared. Download a backup first:
+  only a restore undoes it.
+- `GET /api/backup/summary` (admin) returns record counts and the last backup,
+  restore and reset times from the audit log.
 
 Operational rules:
 
@@ -372,7 +387,7 @@ The repository defaults are for local development only. Before deploying:
 | No MFA | A stolen password is enough to sign in | Rate limiting only; planned for deployment |
 | No password reset or email verification | No self-service recovery; addresses unverified | Admin/staff reset; document process |
 | Password minimum is 8 characters, no complexity rule | Weak passwords possible | bcrypt hashing; consider a stronger policy |
-| Login throttling is per IP only | Shared NAT can lock out a group; distributed attacks bypass it | 5/15 min window; add per-account throttling |
+| Login throttling is per IP (per account, plus a per-address ceiling) | Distributed attacks across many addresses bypass it | 5 per account / 20 per address per 15 min; add per-account throttling across addresses |
 | Registration and public memorial search are not rate-limited | Account spam and name/plot scraping | Add throttling and monitoring |
 | Registration reveals whether an email exists | Account enumeration | Generic login message; consider a neutral registration response |
 | No idle/absolute session timeout | Stolen cookie stays valid until logout/browser close | Set server-side timeout |
