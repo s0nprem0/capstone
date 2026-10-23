@@ -3255,7 +3255,7 @@ textarea:disabled {
 }
 
 .panel-note {
-  margin: 0 0 var(--space-md);
+  margin: var(--space-sm) 0 var(--space-md);
 }
 
 .dash-panel .figure-list {

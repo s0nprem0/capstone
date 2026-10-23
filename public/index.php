@@ -116,6 +116,8 @@ $router->post('/api/sections/{id}/delete', [$sections, 'destroy']);
 
 $router->get('/api/backup/export', [$backup, 'export']);
 $router->post('/api/backup/import', [$backup, 'import']);
+$router->get('/api/backup/summary', [$backup, 'summary']);
+$router->post('/api/backup/reset', [$backup, 'reset']);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 

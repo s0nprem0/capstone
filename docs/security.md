@@ -87,7 +87,7 @@ experience; bypassing them gains nothing.
 | Create/delete/import/regrid plots | – | – | – | yes | `LotController` |
 | Dashboard and reports | – | – | yes | yes | `StatsController`, `ReportController` |
 | Audit-log report | – | – | yes | yes | `ReportController::auditLogs` |
-| Backup export/import | – | – | – | yes | `BackupController` |
+| Backup export/import, record summary, reset records | – | – | – | yes | `BackupController` |
 | Own notifications | – | yes | yes | yes | `NotificationController` |
 
 Additional account-safety rules in `UserController`:
@@ -250,7 +250,8 @@ Entries are written for:
 - create/update/delete/import/regrid on lots and sections;
 - create/update/delete on users;
 - create/update/delete on plot owners;
-- backup export, import, and failed imports.
+- backup export, import, failed imports, and record resets (with the counts
+  cleared).
 
 The audit report is available to **staff and administrators** at
 `GET /api/reports/audit-logs` (an optional date range, paged with `limit` and
@@ -283,6 +284,14 @@ can still edit the table; for tamper evidence, ship the log off the host.
   not the response.
 - `login_attempts` is not in the export's fixed table order but is included via
   the `SHOW TABLES` fallback.
+- `POST /api/backup/reset` (admin) deletes reservations, payments, burial
+  records, plot owners, notifications and sign-in attempts, and sets every plot
+  available, in one transaction. It requires the administrator's own password
+  and the typed word `RESET`; users, sections, plots and `audit_logs` are kept,
+  and the reset is logged with the counts it cleared. Download a backup first:
+  only a restore undoes it.
+- `GET /api/backup/summary` (admin) returns record counts and the last backup,
+  restore and reset times from the audit log.
 
 Operational rules:
 

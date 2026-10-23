@@ -287,10 +287,18 @@ Open **Settings**.
 
 - **Backup** — choose **Download Backup (.sql)** to save a full copy of the
   database (structure and data) to your computer. Keep it somewhere safe.
+- **Records in the database** — how many accounts, plots, reservations,
+  payments, burials, owners and notifications are stored, and when the last
+  backup was taken.
 - **Restore** — choose a `.sql` backup file, then **Restore Backup** and confirm.
   **This replaces all current data with the backup** and cannot be undone.
+- **Reset records** — clears every reservation, payment, burial record, plot
+  owner and notification and makes every plot available, for example before
+  going live after training. Accounts, sections, plots and the audit log stay.
+  Enter your password, type `RESET`, and confirm. **Download a backup first**;
+  only restoring it undoes a reset.
 
-Backups and restores are recorded in the audit log.
+Backups, restores and resets are recorded in the audit log.
 
 ## 7. Common tasks — quick reference
 

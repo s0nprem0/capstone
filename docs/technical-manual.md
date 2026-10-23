@@ -296,6 +296,8 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/sections/{id}/delete` | admin | Empty, unlocked sections only |
 | `GET /api/backup/export` | admin | SQL dump download, audit-logged |
 | `POST /api/backup/import` | admin | Restore from uploaded/`php://input` SQL |
+| `GET /api/backup/summary` | admin | Record counts; last backup/restore/reset times |
+| `POST /api/backup/reset` | admin | `{ password, confirm: "RESET" }`; clears transactional records, keeps accounts, plots and the audit log |
 
 **Status codes.** `200` ok · `201` created · `304` not modified (conditional GET)
 · `400` bad request · `401` unauthenticated · `403` forbidden · `404` not found ·
@@ -411,6 +413,11 @@ spreadsheet never runs user-entered text as a formula.
 - **Import** (`POST /api/backup/import`, admin) reads an uploaded file or raw
   body, splits it into statements while honouring quotes and comments, and
   executes them. Capped at 50 MB.
+- **Reset** (`POST /api/backup/reset`, admin) deletes `payments`,
+  `notifications`, `burial_records`, `lot_owners`, `reservations` and
+  `login_attempts` and sets every lot `available`, in one transaction (row
+  deletes, unlike a restore's DDL, can roll back). Needs the admin's password
+  and `confirm: "RESET"`.
 
 `database/schema.sql` remains the authoritative definition — a fresh
 `make migrate` reproduces the schema and seed regardless of any backup.
