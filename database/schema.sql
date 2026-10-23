@@ -92,7 +92,9 @@ CREATE TABLE `reservations` (
   `purpose` VARCHAR(100) NULL,
   `number_of_slots` INT UNSIGNED NOT NULL DEFAULT 1,
   `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `approved_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  -- 'cancelled' is the client withdrawing a pending request themselves;
+  -- 'rejected' is the office declining it (or the hold expiring).
+  `approved_status` ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
   -- Derived from the payments recorded against the reservation (see
   -- Payment::recomputeStatus). Stored rather than computed on read so the
   -- reservations list and reports do not each add a subquery.

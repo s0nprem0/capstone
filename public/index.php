@@ -61,6 +61,7 @@ $router->post('/api/reservations', [$reservations, 'store']);
 $router->post('/api/reservations/{id}', [$reservations, 'update']);
 $router->post('/api/reservations/{id}/approve', [$reservations, 'approve']);
 $router->post('/api/reservations/{id}/reject', [$reservations, 'reject']);
+$router->post('/api/reservations/{id}/cancel', [$reservations, 'cancel']);
 $router->post('/api/reservations/{id}/delete', [$reservations, 'destroy']);
 
 $router->get('/api/payments', [$payments, 'index']);

@@ -37,6 +37,7 @@ export const APPROVAL_STATUS = {
   pending: 'Pending',
   approved: 'Approved',
   rejected: 'Rejected',
+  cancelled: 'Cancelled',
 }
 
 export const PAYMENT_METHODS = {

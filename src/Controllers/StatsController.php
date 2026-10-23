@@ -33,6 +33,7 @@ class StatsController
         $pendingReservations = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'pending'")->fetchColumn();
         $approvedReservations = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'approved'")->fetchColumn();
         $rejectedReservations = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'rejected'")->fetchColumn();
+        $cancelledReservations = $db->query("SELECT COUNT(*) FROM reservations WHERE approved_status = 'cancelled'")->fetchColumn();
 
         $totalBurials = $db->query("SELECT COUNT(*) FROM burial_records")->fetchColumn();
         $pendingBurials = $db->query("SELECT COUNT(*) FROM burial_records WHERE interment_status = 'scheduled'")->fetchColumn();
@@ -62,6 +63,7 @@ class StatsController
                 'pending' => (int) $pendingReservations,
                 'approved' => (int) $approvedReservations,
                 'rejected' => (int) $rejectedReservations,
+                'cancelled' => (int) $cancelledReservations,
             ],
             'burials' => [
                 'total' => (int) $totalBurials,

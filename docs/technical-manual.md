@@ -172,7 +172,7 @@ reproduces the whole database.
 | `purpose` | VARCHAR(100) | nullable |
 | `number_of_slots` | INT UNSIGNED | ≤ lot capacity |
 | `total_amount` | DECIMAL(10,2) | stated value |
-| `approved_status` | ENUM(pending, approved, rejected) | default `pending` |
+| `approved_status` | ENUM(pending, approved, rejected, cancelled) | default `pending`; `cancelled` = withdrawn by the client |
 | `payment_status` | ENUM(unpaid, partial, paid) | derived from payments; default `unpaid` |
 | `created_at` | DATETIME | |
 
@@ -227,8 +227,10 @@ owner keeps the plot `occupied`.
   when nothing live touches it.
 - Reserving locks the row (`SELECT … FOR UPDATE`) inside a transaction, so two
   requests cannot both claim a plot.
-- Approving a reservation moves the plot `reserved → occupied`; rejecting or
-  deleting one returns the plot unless a burial already claims it.
+- Approving a reservation moves the plot `reserved → occupied`; rejecting,
+  cancelling or deleting one returns the plot unless a burial already claims it.
+- A client can cancel only their own pending reservation, and only while no
+  payment is recorded against it; staff and admins are notified.
 - `number_of_slots` cannot exceed the plot type's capacity (single 1 / double 2 /
   family 4).
 - A burial record requires a `reserved` or `occupied` plot.
@@ -259,6 +261,7 @@ Base path `/api`. JSON in and out. Mutating requests need a CSRF token (see
 | `POST /api/reservations` | user, staff, admin | Create; claims the plot transactionally |
 | `POST /api/reservations/{id}` | admin, staff | Update date/purpose/slots/amount |
 | `POST /api/reservations/{id}/approve` \| `/reject` | admin, staff | Pending only |
+| `POST /api/reservations/{id}/cancel` | user (own) | Pending and unpaid only |
 | `POST /api/reservations/{id}/delete` | admin, staff | Releases the plot |
 | `GET /api/payments` | admin, staff | List; filter by `reservation_id`, `q`, `method`, `from`, `to` |
 | `GET /api/payments/mine` | Auth | A visitor's own payments |
@@ -335,7 +338,7 @@ inventory, deployment checklist, and accepted risks, is
   Accept-Encoding` when compressing. HSTS and a script/style CSP are not set.
   JSON `GET` responses add `Cache-Control: private, no-cache` and an `ETag`.
 - **Audit trail** — `audit_logs` records registration, logins, logouts, and
-  every create/update/approve/reject/delete, plus lot/section imports, regrids,
+  every create/update/approve/reject/cancel/delete, plus lot/section imports, regrids,
   and backup export/import. The report is readable by **staff and admins**.
 - **Public read endpoints** — `/api/map`, `/api/lots*`, `/api/memorials` (and
   `/api/lots/{id}/memorials`) require no session. The map includes reserved and

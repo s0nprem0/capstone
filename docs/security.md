@@ -67,6 +67,7 @@ experience; bypassing them gains nothing.
 | View own reservation | – | own only | yes | yes | `ReservationController::show` |
 | Create reservation | – | own only | any visitor | any visitor | `ReservationController::store` |
 | Update, approve, reject, delete reservation (delete only while it has no payments) | – | – | yes | yes | `ReservationController` |
+| Cancel reservation (pending, no payments) | – | own only | – | – | `ReservationController::cancel` |
 | View all payments | – | – | yes | yes | `PaymentController::index` |
 | View own payments | – | yes | – | – | `PaymentController::mine` |
 | Record/update payment | – | – | yes | yes | `PaymentController` |
@@ -244,7 +245,7 @@ Entries are written for:
 - registration (actor null), login, logout, and failed logins (actor null,
   with the email that was tried);
 - expiry of an unpaid pending reservation (actor null);
-- create/update/approve/reject/delete on reservations;
+- create/update/approve/reject/cancel/delete on reservations;
 - create/update/delete on payments and burial records;
 - create/update/delete/import/regrid on lots and sections;
 - create/update/delete on users;

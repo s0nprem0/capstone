@@ -31,7 +31,7 @@ export default function Reservations() {
   const { items: reservations, loaded, error, reload } = useList(base, { q }, 'Failed to load reservations')
 
   const counts = useMemo(() => {
-    const c = { pending: 0, approved: 0, rejected: 0 }
+    const c = { pending: 0, approved: 0, rejected: 0, cancelled: 0 }
     reservations.forEach((r) => {
       if (c[r.approved_status] !== undefined) c[r.approved_status]++
     })
@@ -39,7 +39,10 @@ export default function Reservations() {
   }, [reservations])
 
   const shown = approval ? reservations.filter((r) => r.approved_status === approval) : reservations
-  const showActions = isStaffView && shown.some((r) => r.approved_status === 'pending')
+  // A client may withdraw a request only while it waits and nothing is paid;
+  // money taken is settled at the office.
+  const cancellable = (r) => r.approved_status === 'pending' && Number(r.amount_paid) === 0
+  const showActions = shown.some((r) => (isStaffView ? r.approved_status === 'pending' : cancellable(r)))
 
   const decide = async (r, action) => {
     clear()
@@ -47,7 +50,8 @@ export default function Reservations() {
     const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST' })
     setBusy(null)
     if (ok) {
-      succeed(`Reservation #${r.reservation_id} for ${r.lot_code} ${action === 'approve' ? 'approved' : 'rejected'}.`)
+      const done = { approve: 'approved', reject: 'rejected', cancel: 'cancelled. The plot is available to others again' }
+      succeed(`Reservation #${r.reservation_id} for ${r.lot_code} ${done[action]}.`)
       reload()
     } else {
       fail(data?.error || 'Action failed')
@@ -150,7 +154,22 @@ export default function Reservations() {
                       {money(r.amount_paid)} of {money(r.total_amount)}
                     </span>
                   </td>
-                  {showActions && (
+                  {showActions && !isStaffView && (
+                    <td className="cell-actions no-print">
+                      {cancellable(r) && (
+                        <ConfirmButton
+                          label="Cancel"
+                          danger
+                          confirmLabel="Cancel reservation"
+                          dismissLabel="Keep it"
+                          onConfirm={() => decide(r, 'cancel')}
+                          busy={busy === `${r.reservation_id}:cancel`}
+                          message={`Cancel your request for ${r.lot_code}? The plot is released to other visitors.`}
+                        />
+                      )}
+                    </td>
+                  )}
+                  {showActions && isStaffView && (
                     <td className="cell-actions no-print">
                       {r.approved_status === 'pending' && (
                         <div className="table-actions">

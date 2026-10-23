@@ -150,7 +150,7 @@ class Reservation extends Model
             }
         }
 
-        if (isset($filters['approved_status']) && in_array($filters['approved_status'], ['pending', 'approved', 'rejected'], true)) {
+        if (isset($filters['approved_status']) && in_array($filters['approved_status'], ['pending', 'approved', 'rejected', 'cancelled'], true)) {
             $where[] = 'r.approved_status = :approved_status';
             $params['approved_status'] = $filters['approved_status'];
         }

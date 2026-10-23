@@ -124,7 +124,9 @@ that time to keep the hold. (The office can change both limits.)
 Open **My Reservations** to see your own reservations only. Each row shows the
 ID, plot, section, date, number of slots, amount, approval status, and **payment
 status** (with how much has been paid of the total). Choose the plot code to see
-it on the map. Use the search box or the **All approvals** dropdown to narrow the
+it on the map. While a request is still **Pending** and nothing has been paid,
+you can **Cancel** it; the plot is released to other visitors. Once a payment is
+recorded, ask the office to cancel it so the payment can be settled. Use the search box or the **All approvals** dropdown to narrow the
 list.
 
 ### Account settings

@@ -1286,6 +1286,11 @@ textarea {
   color: var(--color-danger-text);
 }
 
+.badge--cancelled {
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+}
+
 .badge--available {
   background: var(--color-success-bg);
   color: var(--color-success-text);

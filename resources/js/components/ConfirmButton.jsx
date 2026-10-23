@@ -5,6 +5,7 @@ export default function ConfirmButton({
   label,
   className = 'btn btn-secondary btn-sm',
   confirmLabel = 'Confirm',
+  dismissLabel = 'Cancel',
   message = 'Are you sure?',
   busy = false,
   disabled = false,
@@ -70,7 +71,7 @@ export default function ConfirmButton({
           {busy ? 'Working...' : confirmLabel}
         </button>
         <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={close}>
-          Cancel
+          {dismissLabel}
         </button>
       </span>
     )

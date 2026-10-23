@@ -180,6 +180,7 @@ export default function Reports() {
               <Tile label="Pending" value={summary.reservations.pending} />
               <Tile label="Approved" value={summary.reservations.approved} />
               <Tile label="Rejected" value={summary.reservations.rejected} />
+              <Tile label="Cancelled" value={summary.reservations.cancelled} />
               <Tile label="Value booked" value={money(summary.reservations.value)} />
             </div>
           </section>
