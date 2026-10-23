@@ -136,7 +136,9 @@ Your role and account status can only be changed by an administrator.
 ### Notifications
 
 The **Notifications** item shows a small number when you have unread messages.
-Open it to read them. Choose **Mark read** on a single message or **Mark all
+Visitors hear about decisions, payments and expired holds; staff and
+administrators are told whenever a visitor submits a new reservation. Open it to
+read them, and choose a message's plot code to jump to that reservation. Choose **Mark read** on a single message or **Mark all
 read** at the top.
 
 ## 5. Staff

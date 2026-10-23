@@ -149,6 +149,19 @@ class ReservationController
                 ['user_id', 'lot_code', 'number_of_slots', 'total_amount']
             ));
 
+            // A request staff encode themselves needs no one told about it.
+            if (Auth::role() === 'user') {
+                $client = Auth::user()['fullname'] ?? 'a visitor';
+                foreach (User::officeIds() as $officeId) {
+                    Notification::createFor(
+                        $officeId,
+                        "New reservation #{$reservationId} for lot {$this->lotLabel($lotId)} from {$client} is waiting for review.",
+                        'reservation',
+                        $reservationId
+                    );
+                }
+            }
+
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
