@@ -213,6 +213,8 @@ CREATE TABLE `lot_owners` (
 ) ENGINE=InnoDB;
 
 -- ===== Seed data =====
+-- Cemetery time, as the app's connections use (APP_TIMEZONE, Asia/Manila).
+SET time_zone = '+08:00';
 -- Default admin (password: admin123)
 INSERT INTO `users` (`fullname`, `email`, `phone`, `password`, `role`, `status`) VALUES
   ('System Administrator', 'admin@cemetery.test', '09170000001', '$2y$10$By0J7o/86O1M19BODiwRGOq6EcnSjZehzxdQVrDiEOe1lW2tTA2Rq', 'admin', 'active');
