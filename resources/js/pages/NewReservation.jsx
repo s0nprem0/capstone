@@ -308,6 +308,7 @@ export default function NewReservation() {
             }
             showSection={!sectionId}
             showStatus={false}
+            showType
             showPrice
           />
         </fieldset>
@@ -352,7 +353,9 @@ export default function NewReservation() {
           </div>
           <div className="field">
             <label>
-              Number of Slots{slotMax && <span className="label-hint">(max {slotMax})</span>}
+              {/* One flex item, so the hint sits beside the label instead of
+                  taking a row and dropping this input below its neighbours. */}
+              <span>Number of Slots{slotMax && <span className="label-hint"> (max {slotMax})</span>}</span>
               <input
                 type="number"
                 min="1"

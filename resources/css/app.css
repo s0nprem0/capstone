@@ -3022,6 +3022,25 @@ textarea:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* Between the code and the price, so a family plot is told from a single one
+   before it is chosen; the price follows it to the right edge. */
+.plot-list-type {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.plot-list-type + .plot-list-price {
+  margin-left: var(--space-md);
+  min-width: 6ch;
+  text-align: right;
+}
+
+.plot-list-item--selected .plot-list-type {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* The reserve form's lot field: a section filter and a code search over the
    same keyboard-operable list the map rail uses, in place of a native select
    that held every available plot in the cemetery. */
