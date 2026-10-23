@@ -107,7 +107,7 @@ function labelFor(items, pathname) {
 
 export default function Layout() {
   const { user, logout } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, state } = useLocation()
   const navigationType = useNavigationType()
   const groups = roleNav(user?.role)
   const items = groups.flatMap((group) => group.items)
@@ -127,7 +127,7 @@ export default function Layout() {
   }, [user])
 
   const closeSidebar = () => setSidebarOpen(false)
-  const pageTitle = labelFor(items, pathname) || 'St. John Memorial Garden & Parks'
+  const pageLabel = labelFor(items, pathname)
 
   // A single-page app never re-titles the document or moves focus on its own,
   // so a screen-reader or keyboard user gets no signal that the view changed
@@ -136,8 +136,8 @@ export default function Layout() {
   // POP is the first paint and back/forward, where focus should stay at the top
   // of the document so the skip link is still the first Tab stop.
   useEffect(() => {
-    document.title = `${pageTitle} · St. John Memorial Garden & Parks`
-  }, [pageTitle])
+    document.title = pageLabel ? `${pageLabel} · St. John Memorial Garden & Parks` : 'St. John Memorial Garden & Parks'
+  }, [pageLabel])
 
   useEffect(() => {
     if (navigationType === 'POP') return
@@ -218,6 +218,11 @@ export default function Layout() {
           {/* The page's own heading names it; a title here only repeated it. */}
           <span className="topbar-title">St. John Memorial Garden &amp; Parks</span>
         </div>
+        {state?.denied && (
+          <p className="alert alert--error" role="alert">
+            That page is not available to your account, so you were brought to your own home page instead.
+          </p>
+        )}
         <Outlet />
       </main>
     </div>
