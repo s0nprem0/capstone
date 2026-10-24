@@ -208,7 +208,9 @@ class DatabaseBackup
                 $i++;
                 while ($i < $length) {
                     $buffer .= $sql[$i];
-                    if ($sql[$i] === '\\' && $i + 1 < $length && $sql[$i + 1] === $quote) {
+                    // A backslash escapes whatever follows it, itself included:
+                    // PDO::quote() writes C:\ as 'C:\\', whose last quote closes.
+                    if ($sql[$i] === '\\' && $quote !== '`' && $i + 1 < $length) {
                         $buffer .= $sql[$i + 1];
                         $i += 2;
                         continue;
