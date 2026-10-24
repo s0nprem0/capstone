@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -67,9 +68,10 @@ class Lot extends Model
     {
         $query = self::query()->orderBy('lot_code');
 
-        $q = trim((string) ($filters['q'] ?? ''));
+        $q = Search::term($filters);
         if ($q !== '') {
-            $query->where(fn (Builder $w) => $w->where('lot_code', 'like', "%{$q}%")->orWhere('block', 'like', "%{$q}%"));
+            $like = Search::contains($q);
+            $query->where(fn (Builder $w) => $w->where('lot_code', 'like', $like)->orWhere('block', 'like', $like));
         }
         if (in_array($filters['status'] ?? null, self::STATUSES, true)) {
             $query->where('status', $filters['status']);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Dates;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 class Payment extends Model
 {
     public const METHODS = ['cash', 'gcash', 'bank_transfer', 'cheque', 'other'];
+
+    /** The most a DECIMAL(10,2) amount column holds. */
+    public const MAX_AMOUNT = 99999999.99;
 
     protected $table = 'payments';
     protected $primaryKey = 'payment_id';
@@ -60,12 +64,13 @@ class Payment extends Model
             $query->where('p.reservation_id', (int) $filters['reservation_id']);
         }
 
-        $q = trim((string) ($filters['q'] ?? ''));
+        $q = Search::term($filters);
         if ($q !== '') {
+            $like = Search::contains($q);
             $query->where(fn (Builder $w) => $w
-                ->where('l.lot_code', 'like', "%{$q}%")
-                ->orWhere('u.fullname', 'like', "%{$q}%")
-                ->orWhere('p.reference_no', 'like', "%{$q}%"));
+                ->where('l.lot_code', 'like', $like)
+                ->orWhere('u.fullname', 'like', $like)
+                ->orWhere('p.reference_no', 'like', $like));
         }
         if (in_array($filters['method'] ?? null, self::METHODS, true)) {
             $query->where('p.method', $filters['method']);

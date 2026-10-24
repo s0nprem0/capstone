@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -56,12 +57,13 @@ class User extends Authenticatable
     {
         $query = self::query()->orderByDesc('user_id');
 
-        $q = trim((string) ($filters['q'] ?? ''));
+        $q = Search::term($filters);
         if ($q !== '') {
+            $like = Search::contains($q);
             $query->where(fn (Builder $w) => $w
-                ->where('fullname', 'like', "%{$q}%")
-                ->orWhere('email', 'like', "%{$q}%")
-                ->orWhere('phone', 'like', "%{$q}%"));
+                ->where('fullname', 'like', $like)
+                ->orWhere('email', 'like', $like)
+                ->orWhere('phone', 'like', $like));
         }
         if (in_array($filters['role'] ?? null, self::ROLES, true)) {
             $query->where('role', $filters['role']);

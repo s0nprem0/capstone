@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Dates;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -99,14 +100,15 @@ class Reservation extends Model
             $query->where('r.user_id', $userId);
         }
 
-        $q = trim((string) ($filters['q'] ?? ''));
+        $q = Search::term($filters);
         if ($q !== '') {
+            $like = Search::contains($q);
             $query->where(fn (Builder $w) => $w
-                ->where('l.lot_code', 'like', "%{$q}%")
-                ->orWhere('l.block', 'like', "%{$q}%")
-                ->orWhere('u.fullname', 'like', "%{$q}%")
-                ->orWhere('s.section_name', 'like', "%{$q}%")
-                ->orWhere('r.purpose', 'like', "%{$q}%"));
+                ->where('l.lot_code', 'like', $like)
+                ->orWhere('l.block', 'like', $like)
+                ->orWhere('u.fullname', 'like', $like)
+                ->orWhere('s.section_name', 'like', $like)
+                ->orWhere('r.purpose', 'like', $like));
         }
         if (in_array($filters['approved_status'] ?? null, self::STATUSES, true)) {
             $query->where('r.approved_status', $filters['approved_status']);

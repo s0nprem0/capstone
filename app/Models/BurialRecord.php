@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Support\Dates;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -54,13 +55,14 @@ class BurialRecord extends Model
     {
         $query = self::detailed()->orderByDesc('b.burial_id');
 
-        $q = trim((string) ($filters['q'] ?? ''));
+        $q = Search::term($filters);
         if ($q !== '') {
+            $like = Search::contains($q);
             $query->where(fn (Builder $w) => $w
-                ->where('b.deceased_fullname', 'like', "%{$q}%")
-                ->orWhere('l.lot_code', 'like', "%{$q}%")
-                ->orWhere('s.section_name', 'like', "%{$q}%")
-                ->orWhere('b.next_of_kin_name', 'like', "%{$q}%"));
+                ->where('b.deceased_fullname', 'like', $like)
+                ->orWhere('l.lot_code', 'like', $like)
+                ->orWhere('s.section_name', 'like', $like)
+                ->orWhere('b.next_of_kin_name', 'like', $like));
         }
         if (in_array($filters['interment_status'] ?? null, self::INTERMENT, true)) {
             $query->where('b.interment_status', $filters['interment_status']);
@@ -104,7 +106,7 @@ class BurialRecord extends Model
             ->limit($limit);
 
         foreach ($words as $word) {
-            $query->where('b.deceased_fullname', 'like', '%'.addcslashes($word, '%_\\').'%');
+            $query->where('b.deceased_fullname', 'like', Search::contains($word));
         }
         if ($lotId !== null) {
             $query->where('b.lot_id', $lotId);
