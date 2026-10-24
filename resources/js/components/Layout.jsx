@@ -1,6 +1,6 @@
 import { Outlet, NavLink, Link, useLocation, useNavigationType } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../lib/api'
 import Icon from './Icon'
 import { ROLES, label } from '../lib/terms'
@@ -114,19 +114,45 @@ export default function Layout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const mainRef = useRef(null)
+  const sidebarRef = useRef(null)
+  const menuButtonRef = useRef(null)
+  const closeButtonRef = useRef(null)
+  const restoreFocusRef = useRef(true)
 
+  // A hidden tab has no one looking at the badge; polling it every 30 seconds
+  // only spends battery and requests. Refresh once when it becomes visible.
   useEffect(() => {
-    if (!user) return
+    if (!user) return undefined
+    let cancelled = false
     const load = async () => {
       const { ok, data } = await api('/api/notifications/unread-count')
-      if (ok) setUnreadCount(data.unread_count)
+      if (!cancelled && ok) setUnreadCount(data.unread_count)
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') load()
     }
     load()
-    const interval = setInterval(load, 30000)
-    return () => clearInterval(interval)
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') load()
+    }, 30000)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [user])
 
-  const closeSidebar = () => setSidebarOpen(false)
+  const closeSidebar = useCallback((restoreFocus = true) => {
+    restoreFocusRef.current = restoreFocus
+    setSidebarOpen(false)
+  }, [])
+
+  const openSidebar = () => {
+    restoreFocusRef.current = true
+    setSidebarOpen(true)
+  }
+
   const pageLabel = labelFor(items, pathname)
 
   // A single-page app never re-titles the document or moves focus on its own,
@@ -144,33 +170,73 @@ export default function Layout() {
     mainRef.current?.focus()
   }, [pathname, navigationType])
 
-  // Escape dismisses the off-canvas drawer without forcing a navigation.
+  // The off-canvas drawer covers the page, so while it is open focus belongs
+  // inside it: move it to the close control, keep Tab from wandering into the
+  // covered content, and put it back on the menu button when it closes.
   useEffect(() => {
     if (!sidebarOpen) return undefined
+    const previous = document.activeElement
+    closeButtonRef.current?.focus()
+
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setSidebarOpen(false)
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeSidebar()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      const focusable = sidebarRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+      if (!focusable?.length) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [sidebarOpen])
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (restoreFocusRef.current) previous?.focus?.()
+    }
+  }, [sidebarOpen, closeSidebar])
 
   return (
     <div className="app-layout">
       <a href="#main" className="skip-link">Skip to content</a>
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} aria-hidden="true" />}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`} aria-label="Site">
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => closeSidebar()} aria-hidden="true" />}
+      <aside
+        ref={sidebarRef}
+        id="site-navigation"
+        className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}
+        aria-label="Site navigation"
+        {...(sidebarOpen ? { role: 'dialog', 'aria-modal': 'true' } : {})}
+      >
         <div className="sidebar-header">
           <h1 className="sidebar-title">St. John Memorial Garden &amp; Parks</h1>
           <button
             type="button"
+            ref={closeButtonRef}
             className="sidebar-close"
-            onClick={closeSidebar}
+            onClick={() => closeSidebar()}
             aria-label="Close navigation menu"
           >
             ×
           </button>
         </div>
-        <nav onClick={closeSidebar} aria-label="Primary">
+        <nav
+          onClick={(e) => {
+            if (e.target.closest('a')) closeSidebar(false)
+          }}
+          aria-label="Primary"
+        >
           {groups.map((group) => (
             <div className="nav-group" key={group.heading}>
               <p className="nav-heading">{group.heading}</p>
@@ -208,10 +274,12 @@ export default function Layout() {
         <div className="topbar">
           <button
             type="button"
+            ref={menuButtonRef}
             className="btn btn-secondary topbar-menu"
-            onClick={() => setSidebarOpen(true)}
+            onClick={openSidebar}
             aria-label="Open navigation menu"
             aria-expanded={sidebarOpen}
+            aria-controls="site-navigation"
           >
             <Icon name="menu" size={18} />
           </button>

@@ -382,6 +382,11 @@ export default function Cemetery() {
           </aside>
 
           <div className="map-layout" ref={layoutRef}>
+            <p className="visually-hidden" aria-live="polite" aria-atomic="true">
+              {selectedLot
+                ? `Plot ${selectedLot.lot_code}, ${LOT_STATUS[selectedLot.status] || selectedLot.status}, ${money(selectedLot.price)}.`
+                : ''}
+            </p>
             <CemeterySvgMap
               sections={sections}
               contextLots={allLots}
