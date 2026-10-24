@@ -50,6 +50,20 @@ class BackupTest extends TestCase
         $this->assertTrue(AuditLog::query()->where('action', 'backup_import')->exists());
     }
 
+    public function test_a_value_ending_in_a_backslash_survives_a_restore(): void
+    {
+        $this->actingAs($this->makeUser('admin'));
+        $lot = $this->makeLot(['description' => 'C:\\', 'block' => "it's;"]);
+        $after = $this->makeLot(['description' => 'next; row']);
+
+        $dump = $this->get('/api/backup/export')->assertOk()->getContent();
+        $this->post('/api/backup/import', ['file' => UploadedFile::fake()->createWithContent('backup.sql', $dump)])->assertOk();
+
+        $this->assertSame('C:\\', Lot::find($lot->lot_id)->description);
+        $this->assertSame("it's;", Lot::find($lot->lot_id)->block);
+        $this->assertSame('next; row', Lot::find($after->lot_id)->description);
+    }
+
     public function test_only_statements_a_backup_writes_are_accepted(): void
     {
         $this->actingAs($this->makeUser('admin'));

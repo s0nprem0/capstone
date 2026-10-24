@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesEmail;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'email' => strtolower((string) $this->input('email', '')),
+            'email' => $this->normalizedEmail(),
             'role' => $this->input('role', 'user'),
             'status' => $this->input('status', 'active'),
         ]);
@@ -42,6 +45,7 @@ class StoreUserRequest extends FormRequest
             'email.required' => $required,
             'password.required' => $required,
             'password.min' => $required,
+            'email.string' => 'Invalid email address',
             'email.email' => 'Invalid email address',
             'email.unique' => 'Email already registered',
         ];

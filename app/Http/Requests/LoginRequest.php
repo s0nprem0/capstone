@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => strtolower((string) $this->input('email', ''))]);
+        $this->merge(['email' => $this->normalizedEmail()]);
     }
 
     public function rules(): array

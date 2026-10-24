@@ -262,7 +262,9 @@ owner keeps the plot `occupied`.
   claims it; `reserved` while a pending reservation holds it; `available` only
   when nothing live touches it.
 - Reserving locks the row (`SELECT … FOR UPDATE`) inside a transaction, so two
-  requests cannot both claim a plot.
+  requests cannot both claim a plot. Recording a burial locks the plot the same
+  way, so two clerks cannot both fill its last slot, and every payment change
+  locks its reservation, so it cannot land in the moment the hold expires.
 - Approving a reservation moves the plot `reserved → occupied`; rejecting,
   cancelling or deleting one returns the plot unless a burial already claims it.
 - A client can cancel only their own pending reservation, and only while no

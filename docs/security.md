@@ -205,11 +205,17 @@ session and compared with `hash_equals()`; the `XSRF-TOKEN` cookie is not sent.
 - **Types and formats**: route `{id}` values must be digits (`Route::pattern`),
   anything else is a `404`; emails use `FILTER_VALIDATE_EMAIL` (`email:filter`);
   dates must be real `YYYY-MM-DD` calendar dates; enums are checked
-  against allowlists; phone numbers and password length are validated. Numeric
-  fields are cast before use.
+  against allowlists; phone numbers and password length are validated. Text,
+  numbers and plot geometry are checked against their column's width and range
+  (a `422`, never a database `500`), ids must be integers rather than cast
+  (`["5"]` is refused, not read as `1`), and a list where text is expected
+  (`?q[]=`) is refused or ignored. Search terms are matched literally: `%` and
+  `_` are escaped in every `LIKE` (`App\Support\Search`).
 - **Uniqueness and integrity**: duplicate emails and `lot_code`s are rejected;
   reservation capacity is checked against the lot type; lot claiming uses a
-  transaction with `SELECT ... FOR UPDATE`; burials require a reserved or
+  transaction with `SELECT ... FOR UPDATE`, as do burials (against the plot's
+  capacity) and payments (against their reservation, which the hold expiry
+  also locks); a grid import is all or nothing; burials require a reserved or
   occupied plot, fit within its capacity (cremations excepted), mark it
   occupied, and have birth, death and burial dates in order; a plot held by a
   pending or approved reservation or a burial cannot be set back to
