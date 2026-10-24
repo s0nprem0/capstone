@@ -4,7 +4,7 @@ import useList from '../lib/useList'
 import useDebounced from '../lib/useDebounced'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
 import PageHeader from '../components/PageHeader'
@@ -214,7 +214,7 @@ export default function Users() {
       </div>
 
       {!loaded && !error ? (
-        <Loading message="Loading accounts..." />
+        <TableSkeleton label="Loading accounts..." columns={4} />
       ) : loaded && !error && users.length === 0 ? (
         <EmptyState
           noun="accounts"

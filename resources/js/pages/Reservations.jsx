@@ -5,7 +5,7 @@ import useDebounced from '../lib/useDebounced'
 import useList from '../lib/useList'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
@@ -32,7 +32,7 @@ export default function Reservations() {
   const base = isStaffView ? '/api/reservations' : '/api/reservations/mine'
   // The approval tabs filter here rather than on the server, so each tab can
   // show its count -- "Pending (3)" is the queue staff open this page for.
-  const { items: reservations, loaded, error, reload } = useList(base, { q }, 'Failed to load reservations')
+  const { items: reservations, loaded, error, reload, mutate } = useList(base, { q }, 'Failed to load reservations')
 
   const counts = useMemo(() => {
     const c = { pending: 0, approved: 0, rejected: 0, cancelled: 0 }
@@ -51,6 +51,12 @@ export default function Reservations() {
   const decide = async (r, action, body) => {
     clear()
     setBusy(`${r.reservation_id}:${action}`)
+    // The row answers before the round trip: a decision that waits for a
+    // reload leaves the button pressed and the status unchanged.
+    const status = { approve: 'approved', reject: 'rejected', cancel: 'cancelled' }[action]
+    const patch = (item, approved_status, hold_until) =>
+      item.reservation_id === r.reservation_id ? { ...item, approved_status, hold_until } : item
+    mutate((prev) => prev.map((item) => patch(item, status, null)))
     const { ok, data } = await api(`/api/reservations/${r.reservation_id}/${action}`, { method: 'POST', body })
     setBusy(null)
     if (ok) {
@@ -58,6 +64,7 @@ export default function Reservations() {
       succeed(`Reservation #${r.reservation_id} for ${r.lot_code} ${done[action]}.`)
       reload()
     } else {
+      mutate((prev) => prev.map((item) => patch(item, r.approved_status, r.hold_until)))
       fail(data?.error || 'Action failed')
     }
   }
@@ -116,7 +123,7 @@ export default function Reservations() {
         ))}
       </div>
 
-      {!loaded && !error && <Loading message="Loading reservations..." />}
+      {!loaded && !error && <TableSkeleton label="Loading reservations..." columns={6} />}
 
       {loaded && !error && (
       <div className="table-container section-block">

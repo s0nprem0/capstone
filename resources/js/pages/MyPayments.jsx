@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
@@ -50,7 +50,7 @@ export default function MyPayments() {
       </PageHeader>
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-      {!loaded && !error && <Loading message="Loading your payments..." />}
+      {!loaded && !error && <TableSkeleton label="Loading your payments..." columns={5} />}
 
       {loaded && !error && (
         <div className="dash section-block">

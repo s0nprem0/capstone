@@ -5,7 +5,7 @@ import useDebounced from '../lib/useDebounced'
 import useList from '../lib/useList'
 import { useAuth } from '../context/AuthContext'
 import ConfirmButton from '../components/ConfirmButton'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import Notice, { useNotice } from '../components/Notice'
@@ -216,7 +216,7 @@ export default function Payments() {
         <Select ariaLabel="Filter by payment method" value={method} onChange={setMethod} options={optionsOf(PAYMENT_METHODS, 'All methods')} />
       </div>
 
-      {!loaded && !error && <Loading message="Loading payments..." />}
+      {!loaded && !error && <TableSkeleton label="Loading payments..." columns={6} />}
 
       {loaded && !error && (payments.length === 0 ? (
         <EmptyState

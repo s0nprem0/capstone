@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { RequireAuth, RequireRole, GuestOnly } from './components/RouteGuards'
 import Layout from './components/Layout'
 import Loading from './components/Loading'
+import OfflineBanner from './components/OfflineBanner'
 
 // Pages load on demand, so the public map and sign-in do not carry the admin
 // editors (Lot Editor alone is ~900 lines) into the first bundle.
@@ -28,6 +29,7 @@ const Profile = lazy(() => import('./pages/Profile'))
 export default function App() {
   return (
     <AuthProvider>
+      <OfflineBanner />
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route element={<GuestOnly />}>

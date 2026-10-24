@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 import useDebounced from '../lib/useDebounced'
 import useList from '../lib/useList'
 import ConfirmButton from '../components/ConfirmButton'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import PlotPicker from '../components/PlotPicker'
 import Notice, { useNotice } from '../components/Notice'
@@ -295,7 +295,7 @@ export default function BurialRecords() {
           />
         </div>
 
-        {!loaded && !error && <Loading message="Loading the register..." />}
+        {!loaded && !error && <TableSkeleton label="Loading the register..." columns={5} />}
 
         {loaded && !error && (records.length === 0 ? (
           <div className="register register-scroll">

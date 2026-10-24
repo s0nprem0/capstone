@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import useList from '../lib/useList'
 import ConfirmButton from '../components/ConfirmButton'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import Notice, { useNotice } from '../components/Notice'
 import PageHeader from '../components/PageHeader'
@@ -214,7 +214,7 @@ export default function Sections() {
         </form>
       )}
 
-      {!loaded && !error && <Loading message="Loading sections..." />}
+      {!loaded && !error && <TableSkeleton label="Loading sections..." columns={3} />}
 
       {loaded && !error && sections.length === 0 && (
         <EmptyState

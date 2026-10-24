@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
-import Loading from '../components/Loading'
+import TableSkeleton from '../components/TableSkeleton'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import { NOTIFICATION_TYPES, label, longDateTime } from '../lib/terms'
@@ -21,6 +21,7 @@ export default function Notifications() {
     if (ok) {
       setNotifications(data.notifications)
       setUnreadCount(data.unread_count)
+      setError('')
     } else {
       setError(data?.error || 'Failed to load notifications')
     }
@@ -30,20 +31,35 @@ export default function Notifications() {
   useEffect(() => { load() }, [])
 
   const markRead = async (id) => {
+    const item = notifications.find((n) => n.notification_id === id)
+    if (!item || item.is_read) return
+    // The badge is the point of the action; waiting for the response makes it
+    // lag behind the click. Restore the server's view if the write fails.
+    setNotifications((prev) =>
+      prev.map((n) => (n.notification_id === id ? { ...n, is_read: 1 } : n))
+    )
+    setUnreadCount((prev) => Math.max(0, prev - 1))
     const { ok, data } = await api(`/api/notifications/${id}/read`, { method: 'POST' })
     if (ok) {
       setUnreadCount(data.unread_count)
-      setNotifications((prev) =>
-        prev.map((n) => (n.notification_id === id ? { ...n, is_read: 1 } : n))
-      )
+      setError('')
+    } else {
+      setError(data?.error || 'Failed to mark the notification read')
+      load()
     }
   }
 
   const markAllRead = async () => {
+    if (unreadCount === 0) return
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })))
+    setUnreadCount(0)
     const { ok, data } = await api('/api/notifications/read-all', { method: 'POST' })
     if (ok) {
-      setUnreadCount(0)
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })))
+      setUnreadCount(data.unread_count)
+      setError('')
+    } else {
+      setError(data?.error || 'Failed to mark all notifications read')
+      load()
     }
   }
 
@@ -59,7 +75,7 @@ export default function Notifications() {
 
       {error && <p className="alert alert--error" role="alert">{error}</p>}
 
-      {!loaded && !error && <Loading message="Loading notifications..." />}
+      {!loaded && !error && <TableSkeleton label="Loading notifications..." columns={2} />}
 
       {loaded && !error && notifications.length === 0 ? (
         <EmptyState noun="notifications" />

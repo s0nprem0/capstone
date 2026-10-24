@@ -104,6 +104,18 @@ export default function SectionEditor() {
 
   const locked = Boolean(section?.is_locked)
 
+  // The trace is saved on a button, so a reload or a closed tab would silently
+  // discard the moved vertices. Let the browser ask first.
+  useEffect(() => {
+    if (!dirty) return undefined
+    const warn = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+
   const toggleReference = (visible) => {
     const next = { ...reference, visible }
     setReference(next)
