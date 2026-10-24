@@ -1,4 +1,4 @@
-.PHONY: up down restart logs install migrate upgrade map-data demo fresh build verify-map setup php node mysql
+.PHONY: up down restart logs install migrate upgrade map-data demo fresh build verify-map test setup php node mysql
 
 # Compose provider. `docker compose` also works under Podman Desktop, where the
 # docker CLI is a shim over podman-compose; override for a bare podman install:
@@ -16,10 +16,9 @@ else
 NODE_EXEC := $(DC) exec node
 endif
 
-# One-shot bring-up from a clean clone. The .env copy matters: bootstrap reads
-# it when present, and the file is gitignored, so a fresh checkout has none.
+# One-shot bring-up from a clean clone. .env is gitignored, so a fresh checkout
+# has none; install creates it and generates the APP_KEY sessions are sealed with.
 setup:
-	@[ -f .env ] || cp .env.example .env
 	$(MAKE) up
 	$(MAKE) install
 	$(MAKE) migrate
@@ -38,23 +37,30 @@ logs:
 	$(DC) logs -f
 
 install:
+	@[ -f .env ] || cp .env.example .env
 	$(DC) exec php composer install
+	@grep -q '^APP_KEY=base64:' .env || $(DC) exec -T php php artisan key:generate
 	$(DC) exec node pnpm install
 
 build:
 	$(NODE_EXEC) pnpm build
 
+# Rebuilds the database from the migrations and seeds the admin account and the
+# survey sections. Drops every table first, so it resets the data too; apply a
+# new migration to a database you want to keep with `make upgrade`.
 migrate:
-	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/schema.sql
+	$(DC) exec -T php php artisan migrate:fresh --seed --force
 
-# Applies one in-place upgrade to an existing database, keeping its data:
-#   make upgrade FILE=database/upgrades/2026-10-22-integrity-and-audit.sql
+# Applies pending migrations, keeping the data. A database built from the
+# pre-Laravel schema.sql is adopted as it is by the first migration, once the
+# SQL upgrades it is missing have been applied:
+#   make upgrade FILE=database/upgrades/2026-10-23-reservation-cancel.sql
 upgrade:
-	@test -n "$(FILE)" || (echo "usage: make upgrade FILE=database/upgrades/<file>.sql" && exit 1)
+	@if [ -z "$(FILE)" ]; then $(DC) exec -T php php artisan migrate --force; exit; fi
 	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < $(FILE)
 
 # Loads the surveyed map: the 70 sections and the 6769 plots traced off the plan
-# in public/traces/survey-lines.png. Kept out of schema.sql because it is
+# in public/traces/survey-lines.png. Kept out of the migrations because it is
 # thousands of rows of surveyed geometry rather than a definition of the
 # database, and the plan can be re-traced without the schema moving.
 # Run after `make migrate`.
@@ -74,7 +80,13 @@ fresh:
 # plot's centre inside its section outline, no two plots overlapping, and
 # nothing outside the overall viewBox. Exits non-zero when one is not.
 verify-map:
-	$(DC) exec -T php php verify-map.php
+	$(DC) exec -T php php artisan map:verify
+
+# The PHPUnit suite, against its own cemetery_test database (created here too,
+# for a MySQL volume made before docker/mysql/init.sql existed).
+test:
+	$(DC) exec -T mysql mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON cemetery_test.* TO 'cemetery_user'@'%';"
+	$(DC) exec -T php php artisan test
 
 php:
 	$(DC) exec php bash

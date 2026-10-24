@@ -1,5 +1,9 @@
 node_modules/
 vendor/
+/storage/*.key
+/public/hot
+.phpunit.result.cache
+/.phpunit.cache
 .env
 *.log
 dist/
