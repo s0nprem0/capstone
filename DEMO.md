@@ -19,6 +19,10 @@ it is optional since compose injects `DB_*`). Running the steps by hand:
 make up && make install && make migrate && make map-data && make demo && make build
 ```
 
+The data loads are Artisan commands (`php artisan map:load`,
+`php artisan demo:load`); the Makefile targets run them in the PHP container.
+Use the commands directly when running without Docker.
+
 On a bare Podman install, use `make DC="podman-compose" setup` (see the Podman
 notes in [README.md](README.md)).
 

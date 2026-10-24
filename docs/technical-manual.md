@@ -134,9 +134,9 @@ Common targets: `up`, `down`, `logs`, `install`, `build`, `migrate`, `upgrade`,
 
 Place the project under `htdocs`, copy `.env.xampp.example` to `.env`, run
 `composer install` and `php artisan key:generate`, create the `cemetery_db`
-database and run `php artisan migrate --seed`, import
-`database/survey/lots.sql` (`mysql -u root cemetery_db -e "source database/survey/lots.sql"`;
-PowerShell has no `<` redirect), then `pnpm install` and `pnpm build`. `storage/` and
+database and run `php artisan migrate --seed` and `php artisan map:load`
+(`php artisan demo:load` for the demo data), then `pnpm install` and
+`pnpm build`. `storage/` and
 `bootstrap/cache/` must be writable by Apache. Apache rewrites all requests into `public/`
 via the root and `public/.htaccess`. Hot-reload dev: `XAMPP=1 pnpm dev`.
 
@@ -606,8 +606,8 @@ and `Logged out`. A `419` on the logout means the CSRF token was not sent; a
 ### Before a demo or release
 
 - `make migrate && make map-data && make demo && make build` from a clean state
-  (XAMPP: `php artisan migrate:fresh --seed`, then `source` `database/survey/lots.sql`
-  and `database/demo.sql` as in section 5),
+  (XAMPP: `php artisan migrate:fresh --seed`, `php artisan map:load`,
+  `php artisan demo:load`),
 - `make test` and the smoke test pass,
 - http://localhost:8000 loads with styling,
 - an accessibility scan (axe-core) and a keyboard walk of the main screens.

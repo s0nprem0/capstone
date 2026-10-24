@@ -36,7 +36,7 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 │   ├── Models/               # Eloquent models (data layer)
 │   ├── Services/             # DatabaseBackup
 │   ├── Support/              # Dates, Svg, LoginThrottle, Tally
-│   └── Console/Commands/     # map:verify
+│   └── Console/Commands/     # map:verify, map:load, demo:load
 ├── bootstrap/app.php         # Middleware groups, exception rendering
 ├── config/                   # Laravel config + cemetery.php (reservation limits)
 ├── routes/                   # api.php, web.php, console.php (reservations:expire)
@@ -63,8 +63,8 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 make up        # docker compose up -d
 make install   # .env + APP_KEY, composer install + pnpm install (in containers)
 make migrate   # php artisan migrate:fresh --seed (drops every table)
-make map-data  # apply database/survey/lots.sql (70 surveyed sections, 6769 plots)
-make demo      # apply database/demo.sql (demo clients, reservations, burials)
+make map-data  # php artisan map:load — database/survey/lots.sql (70 sections, 6769 plots)
+make demo      # php artisan demo:load — database/demo.sql (demo clients, reservations, burials)
 ```
 - React dev server: http://localhost:5173 (proxies `/api` to PHP)
 - Laravel (php artisan serve): http://localhost:8000

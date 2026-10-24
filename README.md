@@ -80,6 +80,10 @@ make map-data     # load the 70 surveyed sections and 6769 plots
 make demo         # optional: load the demo dataset for a walkthrough
 ```
 
+The two data loads are Artisan commands (`php artisan map:load`,
+`php artisan demo:load`); the Makefile targets just run them in the PHP
+container. Use the commands directly outside Docker.
+
 `make migrate` is destructive by design — that is what lets it put a database
 back the way the schema says it should be. To apply a new migration and keep the
 data, run `make upgrade` (`php artisan migrate`). For demo accounts and a suggested
@@ -154,9 +158,9 @@ pnpm install
 Create database `cemetery_db` (utf8mb4) in phpMyAdmin (http://localhost/phpmyadmin), then:
 ```bash
 php artisan migrate --seed
-C:\xampp\mysql\bin\mysql -u root cemetery_db -e "source database/survey/lots.sql"
+php artisan map:load
+php artisan demo:load   # optional demo data
 ```
-(`source` rather than `< file`, which PowerShell does not support.)
 
 ### 5. Build the frontend
 Apache serves the built bundle through `public/index.php`:

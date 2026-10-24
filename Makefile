@@ -65,12 +65,12 @@ upgrade:
 # database, and the plan can be re-traced without the schema moving.
 # Run after `make migrate`.
 map-data:
-	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/survey/lots.sql
+	$(DC) exec -T php php artisan map:load
 
 # Loads the demo dataset. Run after `make migrate` and `make map-data`, which
 # reset the database to the schema and the surveyed plots alone.
 demo:
-	$(DC) exec -T mysql mysql -u cemetery_user -psecret cemetery_db < database/demo.sql
+	$(DC) exec -T php php artisan demo:load
 
 fresh:
 	$(DC) down -v
