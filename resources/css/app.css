@@ -1473,6 +1473,140 @@ textarea {
   max-width: 220px;
 }
 
+/* ==== Sections register ==== */
+.section-overview {
+  margin-bottom: var(--space-md);
+}
+
+.section-overview .stat-row {
+  margin-bottom: var(--space-md);
+}
+
+.section-overview-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.section-overview-bar .occupancy-bar {
+  width: 100%;
+  max-width: 36rem;
+}
+
+.section-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.section-toolbar .search-input {
+  flex: 1 1 240px;
+  max-width: 32rem;
+}
+
+.section-toolbar .map-filters {
+  flex-wrap: wrap;
+}
+
+.section-toolbar-count {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-cell,
+.section-plots-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+}
+
+.section-cell-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs);
+}
+
+.section-name {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.section-name:hover {
+  text-decoration: underline;
+}
+
+.section-description {
+  max-width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.availability {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.availability-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.availability-item strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.mark--locked {
+  margin-left: var(--space-2xs);
+  color: var(--color-text-muted);
+}
+
+.section-clear {
+  margin-top: var(--space-sm);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .section-description {
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .section-cell,
+  .section-plots-value,
+  .availability {
+    align-items: flex-end;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .section-cell-head {
+    justify-content: flex-end;
+  }
+
+  .section-name {
+    font-size: var(--text-xl);
+  }
+
+  .section-toolbar-count {
+    margin-left: 0;
+  }
+}
+
 .table-actions {
   display: flex;
   align-items: center;
@@ -2398,7 +2532,7 @@ textarea:disabled {
 /* ==== Reduced motion ====
    Six animations ran unconditionally: the loading spinner (indefinitely),
    the off-canvas drawer transform, and the nav-link, report-card,
-   lot-rect and editor-chip transitions. */
+   lot-rect and chip transitions. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2502,6 +2636,13 @@ textarea:disabled {
     flex-wrap: wrap;
     gap: var(--space-sm);
   }
+  /* The editor's actions and save state are four items wide, and the status
+     was being pushed off the right edge of a phone. */
+  .page-header .table-actions {
+    flex-wrap: wrap;
+    white-space: normal;
+    justify-content: flex-start;
+  }
   .form-actions {
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -2556,7 +2697,6 @@ textarea:disabled {
   .btn-sm,
   .btn-ghost,
   .chip,
-  .editor-chip,
   .section-row {
     min-height: 44px;
   }
@@ -2579,56 +2719,12 @@ textarea:disabled {
 
   /* Buttons this close together are hard to hit without a miss. */
   .table-actions,
-  .map-filters,
-  .editor-chips-list {
+  .map-filters {
     gap: var(--space-sm);
   }
 }
 
 /* ==== Lot Editor (admin) ==== */
-.editor-chip {
-  padding: var(--space-2xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
-}
-
-.editor-chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.editor-chip--active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-on-strong);
-}
-
-.editor-chips {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-top: var(--space-xs);
-}
-
-.editor-chips-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-}
-
-.editor-title {
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-}
-
 .editor-dirty {
   margin-left: var(--space-xs);
   padding: var(--space-3xs) var(--space-xs);
@@ -2643,6 +2739,90 @@ textarea:disabled {
   background: transparent;
   color: var(--color-text-muted);
   font-weight: 400;
+}
+
+/* The editor's navigation lives in the map rail (section picker, plot search,
+   the keyboard-operable plot list) instead of a row of chips above the map. */
+.lot-editor-rail .select-list {
+  min-width: 100%;
+}
+
+.lot-section-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.lot-section-summary .occupancy-bar {
+  width: 100%;
+}
+
+.lot-find-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.lot-rail-count {
+  margin-left: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.lot-rail-plots .plot-list {
+  max-height: 16rem;
+}
+
+.lot-scan > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lot-scan > summary::before {
+  content: '▸';
+  margin-right: var(--space-2xs);
+}
+
+.lot-scan[open] > summary::before {
+  content: '▾';
+}
+
+.lot-scan-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-2xs);
+}
+
+.lot-scan .lot-reference-opacity {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2xs);
+  align-items: center;
+}
+
+.lot-scan .lot-reference-opacity > input {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+}
+
+.lot-scan .lot-reference-opacity output {
+  text-align: right;
+}
+
+.lot-scan .lot-reference-grid {
+  position: static;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  padding: var(--space-sm);
+  margin-top: var(--space-xs);
+  box-shadow: none;
+}
+
+.lot-scan .lot-reference-align summary {
+  min-height: 32px;
 }
 
 .editor-svg {
@@ -2699,11 +2879,6 @@ textarea:disabled {
   font-weight: 600;
 }
 
-.lot-editor-legend {
-  margin-top: var(--space-sm);
-  margin-bottom: 0;
-}
-
 /* ==== Fit the whole map view into one page ====
    The map page (Cemetery) and the Lot Editor each become a flex column that
    fills the viewport minus main-content padding; the SVG fills the remaining
@@ -2745,19 +2920,6 @@ textarea:disabled {
   flex-shrink: 0;
 }
 
-.lot-reference-tools {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: var(--space-sm) var(--space-md);
-  margin: var(--space-sm) 0;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-}
-
-.lot-reference-find,
 .lot-reference-opacity,
 .lot-reference-grid label {
   display: flex;
@@ -2765,10 +2927,6 @@ textarea:disabled {
   gap: var(--space-2xs);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
-}
-
-.lot-reference-find .select {
-  min-width: 15rem;
 }
 
 .lot-reference-toggle {
@@ -2834,16 +2992,6 @@ textarea:disabled {
 }
 
 @media (max-width: 700px) {
-  .lot-reference-tools {
-    align-items: stretch;
-  }
-
-  .lot-reference-find,
-  .lot-reference-find .select {
-    width: 100%;
-    min-width: 0;
-  }
-
   .lot-reference-opacity {
     grid-template-columns: auto minmax(5rem, 1fr) 3rem;
   }
@@ -3462,6 +3610,12 @@ textarea:disabled {
   display: none;
 }
 
+/* The lot editor's record pane is part of the editing layout, not the map's
+   dismissible sheet: it opens with the selected plot and stays in the flex row. */
+.map-page .map-detail.map-detail--editor {
+  display: block;
+}
+
 .sheet-close {
   position: absolute;
   top: var(--space-xs);
@@ -3557,6 +3711,28 @@ textarea:disabled {
     margin-top: 0;
   }
 
+  /* The lot editor follows the same order as the map: the section and its
+     search above the map, the plot list and the scan controls beneath it. */
+  .map-page .lot-rail-section {
+    order: 1;
+  }
+
+  .map-page .lot-rail-find {
+    order: 2;
+  }
+
+  .map-page .lot-rail-plots {
+    order: 4;
+  }
+
+  .map-page .lot-scan {
+    order: 5;
+  }
+
+  .map-page .lot-editor-rail .map-rail-legend {
+    order: 6;
+  }
+
   /* An explicit height: in the column, flex: 1 would size it from zero. */
   .map-page .map-svg-wrap {
     flex: none;
@@ -3591,6 +3767,13 @@ textarea:disabled {
     border: 0;
     border-top: 1px solid var(--color-border);
     box-shadow: var(--shadow-sheet);
+  }
+
+  /* The editor's form is a normal panel under the map on a phone, not a sheet
+     to dismiss: there is no close control in this editor. */
+  .map-page .map-detail.map-detail--editor {
+    position: static;
+    max-height: none;
   }
 
   .sheet-close {

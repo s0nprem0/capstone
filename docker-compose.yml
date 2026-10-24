@@ -19,6 +19,9 @@ services:
       - DB_PASSWORD=secret
       - APP_ENV=local
       - APP_DEBUG=true
+      # Worker processes for the built-in server, so a slow map load does not
+      # queue every other request behind it.
+      - PHP_CLI_SERVER_WORKERS=4
 
   node:
     build:
@@ -46,7 +49,7 @@ services:
       MYSQL_PASSWORD: secret
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-test-database.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s

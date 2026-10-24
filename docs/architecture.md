@@ -24,9 +24,9 @@ flowchart TB
     P4["Client Runtime<br/>react-router-dom · AuthContext · lib/api.js<br/>role guards · CSRF header · /api/map cache"]
   end
 
-  subgraph L3["3 · Application Layer — PHP"]
+  subgraph L3["3 · Application Layer — Laravel 12 (PHP)"]
     direction LR
-    M1["Authentication Module<br/>AuthController · Core/Auth · Csrf · RateLimiter"]
+    M1["Authentication Module<br/>AuthController · session guard · VerifyCsrfToken · LoginThrottle"]
     M2["Reservation Management<br/>ReservationController"]
     M2b["Payment Monitoring<br/>PaymentController"]
     M3["Burial Records Management<br/>BurialRecordController"]
@@ -34,7 +34,7 @@ flowchart TB
     M5["Notification Module<br/>NotificationController"]
     M6["Report Generation<br/>ReportController · StatsController"]
     M7["User and System Management<br/>User / Section / Backup controllers"]
-    M8["API Interface Layer<br/>Core/Router · public/index.php (REST /api)"]
+    M8["API Interface Layer<br/>routes/api.php · role middleware (REST /api)"]
   end
 
   subgraph L4["4 · Data Layer — MySQL 8.0"]
@@ -56,11 +56,11 @@ flowchart TB
 
   subgraph L6["6 · Infrastructure Layer"]
     direction LR
-    I1["Web Server<br/>Apache (XAMPP) or PHP built-in server"]
+    I1["Web Server<br/>Apache (XAMPP) or php artisan serve"]
     I2["Application Server<br/>PHP 8.3"]
     I3["Database Server<br/>MySQL 8.0"]
     I4["File Storage<br/>public/traces · public/fonts"]
-    I5["Backup and Recovery<br/>BackupController"]
+    I5["Backup and Recovery<br/>BackupController · DatabaseBackup"]
   end
 
   A1 --> A4
@@ -119,7 +119,7 @@ layer the user never sees as "code", only as screens.
 | Activity logs | `audit_logs`, `login_attempts` |
 | Report / backup data | none stored — reports are generated on demand and backups stream as a download |
 
-`schema.sql` seeds the 66 numbered sections; `database/survey/lots.sql` (loaded by
+The migrations define the tables and the seeder adds the 66 numbered sections; `database/survey/lots.sql` (loaded by
 `make map-data`) adds the traced plots and brings the set to **70 sections and
 6,769 plots**, including two perimeter blocks, *North Strip A* and *North Strip B*.
 
@@ -138,12 +138,23 @@ layer the user never sees as "code", only as screens.
   `.sql` file transiently and does not retain it.
 - **Report / Backup data is not a datastore.** Reports are computed per request
   from the live tables; a backup is generated on demand through
-  `BackupController` and downloaded, not persisted server-side.
+  `BackupController` (`App\Services\DatabaseBackup`) and downloaded, not
+  persisted server-side. Sessions and cache are files under `storage/`, not
+  tables, so a restore never touches them.
 
 ## Infrastructure
 
 The infrastructure chain matches the diagram: web server → PHP application →
-MySQL, with file storage for static assets and backup/restore on the side. In
-the containerized dev environment the web server is PHP's built-in server
-(`php -S`) in front of the same front controller; under XAMPP it is Apache with
-the `.htaccess` rewrites (see [../README.md](../README.md)).
+MySQL, with file storage for static assets and backup/restore on the side. The
+application is a Laravel 12 app with one entry point, `public/index.php`:
+`routes/api.php` answers `/api/*` with JSON and `routes/web.php` returns the SPA
+shell for every other path. In the containerized dev environment the web server
+is PHP's built-in server (`php artisan serve`); under XAMPP it is Apache with the
+`.htaccess` rewrites (see [../README.md](../README.md)).
+
+Inside the application layer a request passes the `api` middleware group
+(`bootstrap/app.php`): cookies and session, the CSRF check on POST, the sweep
+that expires unpaid holds, and the conditional-GET ETag; then the route's
+`role:` middleware (RBAC), then the controller. Security headers and gzip wrap
+every response. Errors of every kind render as `{"error": "..."}`, the one
+shape the SPA reads.

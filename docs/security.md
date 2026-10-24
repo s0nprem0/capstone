@@ -20,7 +20,7 @@ Protected assets, in order of sensitivity:
 
 | Asset | Where it lives | Why it matters |
 | --- | --- | --- |
-| Account credentials | `users.password` (bcrypt hash), PHP session | Account takeover, staff/admin abuse |
+| Account credentials | `users.password` (bcrypt hash), Laravel session, `APP_KEY` | Account takeover, staff/admin abuse |
 | Personal data | `users`, `reservations`, `payments`, `burial_records`, `lot_owners`, `notifications` | Data Privacy Act of 2012 (RA 10173) obligations |
 | Cemetery records | `cemetery_sections`, `cemetery_lots`, `reservations`, `burial_records`, `lot_owners` | Financial and legal records; plot ownership |
 | Audit trail | `audit_logs`, `login_attempts` | Accountability and incident investigation |
@@ -43,10 +43,10 @@ application origin.
 
 Boundaries where input must never be trusted:
 
-- **Browser → PHP** (`public/index.php`, `App\Core\Router`): every parameter,
+- **Browser → Laravel** (`public/index.php`, `routes/api.php`): every parameter,
   header, JSON body, query string, and uploaded file.
-- **PHP → MySQL** (`App\Models\*`): all SQL is parameterized; identifiers come
-  from code, never from request values.
+- **Laravel → MySQL** (`App\Models\*`, the query builder): all SQL is
+  parameterized; identifiers come from code, never from request values.
 - **Admin → backup/restore**: an administrator can upload a backup that is
   executed as the application's database user. Only the statement shapes the
   export writes are accepted (section 11), but it is still a privileged,
@@ -56,9 +56,12 @@ Boundaries where input must never be trusted:
 
 ## 3. Roles and permissions
 
-Authorization is enforced server-side in every controller method. Client-side
-route guards (`resources/js/components/RouteGuards.jsx`) only improve the
-experience; bypassing them gains nothing.
+Authorization is enforced server-side on every route: `routes/api.php` puts
+each route behind the `role:` middleware (`App\Http\Middleware\EnsureRole`)
+for the roles that may call it, and the controllers add the ownership checks.
+Client-side route guards (`resources/js/components/RouteGuards.jsx`) only
+improve the experience; bypassing them gains nothing. The "Enforced in" column
+names the controller; its role comes from the route's middleware group.
 
 | Capability | Public | `user` | `staff` | `admin` | Enforced in |
 | --- | --- | --- | --- | --- | --- |
@@ -106,16 +109,19 @@ Additional account-safety rules in `UserController`:
 ## 4. Authentication
 
 - **Registration** (`POST /api/auth/register`) creates a `user` account, hashes
-  the password with `password_hash(..., PASSWORD_BCRYPT)`, validates the email,
+  the password with bcrypt (the `User` model's `hashed` cast), validates the email
+  (`RegisterRequest`),
   enforces an 8-character minimum, and rejects duplicate emails. Successful
   registration starts a session.
-- **Login** (`POST /api/auth/login`) verifies the bcrypt hash with
-  `password_verify()` and requires `users.status = 'active'`. A success
+- **Login** (`POST /api/auth/login`) checks the bcrypt hash through
+  `Auth::attempt()`, whose `active-users` provider finds only accounts with
+  `users.status = 'active'`. A hash made at a lower bcrypt cost is rehashed at
+  the current one on a successful login. A success
   regenerates the session ID and clears failed attempts for that account from
   that IP. A blank email or password is a `422` and is not counted.
-- **Logout** (`POST /api/auth/logout`) writes an audit entry and destroys the
-  session and its cookie.
-- **Throttling** (`App\Core\RateLimiter`): 5 failed attempts on one account from
+- **Logout** (`POST /api/auth/logout`) writes an audit entry, invalidates the
+  session and issues a new CSRF token.
+- **Throttling** (`App\Support\LoginThrottle`): 5 failed attempts on one account from
   one IP address, or 20 from one IP address across all accounts, in a rolling
   15-minute window, tracked in `login_attempts`. The next attempt answers HTTP
   429. Keying on the account keeps one clerk's typos from locking out every desk
@@ -130,42 +136,43 @@ Additional account-safety rules in `UserController`:
 
 ## 5. Sessions
 
-`App\Core\Session` configures the PHP session cookie:
+Laravel's session (`config/session.php`, file driver under
+`storage/framework/sessions`) sets the cookie
+`cemetery-reservation-system-session`, encrypted with `APP_KEY`:
 
 | Attribute | Value |
 | --- | --- |
 | `HttpOnly` | yes |
 | `SameSite` | `Lax` |
-| `Secure` | set when `$_SERVER['HTTPS']` is set |
+| `Secure` | set when the request arrived over HTTPS (`AppServiceProvider`), unless `SESSION_SECURE_COOKIE` says otherwise |
 | `Path` | `/` |
-| `Lifetime` | `0` (session cookie; ends when the browser closes) |
+| Cookie lifetime | session cookie; ends when the browser closes (`SESSION_EXPIRE_ON_CLOSE`) |
+| Idle timeout | `SESSION_LIFETIME` minutes (120) without a request, enforced server-side |
 
-The session ID is regenerated on login and registration. Logout clears
-`$_SESSION`, expires the cookie, and calls `session_destroy()`.
-`Auth::user()` re-reads the account on every request and treats an `inactive`
-account as signed out, so deactivating an account ends its open sessions on
-their next request.
+The session ID is regenerated on login and registration, and the session is
+invalidated on logout. The auth guard re-reads the account on every request
+through the `active-users` provider, which ignores `inactive` accounts, so
+deactivating an account ends its open sessions on their next request.
 
-**Limitations:** there is no application-level idle or absolute timeout, and
-`session.use_strict_mode` is not set. A stolen cookie remains usable until the
-browser session ends, the user logs out, or the server-side session is removed.
-Set `session.use_strict_mode=1` and a session timeout in `php.ini` for
-production.
+**Limitations:** there is no absolute session lifetime: a session kept active
+lasts until the browser closes or the user logs out. Anyone holding `APP_KEY`
+can forge session cookies, so treat it as a secret.
 
 ## 6. Authorization
 
-- `Auth::requireRole([...])` is the first statement of every protected
-  controller method and answers `401` when unauthenticated, `403` when the role
-  is wrong.
+- The `role:` route middleware runs before any protected controller and answers
+  `401` when unauthenticated, `403` when the role is wrong.
 - Ownership checks supplement roles: a visitor may read only their own
   reservation (`ReservationController::show`); `mine` endpoints always filter by
   `Auth::id()`, never by a client-supplied user ID.
 - A visitor cannot book for another user: `store` accepts `user_id` from staff
   and admins, but forces `Auth::id()` for visitors.
 - Every state-changing route except login/register is a `POST` covered by the
-  router's CSRF check.
+  CSRF middleware.
 - Unknown API paths return `404`; unhandled exceptions return a generic
-  `500` and are logged server-side.
+  `500` and are logged server-side (`storage/logs`). Every API error, whatever
+  raised it, renders as `{"error": "..."}` (`bootstrap/app.php`), so stack
+  traces never reach the client from `/api`.
 
 Routes reachable without a session: `GET /api/map`, `GET /api/csrf-token`,
 `GET /api/lots`, `GET /api/lots/available`, `GET /api/lots/{id}`,
@@ -174,25 +181,30 @@ Routes reachable without a session: `GET /api/map`, `GET /api/csrf-token`,
 
 ## 7. CSRF
 
-`App\Core\Router` rejects any `POST` to a non-public route without a valid
-`X-CSRF-Token` header, answering `419`. The token is 32 random bytes stored in
-the session and compared with `hash_equals()`.
+`App\Http\Middleware\VerifyCsrfToken` (Laravel's `ValidateCsrfToken`) rejects
+any `POST` to a non-public route without a valid `X-CSRF-Token` header,
+answering `419`. The token is a 40-character random string stored in the
+session and compared with `hash_equals()`; the `XSRF-TOKEN` cookie is not sent.
 
 - Login and registration are exempt because they create the session.
 - The SPA fetches the token from `GET /api/csrf-token`, caches it in memory, and
   retries once on `419` (`resources/js/lib/api.js`). The token is never written
   to `localStorage`.
 - `GET` requests are not state-changing, so they do not require a token.
-- There are no cross-origin CORS headers; the API is same-origin only.
+- There are no cross-origin CORS headers; Laravel's default CORS middleware is
+  removed, so the API is same-origin only.
 
 ## 8. Input validation and injection
 
-- **SQL**: PDO with `ATTR_EMULATE_PREPARES => false`; all values are bound.
-  Dynamic `WHERE` fragments are fixed strings chosen by code, identifiers come
-  from model classes, and pagination limits are clamped in `Model::paginate`.
+- **SQL**: Eloquent and the query builder over PDO with
+  `ATTR_EMULATE_PREPARES => false`; all values are bound. Raw fragments
+  (`selectRaw`, `whereRaw`) are fixed strings chosen by code with bound values,
+  identifiers come from model classes, and lot pagination limits are clamped in
+  `Lot::window`.
   The backup restore path is the deliberate exception (section 11).
-- **Types and formats**: route `{id}` values are coerced to integers; emails use
-  `FILTER_VALIDATE_EMAIL`; dates must match `YYYY-MM-DD`; enums are checked
+- **Types and formats**: route `{id}` values must be digits (`Route::pattern`),
+  anything else is a `404`; emails use `FILTER_VALIDATE_EMAIL` (`email:filter`);
+  dates must be real `YYYY-MM-DD` calendar dates; enums are checked
   against allowlists; phone numbers and password length are validated. Numeric
   fields are cast before use.
 - **Uniqueness and integrity**: duplicate emails and `lot_code`s are rejected;
@@ -208,12 +220,17 @@ the session and compared with `hash_equals()`.
 - **Client-side validation** mirrors the server rules but is never the only
   check.
 
-Validation is implemented per endpoint, not by a single middleware layer. New
-endpoints must repeat the same checks; see the conventions in `AGENTS.md`.
+Validation is implemented per endpoint: Form Requests (`app/Http/Requests`) or
+`$request->validate()` for field rules, and explicit checks in the controller
+for rules that depend on the database or the caller. Blank strings are not
+converted to null (`ConvertEmptyStringsToNull` is off), because several updates
+read `""` as "clear this field". New endpoints must repeat the same checks; see
+the conventions in `AGENTS.md`.
 
 ## 9. HTTP security headers and caching
 
-`App\Core\Headers` applies these to every JSON and SPA response:
+`App\Http\Middleware\SecurityHeaders` applies these to every response Laravel
+sends (JSON, the SPA shell, errors):
 
 | Header | Value |
 | --- | --- |
@@ -224,9 +241,11 @@ endpoints must repeat the same checks; see the conventions in `AGENTS.md`.
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
 
 `X-Frame-Options` and `frame-ancestors` both deny framing. JSON
-`GET` responses also send `Cache-Control: private, no-cache` and an `ETag`, so
-per-user data is revalidated rather than shared. Responses are gzip-compressed
-at the application layer when the client accepts it.
+`GET` responses also send `Cache-Control: private, no-cache` and an `ETag`
+(`cache.headers` middleware), so per-user data is revalidated rather than
+shared. Responses are gzip-compressed at the application layer when the client
+accepts it (`Compress`). Static files under `public/` are served by the web
+server directly and carry only the headers it adds.
 
 **Not set:** `Strict-Transport-Security` (HSTS) and a script/style
 `Content-Security-Policy`. The current CSP only controls framing; it does not
@@ -282,8 +301,11 @@ can still edit the table; for tamper evidence, ship the log off the host.
   play-back itself fails is the database left partial (HTTP 500), and the
   admin must restore the last good file. Error details go to the server log,
   not the response.
-- `login_attempts` is not in the export's fixed table order but is included via
-  the `SHOW TABLES` fallback.
+- `login_attempts` and Laravel's `migrations` table are not in the export's
+  fixed table order but are included via the `SHOW TABLES` fallback. Sessions
+  and cache are files, not tables, so a restore does not sign anyone out.
+- The dump, statement allowlist and roll-back live in
+  `App\Services\DatabaseBackup`.
 - `POST /api/backup/reset` (admin) deletes reservations, payments, burial
   records, plot owners, notifications and sign-in attempts, and sets every plot
   available, in one transaction. It requires the administrator's own password
@@ -334,7 +356,7 @@ notice):
 **Minimization already in place:** the reservation draft in `localStorage`
 deliberately omits the free-text purpose; the app makes no analytics or
 third-party requests; session data is not stored in `localStorage`; API
-responses strip password hashes (`User::publicUser`).
+responses strip password hashes (`User::$hidden`).
 
 **Gaps to close before production:**
 
@@ -353,12 +375,18 @@ responses strip password hashes (`User::publicUser`).
 The repository defaults are for local development only. Before deploying:
 
 - [ ] Serve only over HTTPS and redirect HTTP to HTTPS. Enable HSTS at the
-      proxy/web server. Keep the app's `Secure` cookie working by ensuring
-      `$_SERVER['HTTPS']` is set (or `HTTPS=on`) behind the proxy.
+      proxy/web server. Keep the app's `Secure` cookie working behind a proxy by
+      trusting it (`$middleware->trustProxies(...)` in `bootstrap/app.php`), or
+      set `SESSION_SECURE_COOKIE=true`.
 - [ ] Change the seeded administrator password (`admin@cemetery.test` /
       `admin123`) and every default database credential.
 - [ ] Keep `.env` out of version control and readable only by the PHP user
       (the repo already git-ignores it). Never commit real secrets.
+- [ ] Generate a fresh `APP_KEY` for the deployment (`php artisan key:generate`)
+      and set `APP_ENV=production`, `APP_DEBUG=false`; with debug on, a
+      non-API error page shows stack traces and configuration.
+- [ ] Run `php artisan config:cache` and `route:cache`, and make `storage/` and
+      `bootstrap/cache/` writable by the PHP user only.
 - [ ] Create a dedicated MySQL user for the app with only the privileges the app
       needs. Use a separate, temporary user for restore if DDL is required.
 - [ ] Do not expose MySQL (`3306`) or phpMyAdmin (`8080`) to the internet. The
@@ -367,8 +395,8 @@ The repository defaults are for local development only. Before deploying:
 - [ ] Use Apache/nginx with PHP-FPM, not the PHP built-in server used by the
       dev container. Set `display_errors=Off`, `expose_php=Off`, and log errors
       to a protected file.
-- [ ] Set `session.use_strict_mode=1` and an idle/absolute session timeout in
-      `php.ini` or application configuration.
+- [ ] Review `SESSION_LIFETIME` (idle timeout, 120 minutes by default) for the
+      office's workstations.
 - [ ] Encrypt and access-control backups; keep copies off the application host;
       test a restore.
 - [ ] Apply OS, PHP, and MySQL security updates; restrict inbound ports with a
@@ -377,8 +405,10 @@ The repository defaults are for local development only. Before deploying:
       schedule, and a data-subject request contact.
 - [ ] Review user accounts and roles, deactivate leavers, and monitor audit
       logs, 429s, and 500s.
-- [ ] Add automated security checks (dependency audit, `pnpm build`, API smoke
-      tests) to the release routine.
+- [ ] Run `php artisan schedule:run` from cron every minute so
+      `reservations:expire` runs even when the API is idle.
+- [ ] Add automated security checks (`composer audit`, `pnpm audit`,
+      `make test`, `pnpm build`, API smoke tests) to the release routine.
 
 ## 14. Known limitations and accepted risks
 
@@ -390,14 +420,15 @@ The repository defaults are for local development only. Before deploying:
 | Login throttling is per IP (per account, plus a per-address ceiling) | Distributed attacks across many addresses bypass it | 5 per account / 20 per address per 15 min; add per-account throttling across addresses |
 | Registration and public memorial search are not rate-limited | Account spam and name/plot scraping | Add throttling and monitoring |
 | Registration reveals whether an email exists | Account enumeration | Generic login message; consider a neutral registration response |
-| No idle/absolute session timeout | Stolen cookie stays valid until logout/browser close | Set server-side timeout |
-| `Secure` cookie depends on `$_SERVER['HTTPS']` | Missing flag behind a misconfigured proxy | Deploy with correct HTTPS detection |
+| No absolute session timeout | A stolen cookie in active use stays valid until logout/browser close | 120-minute idle timeout; add an absolute limit if required |
+| `Secure` cookie follows the request's HTTPS detection | Missing flag behind an untrusted proxy | Trust the proxy or set `SESSION_SECURE_COOKIE=true` |
+| `APP_KEY` signs and encrypts session cookies | A leaked key lets an attacker forge sessions | Keep `.env` private; rotate the key (`APP_PREVIOUS_KEYS`) if exposed |
 | No HSTS or script-level CSP | Weaker transport/clickjacking hardening | XFO/CSP frame denial in place; add at deployment |
 | Backup import runs export-format SQL as the app DB user | A crafted file can replace any table's data if an admin account is abused | Admin-only, CSRF-protected, 50 MB cap, statement allowlist, audit log preserved; review files, use least privilege |
 | Public memorial search exposes deceased names, dates, and plots | Privacy exposure beyond the family | Intentional feature; requires privacy notice and policy |
 | No retention/erasure workflow | Indefinite retention of personal data | Manual operations; define a schedule |
 | No encryption at rest | Disk/host compromise exposes data | Host disk encryption recommended |
-| Audit trail lacks IP/user-agent and before/after values | Harder investigations | Add fields if required |
+| Audit trail lacks the user agent | Harder investigations | IP and before/after values are recorded; add the user agent if required |
 | Seeded admin and compose credentials are public | Trivial takeover if unchanged | Change before deployment |
 | Dev services (MySQL, phpMyAdmin) are published | Direct database exposure | Development only; remove in production |
 
@@ -422,8 +453,10 @@ curl -c /tmp/cj -s http://localhost:8000/api/csrf-token
 #  then reuse the cookie jar against /api/backup/export)
 ```
 
-RBAC checks are also covered by the per-route `Auth::requireRole` calls listed
-in section 3. Do not run the login-throttle test against a production instance.
+RBAC, CSRF-exempt routes, ownership checks, the login throttle and the backup
+allowlist are also covered by the PHPUnit suite (`make test`, `tests/Feature`),
+which runs against its own `cemetery_test` database. Do not run the
+login-throttle test against a production instance.
 
 ## 16. Reporting and change control
 
@@ -431,6 +464,6 @@ in section 3. Do not run the login-throttle test against a production instance.
   open a public issue with exploit details.
 - Re-review this document at the end of any sprint that changes authentication,
   roles, a route guard, headers, personal-data fields, or backups.
-- Keep `database/schema.sql` authoritative: new personal-data columns must be
+- Keep the migrations authoritative: new personal-data columns must be
   added to section 12 and any new public read endpoint must be listed in
   section 6.

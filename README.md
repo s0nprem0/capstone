@@ -2,20 +2,21 @@
 
 Web-based system for **St. John Memorial Garden & Parks** — a capstone project for managing cemetery lot reservations, burial records, and visitor accounts.
 
-Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized with Docker.
+Laravel 12 (PHP 8.3) API backend + React 18 SPA (Vite + pnpm) frontend, containerized with Docker.
 
 ## Tech stack
 
-- **Backend:** PHP >= 8.1, PDO prepared statements only, lightweight custom MVC (`App\`)
-- **Database:** MySQL 8.0, `utf8mb4` — schema authoritative in `database/schema.sql`
+- **Backend:** Laravel 12 on PHP >= 8.2 — Eloquent models, Form Request validation, route middleware for RBAC (`App\`)
+- **Database:** MySQL 8.0, `utf8mb4` — schema authoritative in the Laravel migrations (`database/migrations/`)
 - **Frontend:** React 18 SPA, Vite, pnpm (pinned `pnpm@10.4.1`), `react-router-dom` v7
 - **Mapping:** pure SVG digital map — traced layout paths + grid lot boxes rendered client-side (no map tiles)
 - **Containerization:** Docker Compose (PHP, Node, MySQL) + Makefile
+- **Tests:** PHPUnit unit and feature suite (`make test`)
 
 ## Features
 
 ### Implemented
-- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (`password_hash` / `password_verify`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per IP per 15 minutes (HTTP 429)
+- **Authentication & RBAC** — register, login, logout, session-based auth with CSRF protection (bcrypt via Laravel's `Hash`), roles `admin` / `staff` / `user`, role-guarded routes and server-side checks on every protected endpoint; login rate-limited to 5 failed attempts per account and address per 15 minutes (HTTP 429)
 - **Cemetery map** — pure SVG digital map (traced layout + grid lots) color-coded by status, pan/zoom/fly-to navigation, lot details drawer, reserve flow from the map
 - **Reservations** — client submission, staff/admin approval/rejection, automatic lot locking (available → reserved on submission, reserved → occupied on approval), capacity checks per lot type; lot claim is transactional (`SELECT … FOR UPDATE`) so concurrent requests cannot double-book a lot. Rejecting or deleting a reservation returns its plot to the available pool unless a burial record already claims it
 - **Payments** — staff/admin record manual payments (cash, GCash, bank transfer, cheque, other) against a reservation; the reservation's derived `payment_status` (`unpaid` / `partial` / `paid`) and paid/balance figures update automatically. Recording a payment does not gate approval. Visitors see the payment status on their own reservations; revenue appears on the dashboard and in a payments report. No online gateway
@@ -34,8 +35,9 @@ Plain PHP (PDO) backend + React 18 SPA (Vite + pnpm) frontend, containerized wit
 
 ## Architecture
 
-A layered client–server system: React 18 SPA → REST API (`/api`, custom PHP Router
-in `public/index.php`) → MySQL 8, with PDO-only Models behind the Controllers.
+A layered client–server system: React 18 SPA → REST API (`/api`, Laravel routes in
+`routes/api.php`) → MySQL 8, with Eloquent Models behind the Controllers. Every
+other path serves the SPA shell (`routes/web.php`).
 
 The study's layered architecture diagram, reconciled with the code, is in
 [docs/architecture.md](docs/architecture.md). It matches the diagram's Payment
@@ -50,42 +52,44 @@ actor** the diagram omits (the system's RBAC has `admin` / `staff` / `user`).
 
 ### 1. Start the stack
 ```bash
-make setup         # .env (if absent) + up + install + migrate + map-data
+make setup         # up + install (.env, APP_KEY) + migrate + map-data
 ```
 `make setup` is the one-shot path from a clean clone. To run the steps yourself:
 
 ```bash
-[ -f .env ] || cp .env.example .env   # optional under Docker: compose injects DB_*
 make up            # docker compose up -d
 ```
 
-`.env` is gitignored, so a fresh checkout has none. Under Docker it is optional —
-`docker-compose.yml` supplies `DB_*` as environment variables and the app loads
-`.env` only when present. It is required for the non-container (XAMPP) setup below.
+`.env` is gitignored, so a fresh checkout has none. `make install` copies
+`.env.example` into place and generates the `APP_KEY` Laravel signs session
+cookies with. Under Docker, `docker-compose.yml` supplies `DB_*` as environment
+variables, which take precedence over `.env`.
 
 ### 2. Install dependencies
 ```bash
-make install       # composer install + pnpm install (in containers)
+make install       # .env + APP_KEY, composer install + pnpm install (in containers)
 ```
 
 ### 3. Initialize the database
-The schema (including seed data) auto-loads on first MySQL start. To reset the database to the schema at any time:
+The schema is the Laravel migrations; the seeder adds the admin account and the
+survey sections. To build the database, or reset it to the schema at any time:
 
 ```bash
-make migrate      # drops every table and reloads database/schema.sql
+make migrate      # php artisan migrate:fresh --seed (drops every table)
 make map-data     # load the 70 surveyed sections and 6769 plots
 make demo         # optional: load the demo dataset for a walkthrough
 ```
 
 `make migrate` is destructive by design — that is what lets it put a database
-back the way the schema says it should be. For demo accounts and a suggested
+back the way the schema says it should be. To apply a new migration and keep the
+data, run `make upgrade` (`php artisan migrate`). For demo accounts and a suggested
 walkthrough see [DEMO.md](DEMO.md).
 
 ### 4. Run the app
 | Service | URL | Purpose |
 | --- | --- | --- |
 | React dev server | http://localhost:5173 | Hot-reload development |
-| PHP (production build) | http://localhost:8000 | Serves built bundle + `/api` |
+| Laravel (production build) | http://localhost:8000 | Serves built bundle + `/api` (`php artisan serve`) |
 
 For production mode, build the frontend first:
 ```bash
@@ -139,18 +143,18 @@ copy .env.xampp.example .env     # Windows
 ```
 This points the app at XAMPP's MySQL (`127.0.0.1:3306`, user `root`, no password).
 
-### 3. Create the database
-Option A — phpMyAdmin: open http://localhost/phpmyadmin, create database `cemetery_db` (utf8mb4), then import `database/schema.sql`.
-
-Option B — MySQL CLI:
-```bash
-C:\xampp\mysql\bin\mysql -u root < database/schema.sql
-```
-
-### 4. Install dependencies
+### 3. Install dependencies
 ```bash
 composer install
+php artisan key:generate
 pnpm install
+```
+
+### 4. Create the database
+Create database `cemetery_db` (utf8mb4) in phpMyAdmin (http://localhost/phpmyadmin), then:
+```bash
+php artisan migrate --seed
+C:\xampp\mysql\bin\mysql -u root cemetery_db < database/survey/lots.sql
 ```
 
 ### 5. Build the frontend
@@ -186,21 +190,36 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ## Project structure
 
 ```
+├── app/
+│   ├── Http/Controllers/      # Request logic, one controller per module
+│   ├── Http/Middleware/       # role (RBAC), CSRF, security headers, gzip, hold expiry
+│   ├── Http/Requests/         # Form Request validation
+│   ├── Models/                # Eloquent models (data layer)
+│   ├── Services/              # DatabaseBackup (export/restore)
+│   ├── Support/               # Dates, Svg geometry, LoginThrottle, Tally
+│   └── Console/Commands/      # map:verify
+├── bootstrap/app.php          # Middleware groups, JSON error rendering
+├── config/                    # Laravel config + cemetery.php (reservation limits)
+├── routes/
+│   ├── api.php                # JSON API, role middleware per route
+│   ├── web.php                # SPA shell for every other path
+│   └── console.php            # reservations:expire (scheduled hourly)
+├── database/
+│   ├── migrations/            # Authoritative schema
+│   ├── seeders/               # Admin account + survey sections
+│   ├── survey/lots.sql        # Surveyed plots (make map-data)
+│   ├── demo.sql               # Demo dataset (make demo)
+│   └── upgrades/              # SQL upgrades for pre-Laravel databases
 ├── public/
-│   ├── index.php              # Front controller (JSON API + SPA)
+│   ├── index.php              # Laravel entry point
 │   └── .htaccess              # Apache/XAMPP routing to index.php
-├── src/
-│   ├── bootstrap.php          # Env + autoloader
-│   ├── Config/Database.php    # PDO singleton
-│   ├── Core/                  # Router, Session, Csrf, Auth, Response
-│   ├── Controllers/           # Request logic
-│   └── Models/                # Data layer (Model base + entities)
-├── database/schema.sql        # Authoritative schema + seed data
 ├── resources/
 │   ├── js/                    # React SPA (contexts, components, pages, lib)
-│   └── css/app.css            # All styling
+│   ├── css/app.css            # All styling
+│   └── views/app.blade.php    # SPA shell (built bundle or Vite dev entry)
+├── tests/                     # PHPUnit: Unit/ and Feature/
 ├── docker-compose.yml         # php / node / mysql services
-├── Dockerfile                 # PHP 8.3-cli + composer
+├── Dockerfile                 # PHP 8.3-cli + composer, php artisan serve
 ├── docker/node.Dockerfile     # Node 22 + pnpm
 ├── docs/
 │   ├── architecture.md        # layered architecture reconciled with the build
@@ -211,7 +230,7 @@ Additional users are created via the app (User Management) or `POST /api/auth/re
 ├── .htaccess                  # Apache/XAMPP: redirect into public/
 ├── .env.example               # Docker/standalone env template
 ├── .env.xampp.example         # XAMPP env template
-└── Makefile                   # up, down, install, build, migrate, demo, fresh, ...
+└── Makefile                   # up, down, install, build, migrate, demo, test, fresh, ...
 ```
 
 ## API overview
@@ -234,7 +253,7 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/sections/{id}` | POST | admin |
 | `/api/sections/{id}/delete` | POST | admin |
 | `/api/users`, `/api/users/{id}` | GET | admin, staff |
-| `/api/users` | POST | admin, staff |
+| `/api/users` | POST | admin |
 | `/api/users/{id}` | POST | admin, staff, user (self) |
 | `/api/users/{id}/delete` | POST | admin |
 | `/api/reservations` | GET | admin, staff |
@@ -247,7 +266,8 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 | `/api/payments/{id}` | POST | admin, staff |
 | `/api/payments/{id}/delete` | POST | admin |
 | `/api/burial-records` | GET/POST | admin, staff |
-| `/api/burial-records/{id}`, `/api/burial-records/{id}/delete` | POST | admin, staff |
+| `/api/burial-records/{id}` | POST | admin, staff |
+| `/api/burial-records/{id}/delete` | POST | admin |
 | `/api/notifications` | GET | Auth |
 | `/api/notifications/{id}/read`, `/api/notifications/read-all` | POST | Auth |
 | `/api/stats/dashboard` | GET | admin, staff |
@@ -258,13 +278,16 @@ RESTful JSON under `/api`. Mutations require a CSRF token (`GET /api/csrf-token`
 ## Development workflow
 
 ```bash
-make setup       # one-shot: .env + up + install + migrate + map-data
+make setup       # one-shot: up + install + migrate + map-data
 make logs        # tail container logs
 make php         # shell into PHP container
 make node        # shell into Node container
 make mysql       # interactive MySQL shell
 make build       # build the frontend bundle
-make migrate     # reset the database to the schema
+make migrate     # reset the database to the schema (migrate:fresh --seed)
+make upgrade     # apply new migrations, keeping the data
+make test        # PHPUnit suite against the cemetery_test database
+make verify-map  # check plot geometry (php artisan map:verify)
 make demo        # load the demo dataset
 make fresh       # rebuild everything from scratch
 ```
@@ -274,25 +297,25 @@ make fresh       # rebuild everything from scratch
 The full controls, permission matrix, privacy notes, deployment checklist, and
 accepted risks are in **[docs/security.md](docs/security.md)**. Summary:
 
-- All SQL via PDO prepared statements (`ATTR_EMULATE_PREPARES` off); identifiers never come from request input
-- Passwords hashed with `password_hash()` (bcrypt, minimum 8 characters)
+- All SQL through Eloquent / the query builder with bound parameters (PDO, `ATTR_EMULATE_PREPARES` off); identifiers never come from request input
+- Passwords hashed with bcrypt (Laravel `Hash`, `hashed` cast; minimum 8 characters)
 - Server-side RBAC on every protected route (not just UI), plus ownership checks on a visitor's own records
 - CSRF token (`X-CSRF-Token`) required on every `POST` except login/register; invalid → `419`
 - Sessions with `HttpOnly`, `SameSite=Lax`, and `Secure` when HTTPS; ID regenerated on login
-- Login rate limiting (5 failed attempts per IP per 15 minutes) against brute force
-- Security headers on JSON API and SPA responses: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies
+- Login rate limiting (5 failed attempts per account and address, 20 per address, per 15 minutes) against brute force
+- Security headers on JSON API and SPA responses (`SecurityHeaders` middleware); no CORS (same-origin only): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies
 - Input validation and uniqueness checks server-side
 - Data-integrity rules: lots are claimed atomically (no double-booking), approval is what turns a held plot into an occupied one, burials require a reserved/occupied lot
 - Audit trail of logins, logouts, and every create/update/approve/reject/delete, viewable by staff and admins
 - Personal data minimized per the Data Privacy Act of 2012; public memorial search and plot statuses are disclosed by design
 
 Known gaps before production (no MFA, no password reset, no retention/erasure
-workflow, no HSTS/script CSP, admin restore executes arbitrary SQL) are listed in
+workflow, no HSTS/script CSP, admin restore runs the export's SQL as the app DB user) are listed in
 [section 14 of the security guide](docs/security.md#14-known-limitations-and-accepted-risks).
 
 ## Conventions
 
-- PHP: `declare(strict_types=1)`, PSR-4 `App\`, existing style
+- PHP: Laravel conventions, `declare(strict_types=1)`, PSR-4 `App\`, existing style
 - React: function components + hooks, no TypeScript
 - Conventional commits (`feat:`, `fix:`, `refactor:`, ...)
-- `database/schema.sql` stays authoritative — a fresh import reproduces the whole DB
+- The migrations stay authoritative — `make migrate` reproduces the whole schema; schema changes ship as new migrations

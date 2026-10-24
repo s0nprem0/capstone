@@ -118,7 +118,7 @@ Steps 3 and 4 are the ones to slow down on. Everything else is context.
 ## Resetting
 
 ```bash
-make migrate   # drops every table and reloads schema.sql
+make migrate   # drops every table, reruns the migrations and the seeder
 make map-data  # reloads the surveyed sections and plots
 ```
 
@@ -130,7 +130,7 @@ plots rather than adding to them, so it is the step to run after editing the
 survey trace — but it takes the reservations and burials with it, because those
 hang off the plots. Load `make demo` after it, not before.
 
-The demo dataset lives in `database/demo.sql` rather than `schema.sql` on
-purpose. `schema.sql` is the authoritative definition of the database and a
-fresh `make migrate` has to reproduce it; invented clients with hand-picked
-dates are presentation, not schema.
+The demo dataset lives in `database/demo.sql` rather than the seeder on
+purpose. The migrations and seeder are the authoritative definition of the
+database and a fresh `make migrate` has to reproduce it; invented clients with
+hand-picked dates are presentation, not schema.

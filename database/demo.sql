@@ -1,10 +1,10 @@
 -- Demo dataset for the tech demo.
 --
--- Separate from schema.sql on purpose. schema.sql is the authoritative
--- definition of the database and a fresh `make migrate` has to reproduce it;
--- fake clients with invented names and hand-picked dates are presentation, not
--- schema, and folding them in would leave the adviser reading a seed section
--- full of fiction. Load schema.sql first, then this:
+-- Separate from the seeder on purpose. The migrations and seeder are the
+-- authoritative definition of the database and a fresh `make migrate` has to
+-- reproduce it; fake clients with invented names and hand-picked dates are
+-- presentation, not schema, and folding them in would leave the adviser reading
+-- a seeder full of fiction. Migrate first, then load this:
 --
 --   make migrate && make map-data && make demo
 --
