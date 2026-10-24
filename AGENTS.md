@@ -3,41 +3,53 @@
 Project guide for the **Cemetery Reservation and Records Management System** for St. John Memorial Garden & Parks. This is a capstone study project. Most modules are implemented end-to-end (see "Current state" below); the remaining ones are built out module-by-module against the system described here.
 
 ## Project overview
-- Plain PHP (>= 8.1) backend using PDO only — no Laravel/Symfony. Lightweight custom MVC.
+- Laravel 12 backend (PHP >= 8.2): Eloquent models, controllers, Form Requests, route middleware. It replaced the earlier plain-PHP custom MVC, keeping the same `/api` contract.
 - React 18 SPA + Vite (pnpm) frontend, `react-router-dom` v7.
-- MySQL 8.0, `utf8mb4`. Schema is authoritative in `database/schema.sql`.
+- MySQL 8.0, `utf8mb4`. Schema is authoritative in the Laravel migrations (`database/migrations/`).
 - Containerized dev environment (PHP, Node, MySQL) via `docker-compose.yml` + Makefile.
 - Leaflet.js + OpenStreetMap replaced by a pure SVG digital map (traced layout + grid lot boxes, no map tiles).
 
 ## Tech stack (mandatory)
-- Backend: PHP >= 8.1, PDO prepared statements only (no value concatenation into SQL), `declare(strict_types=1)`, PSR-4 `App\`.
+- Backend: Laravel 12, PHP >= 8.2, Eloquent / query builder with bound values only (no value concatenation into SQL, raw fragments are fixed strings), `declare(strict_types=1)`, PSR-4 `App\` → `app/`.
 - Database: MySQL 8.0, `utf8mb4`.
 - Frontend: React 18 SPA + Vite, pnpm, `react-router-dom` v7. Styling in `resources/css/app.css`. No TypeScript.
 - Mapping: pure SVG digital map (traced layout paths + grid lot `<rect>`s, rendered client-side; no Leaflet, no tiles).
 - Client-side storage: localStorage (drafts / non-sensitive), sessionStorage (active auth flags), JSON (API interchange). No sensitive data in localStorage.
-- Containerization: `docker-compose.yml` (php:8000, node:5173, mysql:3306) + Makefile workflow.
+- Containerization: `docker-compose.yml` (php:8000 via `php artisan serve`, node:5173, mysql:3306) + Makefile workflow.
+- Tests: PHPUnit (`tests/Unit`, `tests/Feature`) against the `cemetery_test` database (`make test`).
 
 ## Architecture
-- Six layers: user access (browser) → presentation (React SPA) → application (PHP controllers + API) → data (MySQL) → external services (none) → infrastructure.
+- Six layers: user access (browser) → presentation (React SPA) → application (Laravel controllers + API) → data (MySQL) → external services (none) → infrastructure.
 - Client-Server + MVC: Models = data layer, Views = React pages, Controllers = request logic.
-- Single front controller `public/index.php`: serves JSON API under `/api`; serves the built Vite bundle (or dev server) for all other routes.
+- Single entry point `public/index.php` (Laravel): `routes/api.php` serves the JSON API under `/api`; `routes/web.php` serves the SPA shell (`resources/views/app.blade.php`, built Vite bundle or dev server) for all other paths.
+- `bootstrap/app.php` defines the `api` middleware group (session, CSRF, hold-expiry sweep, ETag), the global security headers and gzip, the `role` middleware alias, and renders every API error as `{"error": "..."}`.
 - The presentation layer is browser-only (`resources/js/`): page views, shared components, the SVG map renderer, and the client runtime (router, `AuthContext`, `lib/api.js`). It holds no business rules and calls only `/api/*`.
 - The study's layered architecture diagram is reproduced and reconciled with the build in `docs/architecture.md`: it adds the Administrator actor and the Presentation Layer the diagram omits, and matches the diagram's Payment Monitoring module (now implemented).
 
 ## Project structure
 ```
-├── public/index.php          # Front controller (API + SPA)
-├── src/
-│   ├── bootstrap.php         # Loads .env + autoloader
-│   ├── Config/Database.php   # PDO singleton (mysql, utf8mb4)
-│   ├── Core/                 # Router, Session, Csrf, Auth, Response, RateLimiter
-│   ├── Controllers/          # Request logic (auth, lots, reservations, burials, reports, backup, ...)
-│   └── Models/               # Data layer (Model base + entities)
-├── database/schema.sql       # Authoritative schema + seed data
+├── public/index.php          # Laravel entry point
+├── app/
+│   ├── Http/Controllers/     # Request logic (auth, lots, reservations, burials, reports, backup, ...)
+│   ├── Http/Middleware/      # EnsureRole (RBAC), VerifyCsrfToken, SecurityHeaders, Compress, ExpireStaleReservations
+│   ├── Http/Requests/        # Form Request validation
+│   ├── Models/               # Eloquent models (data layer)
+│   ├── Services/             # DatabaseBackup
+│   ├── Support/              # Dates, Svg, LoginThrottle, Tally
+│   └── Console/Commands/     # map:verify
+├── bootstrap/app.php         # Middleware groups, exception rendering
+├── config/                   # Laravel config + cemetery.php (reservation limits)
+├── routes/                   # api.php, web.php, console.php (reservations:expire)
+├── database/
+│   ├── migrations/           # Authoritative schema
+│   ├── seeders/              # Admin account + survey sections
+│   └── upgrades/             # SQL upgrades for pre-Laravel databases only
 ├── resources/
 │   ├── js/                   # React SPA (contexts, components, pages/)
-│   └── css/app.css           # All styling
-├── Dockerfile                # PHP 8.3-cli + composer
+│   ├── css/app.css           # All styling
+│   └── views/app.blade.php   # SPA shell
+├── tests/                    # PHPUnit Unit/ + Feature/
+├── Dockerfile                # PHP 8.3-cli + composer, php artisan serve
 ├── docker/node.Dockerfile    # Node 22 + pnpm
 ├── docker-compose.yml        # php / node / mysql services
 ├── Makefile                  # up, down, install, build, migrate, fresh, ...
@@ -49,13 +61,13 @@ Project guide for the **Cemetery Reservation and Records Management System** for
 ## Getting started
 ```bash
 make up        # docker compose up -d
-make install   # composer install + pnpm install (in containers)
-make migrate   # apply database/schema.sql to MySQL
+make install   # .env + APP_KEY, composer install + pnpm install (in containers)
+make migrate   # php artisan migrate:fresh --seed (drops every table)
 make map-data  # apply database/survey/lots.sql (70 surveyed sections, 6769 plots)
 make demo      # apply database/demo.sql (demo clients, reservations, burials)
 ```
 - React dev server: http://localhost:5173 (proxies `/api` to PHP)
-- PHP server: http://localhost:8000
+- Laravel (php artisan serve): http://localhost:8000
 - MySQL: localhost:3306 (db `cemetery_db`)
 
 ## Current state
@@ -72,7 +84,9 @@ Implemented end-to-end (API + React page + server-side RBAC on every route):
 
 Payments were re-added on request (they had been cut after the early sprints). `reservations.payment_status` is derived from the `payments` rows via `Payment::recomputeStatus` and stored, so it must be recomputed whenever a payment changes or a reservation's `total_amount` changes.
 
-Still open: Documents, concession terms beyond ownership (expiry, transfers), record-level notes and expiration tracking, responsive layout polish. Extend `database/schema.sql` per the "Data model" section below before building them; it stays authoritative, so a fresh `make migrate` must reproduce the whole database.
+Still open: Documents, concession terms beyond ownership (expiry, transfers), record-level notes and expiration tracking, responsive layout polish. Add a migration per the "Data model" section below before building them; the migrations stay authoritative, so a fresh `make migrate` must reproduce the whole database.
+
+The backend moved from plain PHP to Laravel 12 with the API contract unchanged (routes, roles, JSON shapes, status codes, error messages, session cookie + `X-CSRF-Token`); the one visible difference is that a non-numeric `{id}` answers 404 instead of 400. The SPA needed no changes.
 
 ## Roles & permissions (RBAC) — from the study
 - **Administrator** (`admin`): everything — manage user/staff accounts, roles, permissions, access levels; approve/reject reservations; manage sections and lots; generate reports; backup/restore; view audit logs.
@@ -82,7 +96,7 @@ Still open: Documents, concession terms beyond ownership (expiry, transfers), re
 
 `users.role` must become `ENUM('admin','staff','user')` (client).
 
-## Data model (extend `database/schema.sql` consistently)
+## Data model (extend through new migrations)
 The current schema uses `users` / `cemetery_sections` / `cemetery_lots` / `reservations` / `payments` / `burial_records` / `notifications` / `audit_logs` / `login_attempts`, aligned to the study's ERD:
 - `users.role` → `ENUM('admin','staff','user')`; `users.password` → `VARCHAR(255)` (for `password_hash()`).
 - ERD tables/columns as designed: `users` (fullname, email, phone, role, status), `cemetery_sections`, `cemetery_lots` (lot_code, section_id, block, lot_type, price, status), `reservations` (user_id, lot_id, reservation_date, purpose, number_of_slots, total_amount, approved_status, payment_status), `audit_logs` (user_id, action, table_name, record_id).
@@ -104,7 +118,7 @@ RESTful JSON under `/api`, consistent with Router conventions (GET list, GET `{i
 - `/api/stats/dashboard`
 - `/api/map` (sections + lots with SVG grid coordinates and status)
 
-Always respond with proper HTTP status codes; validate inputs server-side; never trust client input; RBAC enforced on every route, not just in the UI.
+Always respond with proper HTTP status codes; validate inputs server-side; never trust client input; RBAC enforced on every route, not just in the UI. Register each route in `routes/api.php` inside the `role:` middleware group for the roles allowed; errors are `{"error": "..."}` (return `$this->error(...)`, throw a `ValidationException`, or `abort()`).
 
 ## Frontend pages/routes (match the study's interface figures)
 - Public: `/` (cemetery map with available/reserved/occupied plot statuses, memorial search, no login), `/login`, `/register`.
@@ -115,23 +129,24 @@ Always respond with proper HTTP status codes; validate inputs server-side; never
 
 ## Security (study + Data Privacy Act 2012)
 - Full controls, permission matrix, privacy inventory, deployment checklist, and accepted risks: `docs/security.md`. Keep it in sync with auth, routes, headers, personal-data fields, and backups.
-- Hash passwords with `password_hash()` / verify with `password_verify()`; minimum 8 characters.
-- PDO prepared statements everywhere (`ATTR_EMULATE_PREPARES` off); identifiers never come from request input.
+- Hash passwords with bcrypt (the `User` model's `hashed` cast / `Hash`); verify through `Auth::attempt()` / `Hash::check()`; minimum 8 characters.
+- Eloquent / query builder with bound values everywhere (PDO, `ATTR_EMULATE_PREPARES` off); identifiers never come from request input.
 - Server-side RBAC on every mutation and read endpoint; ownership checks on a visitor's own records; never trust client-side route guards.
-- Session auth with `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS, and ID regeneration on login. CSRF token required on every `POST` except login/register.
+- Laravel session auth (file driver, encrypted cookie, `APP_KEY` secret) with `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS, 120-minute idle timeout, and ID regeneration on login; only active accounts resolve (`active-users` provider). CSRF token required on every `POST` except login/register (`VerifyCsrfToken`). No CORS.
 - Input validation/sanitization on client and server; uniqueness checks prevent duplicate users and double-booked lots.
-- Security headers (`Core/Headers`): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies. HSTS and script/style CSP are deployment TODOs.
-- Audit trail for logins, failed logins, logouts, and every create/update/approve/reject/cancel/delete, with the client IP and the changed values (`AuditLog::changes`/`snapshot`; secrets masked); readable by staff and admins. Schema changes to an existing database ship as `database/upgrades/*.sql` (`make upgrade FILE=...`) alongside `schema.sql`.
+- Security headers (`SecurityHeaders` middleware): `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, referrer and permissions policies. HSTS and script/style CSP are deployment TODOs.
+- Audit trail for logins, failed logins, logouts, and every create/update/approve/reject/cancel/delete, with the client IP and the changed values (`AuditLog::changes`/`snapshot`; secrets masked); readable by staff and admins. Schema changes ship as new Laravel migrations (`make upgrade` applies them, keeping data); `database/upgrades/*.sql` exists only to bring a pre-Laravel database up to the point the first migration adopts.
 - Minimize collected personal data; restrict access by role; document public disclosures (map statuses, memorial search); define retention/erasure before deployment.
 - Backup/restore is admin-only and audit-logged; import runs export-format SQL (an allowlist of statement shapes) as the app DB user, so review files and use a least-privilege DB account.
 
 ## Conventions & quality bar
-- PHP: `declare(strict_types=1)`, PSR-4 `App\`, existing style.
+- PHP: Laravel idioms (Eloquent, Form Requests / `$request->validate()`, middleware, `DB::transaction` + `lockForUpdate()` for claims), `declare(strict_types=1)`, PSR-4 `App\`, existing style. Keep `$timestamps = false` and no date casts on models: the SPA reads `created_at` as MySQL's `Y-m-d H:i:s`. Big read-only payloads (the map) use the query builder, not models.
 - React: function components + hooks, existing import style; do not introduce TypeScript.
 - No unnecessary comments; keep code clean and idiomatic.
 - Commit in logical chunks with conventional commit messages (`feat:`, `fix:`, `refactor:`).
-- Verify with the Makefile workflow: `make up`, `make install`, `make migrate`, `make map-data`; smoke-test API via curl; `pnpm build` must pass.
-- Keep `database/schema.sql` authoritative so a fresh `make migrate` reproduces the full database.
+- Verify with the Makefile workflow: `make up`, `make install`, `make migrate`, `make map-data`; `make test` must pass; smoke-test API via curl; `pnpm build` must pass.
+- Keep the migrations authoritative so a fresh `make migrate` reproduces the full database.
+- The test suite must only ever touch `cemetery_test` (`phpunit.xml` forces it; `tests/TestCase.php` refuses anything else).
 
 ## Software engineering process (Agile — Scrum)
 The project follows an iterative Agile (Scrum) process:
@@ -143,9 +158,9 @@ The project follows an iterative Agile (Scrum) process:
 
 ### Definition of Done (per story / per sprint)
 1. **Implemented end-to-end:** API + frontend working, matching the story's acceptance criteria.
-2. **Tested:** unit tests for core logic; integration smoke-tests of the API via curl; `pnpm build` passes; a fresh `make migrate` reproduces the database.
+2. **Tested:** PHPUnit unit tests for core logic and feature tests for the API (`make test`); integration smoke-tests of the API via curl; `pnpm build` passes; a fresh `make migrate` reproduces the database.
 3. **Secure:** RBAC enforced server-side on the route, inputs validated, audit-logged where required.
-4. **Idiomatic:** conventions met — PDO prepared statements, `declare(strict_types=1)`, PSR-4, React hooks/function components, conventional commits.
+4. **Idiomatic:** conventions met — Laravel idioms with bound queries, `declare(strict_types=1)`, PSR-4, React hooks/function components, conventional commits.
 5. **Verifiable:** runs in the dev environment (`make up`), demoable in the sprint review.
 
 ### Prioritized backlog order (build smallest vertical slices first)
