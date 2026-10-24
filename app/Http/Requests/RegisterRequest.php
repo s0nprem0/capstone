@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     protected function prepareForValidation(): void
     {
-        $this->merge(['email' => strtolower((string) $this->input('email', ''))]);
+        $this->merge(['email' => $this->normalizedEmail()]);
     }
 
     public function rules(): array
@@ -31,6 +34,7 @@ class RegisterRequest extends FormRequest
             'fullname.required' => $required,
             'email.required' => $required,
             'password.required' => $required,
+            'email.string' => 'Invalid email address',
             'email.email' => 'Invalid email address',
             'email.unique' => 'Email already registered',
             'password.min' => 'Password must be at least 8 characters',

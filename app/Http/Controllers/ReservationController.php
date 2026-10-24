@@ -118,11 +118,12 @@ class ReservationController extends Controller
             'reservation_date' => ['nullable', 'date_format:Y-m-d'],
             'purpose' => self::PURPOSE_RULES,
             'number_of_slots' => ['nullable', 'integer', 'min:1'],
-            'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0', 'max:'.Payment::MAX_AMOUNT],
         ], [
             'reservation_date.*' => 'reservation_date must be a date in YYYY-MM-DD format',
             'purpose.*' => self::PURPOSE_ERROR,
             'number_of_slots.*' => 'number_of_slots must be at least 1',
+            'total_amount.max' => 'total_amount must be at most '.number_format(Payment::MAX_AMOUNT, 2),
             'total_amount.*' => 'total_amount must not be negative',
         ]);
 
@@ -146,11 +147,14 @@ class ReservationController extends Controller
         }
 
         if ($data !== []) {
-            $before = $reservation->getAttributes();
-            $reservation->update($data);
-            // total_amount may have moved, so the stored payment_status is stale.
-            Payment::recomputeStatus($id);
-            AuditLog::record(Auth::id(), 'update', 'reservations', $id, AuditLog::changes($before, $data));
+            DB::transaction(function () use ($id, $data) {
+                $reservation = Reservation::findForUpdate($id);
+                $before = $reservation->getAttributes();
+                $reservation->update($data);
+                // total_amount may have moved, so the stored payment_status is stale.
+                Payment::recomputeStatus($id);
+                AuditLog::record(Auth::id(), 'update', 'reservations', $id, AuditLog::changes($before, $data));
+            });
         }
 
         return response()->json(Reservation::withDetails($id));
