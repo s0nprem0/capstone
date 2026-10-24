@@ -135,7 +135,8 @@ Common targets: `up`, `down`, `logs`, `install`, `build`, `migrate`, `upgrade`,
 Place the project under `htdocs`, copy `.env.xampp.example` to `.env`, run
 `composer install` and `php artisan key:generate`, create the `cemetery_db`
 database and run `php artisan migrate --seed`, import
-`database/survey/lots.sql`, then `pnpm install` and `pnpm build`. `storage/` and
+`database/survey/lots.sql` (`mysql -u root cemetery_db -e "source database/survey/lots.sql"`;
+PowerShell has no `<` redirect), then `pnpm install` and `pnpm build`. `storage/` and
 `bootstrap/cache/` must be writable by Apache. Apache rewrites all requests into `public/`
 via the root and `public/.htaccess`. Hot-reload dev: `XAMPP=1 pnpm dev`.
 
@@ -467,17 +468,147 @@ The migrations remain the authoritative definition — a fresh `make migrate`
 reproduces the schema and seed regardless of any backup. A backup includes the
 `migrations` table, so a restored database knows which migrations it has.
 
-## 13. Build and verification
+## 13. Testing and verification
+
+### The test suite
+
+PHPUnit 11 through `php artisan test`: `tests/Unit` for core logic (audit
+diffs, SVG geometry) and `tests/Feature` for the API (auth, RBAC on every route
+group, reservations, payments, burials, owners, backup/restore, input
+validation). Feature tests call the routes in-process, so no web server needs
+to be running, only MySQL.
+
+The suite always runs against its own database, `cemetery_test`, never
+`cemetery_db`. `phpunit.xml` forces `DB_DATABASE=cemetery_test` (and array
+sessions and cache), and `tests/TestCase.php` refuses to start against any other
+database name, because every test class rebuilds the schema from the
+migrations. The suite takes the host, port, user and password from the
+environment or `.env`, as the app does. Create `cemetery_test` once per MySQL
+server; the steps below include it.
+
+Running part of the suite works the same everywhere (prefix the container or
+XAMPP command as below):
 
 ```bash
-make build       # vite build -> public/dist (must pass)
-make test        # PHPUnit unit + feature suite (cemetery_test database)
-make verify-map  # surveyed-plot geometry check
+php artisan test --testsuite=Unit                 # one suite
+php artisan test tests/Feature/PaymentTest.php    # one file
+php artisan test --filter=cancel                  # tests whose name matches
+php artisan test --stop-on-failure
 ```
 
-Recommended before a demo/release:
+### Linux
 
-- `make migrate && make map-data && make demo && make build` from a clean state,
+**Docker or Podman (the default).** With the stack up (`make up`, `make install`):
+
+```bash
+make test                          # creates cemetery_test if missing, then runs the suite
+make DC="podman-compose" test      # bare podman-compose install
+docker compose exec php php artisan test --filter=cancel   # part of the suite
+```
+
+**Host PHP against the container's MySQL.** PHP 8.2+ with `pdo_mysql`,
+`mbstring` and `xml` on the host, and `composer install` run. `.env` names the
+compose service `mysql` as the host, which only resolves inside the network, so
+point the run at the published port:
+
+```bash
+DB_HOST=127.0.0.1 php artisan test
+```
+
+**Native MySQL, no containers.** On Debian/Ubuntu, `sudo apt install php8.3-cli
+php8.3-mysql php8.3-mbstring php8.3-xml mysql-server`; set `DB_HOST=127.0.0.1`
+and your own credentials in `.env`, then create the test database once and run
+the suite:
+
+```bash
+sudo mysql -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON cemetery_test.* TO 'cemetery_user'@'%';"
+php artisan test
+```
+
+(Use the `DB_USERNAME` from `.env` in the `GRANT`, with `@'localhost'` if that
+is how the account was created.)
+
+### Windows
+
+**Docker Desktop.** `make` is not part of Windows; the Makefile targets work from
+WSL or Git Bash, or run what `make test` runs directly in PowerShell or `cmd`
+from the project folder:
+
+```powershell
+docker compose exec -T mysql mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON cemetery_test.* TO 'cemetery_user'@'%';"
+docker compose exec -T php php artisan test
+```
+
+The first line is only needed once, and not at all on a MySQL volume created
+after `docker/mysql/init.sql` existed. The other targets map the same way
+(`make migrate` is `docker compose exec -T php php artisan migrate:fresh --seed --force`).
+
+**XAMPP.** The suite runs on XAMPP's own PHP and database; Apache need not be
+running, but MySQL must be (XAMPP Control Panel). XAMPP's PHP must be 8.2 or
+newer (`C:\xampp\php\php.exe -v`), and `composer install` must have been run
+without `--no-dev`, which is what installs PHPUnit. From the project folder:
+
+```powershell
+C:\xampp\mysql\bin\mysql -u root -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+C:\xampp\php\php.exe artisan test
+```
+
+(Or create `cemetery_test` with utf8mb4 in phpMyAdmin; with `C:\xampp\php` on
+`PATH`, plain `php artisan test` works.) The credentials come from `.env`,
+which `.env.xampp.example` sets to `root` with no password. XAMPP ships MariaDB
+rather than MySQL 8.0; the suite is verified against MySQL 8.0 in Docker, so a
+failure that appears only under XAMPP is worth checking there before treating
+it as a code bug.
+
+### Frontend build and map check
+
+```bash
+make build              # pnpm build -> public/dist (must pass); XAMPP: pnpm build
+make verify-map         # surveyed-plot geometry; XAMPP: php artisan map:verify
+```
+
+On Windows without `make`: `docker compose exec node pnpm build` and
+`docker compose exec -T php php artisan map:verify`.
+
+### API smoke test
+
+Against a running app (http://localhost:8000 under Docker; under XAMPP use
+http://localhost/cemetery-system) with the seeded admin account. Linux, macOS
+or Git Bash:
+
+```bash
+B=http://localhost:8000; J=$(mktemp)
+curl -s $B/api/map | head -c 80; echo                                   # public
+curl -s -c $J -b $J -H 'Content-Type: application/json' \
+  -d '{"email":"admin@cemetery.test","password":"admin123"}' $B/api/auth/login; echo
+T=$(curl -s -c $J -b $J $B/api/csrf-token | sed 's/.*"csrf_token":"\([^"]*\)".*/\1/')
+curl -s -b $J $B/api/stats/dashboard | head -c 80; echo                 # signed in
+curl -s -b $J -c $J -X POST -H "X-CSRF-Token: $T" $B/api/auth/logout; echo   # CSRF-protected POST
+```
+
+Windows PowerShell (5.1 or 7), where `curl` may be an alias of
+`Invoke-WebRequest`, so the session is kept by PowerShell itself:
+
+```powershell
+$base = 'http://localhost:8000'
+(Invoke-RestMethod "$base/api/map").sections.Count
+$login = @{ email = 'admin@cemetery.test'; password = 'admin123' } | ConvertTo-Json
+(Invoke-RestMethod "$base/api/auth/login" -Method Post -ContentType 'application/json' -Body $login -SessionVariable s).user.role
+$token = (Invoke-RestMethod "$base/api/csrf-token" -WebSession $s).csrf_token
+(Invoke-RestMethod "$base/api/stats/dashboard" -WebSession $s).lots
+(Invoke-RestMethod "$base/api/auth/logout" -Method Post -Headers @{ 'X-CSRF-Token' = $token } -WebSession $s).message
+```
+
+Expect the section count (70 after `make map-data`), `admin`, the plot totals,
+and `Logged out`. A `419` on the logout means the CSRF token was not sent; a
+`401` on the dashboard means the session cookie was not kept.
+
+### Before a demo or release
+
+- `make migrate && make map-data && make demo && make build` from a clean state
+  (XAMPP: `php artisan migrate:fresh --seed`, then `source` `database/survey/lots.sql`
+  and `database/demo.sql` as in section 5),
+- `make test` and the smoke test pass,
 - http://localhost:8000 loads with styling,
 - an accessibility scan (axe-core) and a keyboard walk of the main screens.
 

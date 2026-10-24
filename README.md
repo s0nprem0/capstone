@@ -126,7 +126,7 @@ Two host-side notes for a bare Podman install:
 An alternative to Docker using a local XAMPP install (Apache + MySQL + PHP).
 
 ### Prerequisites
-- XAMPP with Apache, MySQL, and PHP >= 8.1 (Control Panel: start **Apache** and **MySQL**)
+- XAMPP with Apache, MySQL, and PHP >= 8.2, which Laravel 12 requires (Control Panel: start **Apache** and **MySQL**)
 - Node.js + pnpm
 - Composer
 
@@ -154,8 +154,9 @@ pnpm install
 Create database `cemetery_db` (utf8mb4) in phpMyAdmin (http://localhost/phpmyadmin), then:
 ```bash
 php artisan migrate --seed
-C:\xampp\mysql\bin\mysql -u root cemetery_db < database/survey/lots.sql
+C:\xampp\mysql\bin\mysql -u root cemetery_db -e "source database/survey/lots.sql"
 ```
+(`source` rather than `< file`, which PowerShell does not support.)
 
 ### 5. Build the frontend
 Apache serves the built bundle through `public/index.php`:
@@ -291,6 +292,33 @@ make verify-map  # check plot geometry (php artisan map:verify)
 make demo        # load the demo dataset
 make fresh       # rebuild everything from scratch
 ```
+
+## Testing
+
+The PHPUnit suite runs against its own `cemetery_test` database and refuses to
+touch `cemetery_db`. Full instructions, including running part of the suite and
+an API smoke test for bash and PowerShell, are in
+[docs/technical-manual.md §13](docs/technical-manual.md#13-testing-and-verification).
+
+**Linux (Docker or Podman)**
+```bash
+make test                            # creates cemetery_test if missing, runs the suite
+DB_HOST=127.0.0.1 php artisan test   # or with host PHP 8.2+, against the container's MySQL
+```
+
+**Windows (Docker Desktop, PowerShell, no `make`)**
+```powershell
+docker compose exec -T mysql mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON cemetery_test.* TO 'cemetery_user'@'%';"
+docker compose exec -T php php artisan test
+```
+
+**Windows (XAMPP)**, with MySQL started in the Control Panel:
+```powershell
+C:\xampp\mysql\bin\mysql -u root -e "CREATE DATABASE IF NOT EXISTS cemetery_test DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+C:\xampp\php\php.exe artisan test
+```
+
+The database line is needed once. `pnpm build` must also pass (`make build`).
 
 ## Security
 
