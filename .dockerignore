@@ -5,3 +5,9 @@ dist/
 *.log
 .vscode/
 .idea/
+.git/
+database/ledger/
+database/ledger.sql
+public/build/
+storage/logs/
+.pnpm-store/
